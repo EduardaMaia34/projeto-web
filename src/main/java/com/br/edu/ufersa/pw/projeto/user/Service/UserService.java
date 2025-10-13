@@ -3,29 +3,40 @@ package com.br.edu.ufersa.pw.projeto.user.Service;
 import com.br.edu.ufersa.pw.projeto.user.API.dto.InputUserDTO;
 import com.br.edu.ufersa.pw.projeto.user.API.dto.ReturnUserDTO;
 import com.br.edu.ufersa.pw.projeto.user.Model.entity.User;
+import com.br.edu.ufersa.pw.projeto.user.Model.entity.Role;
 import com.br.edu.ufersa.pw.projeto.user.Model.repository.UserRepository;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.security.crypto.password.PasswordEncoder; // <-- NOVO: Importe o PasswordEncoder
-import org.springframework.stereotype.Service;
 import com.br.edu.ufersa.pw.projeto.user.Model.entity.Interesse;
 import com.br.edu.ufersa.pw.projeto.user.Model.repository.InteresseRepository;
 
-import java.util.ArrayList;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.stereotype.Service;
+
 import java.util.List;
 import java.util.stream.Collectors;
 
 @Service
-public class UserService {
+public class UserService implements UserDetailsService {
+
     private final UserRepository repository;
     private final InteresseRepository interesseRepository;
-    private final PasswordEncoder passwordEncoder; // <-- NOVO: Campo para o PasswordEncoder
+    private final PasswordEncoder passwordEncoder;
 
     @Autowired
     public UserService(UserRepository repository, InteresseRepository interesseRepository,
-                       PasswordEncoder passwordEncoder) { // <-- NOVO: Injeção de dependência
+                       PasswordEncoder passwordEncoder) {
         this.repository = repository;
         this.interesseRepository = interesseRepository;
-        this.passwordEncoder = passwordEncoder; // <-- NOVO: Atribuição
+        this.passwordEncoder = passwordEncoder;
+    }
+
+    @Override
+    public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
+        return repository.findByEmailIgnoreCase(email)
+                .orElseThrow(() -> new UsernameNotFoundException("Usuário não encontrado com o email: " + email));
     }
 
     public List<ReturnUserDTO> buscarPorNome(String name) {
@@ -41,30 +52,36 @@ public class UserService {
     }
 
     public ReturnUserDTO save(InputUserDTO dto){
-        // 1. Cria a entidade User com os dados do DTO (incluindo a senha em texto puro)
+        if (repository.findByEmailIgnoreCase(dto.getEmail()).isPresent()) {
+            throw new IllegalArgumentException("O email já está em uso.");
+        }
+
         User user = new User(dto);
 
-        // 2. CRIPTOGRAFIA DE SENHA: Pega a senha em texto puro e a criptografa
-        String encodedPassword = passwordEncoder.encode(dto.getSenha());
+        // Lógica de Role (Segurança Correta)
+        if ("admin@seu-dominio.com".equalsIgnoreCase(dto.getEmail())) {
+            user.setRole(Role.ROLE_ADMIN);
+        } else {
+            user.setRole(Role.ROLE_USER);
+        }
 
-        // 3. Define a senha criptografada na entidade User
+        // Criptografia de Senha (Segurança Correta)
+        String encodedPassword = passwordEncoder.encode(dto.getSenha());
         user.setSenha(encodedPassword);
 
-        // 4. Salva a entidade uma primeira vez (para ter o ID se necessário para Interesse)
-        User savedUser = repository.save(user);
-
-        // Lógica de Interesses
+        // Lógica de Interesses (Associação)
         if (dto.getInteressesIds() != null && !dto.getInteressesIds().isEmpty()) {
             if (dto.getInteressesIds().size() > 3) {
                 throw new IllegalArgumentException("O usuário só pode escolher até 3 interesses.");
             }
 
+            // Busca e associa a lista à entidade antes do salvamento final
             List<Interesse> interesses = interesseRepository.findAllById(dto.getInteressesIds());
-            savedUser.setInteresses(interesses);
+            user.setInteresses(interesses);
         }
 
-        // 5. Salva novamente com os interesses (ou apenas uma vez se otimizado)
-        repository.save(savedUser);
+        // Salva a entidade User (com as associações de interesse) de uma ÚNICA vez.
+        User savedUser = repository.save(user);
 
         return new ReturnUserDTO(savedUser);
     }

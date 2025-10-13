@@ -14,13 +14,12 @@ public class InputLivroDTO {
     @NotBlank(message = "A descrição é obrigatória.")
     private String descricao;
 
-    // Adicione os IDs dos estilos (opcional, dependendo do seu design de API)
-    private Long[] estiloIds;
 
-    // Construtor vazio
+    private Long[] interessesIds;
+
+
     public InputLivroDTO() {}
 
-    // Getters e Setters
     public String getTitulo() { return titulo; }
     public void setTitulo(String titulo) { this.titulo = titulo; }
 
@@ -30,6 +29,9 @@ public class InputLivroDTO {
     public String getDescricao() { return descricao; }
     public void setDescricao(String descricao) { this.descricao = descricao; }
 
-    public Long[] getEstiloIds() { return estiloIds; }
-    public void setEstiloIds(Long[] estiloIds) { this.estiloIds = estiloIds; }
+    public Long[] getInteressesIds() { return interessesIds; }
+
+    public void setInteressesIds(Long[] interessesIds) {
+        this.interessesIds = interessesIds;
+    }
 }

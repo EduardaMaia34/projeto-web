@@ -5,6 +5,7 @@ import java.time.LocalDateTime;
 import java.util.Objects;
 import java.util.Set;
 import java.util.HashSet;
+import com.br.edu.ufersa.pw.projeto.user.Model.entity.Interesse;
 
 
 @Entity
@@ -21,7 +22,7 @@ public class Livro {
     @Column(nullable = false)
     private String autor;
 
-    @Column(nullable = false, length = 1024) // Aumentando o tamanho para descrições mais longas
+    @Column(nullable = false, length = 1024)
     private String descricao;
 
 
@@ -32,14 +33,13 @@ public class Livro {
             CascadeType.PERSIST,
             CascadeType.MERGE
     })
-    @JoinTable(name = "tb_livro_estilos",
+    @JoinTable(name = "tb_livro_interesse",
             joinColumns = @JoinColumn(name = "livro_id"),
-            inverseJoinColumns = @JoinColumn(name = "estilo_id"))
-    private Set<Estilos> estilos = new HashSet<>();
+            inverseJoinColumns = @JoinColumn(name = "interesse_id"))
+    private Set<Interesse> interesses = new HashSet<>();
 
     //construtores
     public Livro(){
-        // Construtor vazio exigido pelo JPA
     }
     public Livro(String titulo, String autor, String descricao){
         this.titulo = titulo;
@@ -88,13 +88,12 @@ public class Livro {
         this.dataCriacao = dataCriacao;
     }
 
-    public Set<Estilos> getEstilos() {
-        return estilos;
-    }
-
-    public void setEstilos(Set<Estilos> estilos) {
-        this.estilos = estilos;
-    }
+   public Set<Interesse> getInteresses() {
+        return interesses;
+   }
+   public void setInteresses(Set<Interesse> interesses) {
+        this.interesses = interesses;
+   }
 
     // --- MÉTODOS DE CICLO DE VIDA ---
 

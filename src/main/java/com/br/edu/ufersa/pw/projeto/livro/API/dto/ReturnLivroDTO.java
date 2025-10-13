@@ -16,7 +16,7 @@ public class ReturnLivroDTO {
     private LocalDateTime dataCriacao;
 
     // Simplificando o relacionamento Estilos (Many-to-Many) para uma lista de nomes
-    private Set<String> estilos; // Substitui 'interesses'
+    private Set<String> interesses; // Substitui 'interesses'
 
 
     // --- CONSTRUTORES ---
@@ -24,13 +24,13 @@ public class ReturnLivroDTO {
     public ReturnLivroDTO() {}
 
     // Construtor principal para facilitar a conversão da Entity para o DTO
-    public ReturnLivroDTO(Long id, String titulo, String autor, String descricao, LocalDateTime dataCriacao, Set<String> estilos) {
+    public ReturnLivroDTO(Long id, String titulo, String autor, String descricao, LocalDateTime dataCriacao, Set<String> interesses) {
         this.id = id;
         this.titulo = titulo;
         this.autor = autor;
         this.descricao = descricao;
         this.dataCriacao = dataCriacao;
-        this.estilos = estilos;
+        this.interesses = interesses;
     }
 
     // --- GETTERS E SETTERS CORRIGIDOS ---
@@ -76,12 +76,11 @@ public class ReturnLivroDTO {
     }
 
     // Método removido: getEstadoNome() - Não se aplica a Livros
+     public Set<String> getInteresses() {
+        return interesses;
+     }
 
-    public Set<String> getEstilos() { // Corrigido de getInteresses()
-        return estilos;
-    }
-
-    public void setEstilos(Set<String> estilos) { // Corrigido de setInteresses()
-        this.estilos = estilos;
-    }
+     public void setInteresses(Set<String> interesses) {
+        this.interesses = interesses;
+     }
 }

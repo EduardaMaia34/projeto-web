@@ -3,13 +3,17 @@ package com.br.edu.ufersa.pw.projeto.user.Model.entity;
 import com.br.edu.ufersa.pw.projeto.todoAPI.Model.entity.Todo;
 import com.br.edu.ufersa.pw.projeto.user.API.dto.InputUserDTO;
 import jakarta.persistence.*;
+import org.springframework.security.core.GrantedAuthority; // Import
+import org.springframework.security.core.authority.SimpleGrantedAuthority; // Import
+import org.springframework.security.core.userdetails.UserDetails; // Import
 import java.time.LocalDateTime;
+import java.util.Collection; // Import
 import java.util.List;
 import java.util.Objects;
 
 @Entity
 @Table(name = "tb_usuarios")
-public class User {
+public class User implements UserDetails {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -21,6 +25,11 @@ public class User {
     @Column(nullable = false)
     private String senha;
 
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private Role role;
+
     @Column(name = "foto_perfil", length = 500)
     private String fotoPerfil;
 
@@ -31,7 +40,7 @@ public class User {
     @Column(name = "data_cadastro", nullable = false, updatable = false)
     private LocalDateTime dataCadastro;
 
-    @Column(name = "nome", length = 500)
+    @Column(name = "nome", unique = true, nullable = false, length = 500)
     private String nome;
 
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
@@ -46,9 +55,8 @@ public class User {
     )
     private List<Interesse> interesses;
 
-    // Construtores
     public User() {
-        this.dataCadastro = LocalDateTime.now(); // define automaticamente no momento da criação
+        this.dataCadastro = LocalDateTime.now();
     }
 
     public User(InputUserDTO dto) {
@@ -69,6 +77,7 @@ public class User {
 
     public void setEmail(String email) { this.email = email; }
 
+    // Retorna a senha criptografada (exigido pelo UserDetails)
     public String getSenha() { return senha; }
 
     public void setSenha(String senha) { this.senha = senha; }
@@ -96,7 +105,44 @@ public class User {
 
     public void setInteresses(List<Interesse> interesses) { this.interesses = interesses; }
 
-    // equals e hashCode
+
+    public Role getRole() { return role; }
+    public void setRole(Role role) { this.role = role; }
+
+
+
+    @Override
+    public Collection<? extends GrantedAuthority> getAuthorities() {
+        return List.of(new SimpleGrantedAuthority(role.name()));
+    }
+
+    @Override
+    public String getPassword() {
+
+        return this.senha;
+    }
+
+    @Override
+    public String getUsername() {
+
+        return this.email;
+    }
+
+
+    @Override
+    public boolean isAccountNonExpired() { return true; }
+
+    @Override
+    public boolean isAccountNonLocked() { return true; }
+
+    @Override
+    public boolean isCredentialsNonExpired() { return true; }
+
+    @Override
+    public boolean isEnabled() { return true; }
+
+
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;

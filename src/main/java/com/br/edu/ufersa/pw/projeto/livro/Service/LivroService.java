@@ -1,71 +1,90 @@
 package com.br.edu.ufersa.pw.projeto.livro.Service;
 
+import com.br.edu.ufersa.pw.projeto.livro.API.dto.InputLivroDTO;
 import com.br.edu.ufersa.pw.projeto.livro.Model.entity.Livro;
 import com.br.edu.ufersa.pw.projeto.livro.Model.repository.LivroRepository;
+import com.br.edu.ufersa.pw.projeto.user.Model.entity.Interesse;
+import com.br.edu.ufersa.pw.projeto.user.Model.repository.InteresseRepository;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
+import java.util.Arrays;
+import java.util.stream.Collectors;
 
-// A anotação @Service marca esta classe como um componente de serviço
-// do Spring, permitindo sua injeção de dependência em Controllers.
 @Service
 public class LivroService {
 
-    // Injeção de Dependência: O Service precisa do Repository para interagir com o DB.
     private final LivroRepository livroRepository;
+    private final InteresseRepository interesseRepository;
 
-    // Injeção via construtor é a prática recomendada.
     @Autowired
-    public LivroService(LivroRepository livroRepository) {
+    public LivroService(LivroRepository livroRepository, InteresseRepository interesseRepository) {
         this.livroRepository = livroRepository;
+        this.interesseRepository = interesseRepository;
     }
 
-    // --- MÉTODOS DE LÓGICA DE NEGÓCIOS E CRUD ---
+    @Transactional
+    public Livro criarLivroComInteresses(InputLivroDTO dto) {
+        Livro novoLivro = new Livro(dto.getTitulo(), dto.getAutor(), dto.getDescricao());
 
-    /**
-     * Lógica: Salva um novo livro ou atualiza um existente.
-     * Inclui validação de unicidade (regra de negócio).
-     */
-    public Livro criarOuAtualizar(Livro livro) {
-        // Exemplo de Regra de Negócio: Impedir livros duplicados (Título e Autor)
-        if (livro.getId() == null && livroRepository.existsByTituloAndAutor(livro.getTitulo(), livro.getAutor())) {
-            // Lançar uma exceção de negócio para o Controller tratar
-            throw new IllegalArgumentException("Já existe um livro com o mesmo Título e Autor.");
+        if (dto.getInteressesIds() != null && dto.getInteressesIds().length > 0) {
+            List<Long> idsList = Arrays.asList(dto.getInteressesIds());
+            List<Interesse> interessesEncontrados = interesseRepository.findAllById(idsList);
+
+            novoLivro.setInteresses(interessesEncontrados.stream().collect(Collectors.toSet()));
         }
 
-        // Chamada ao Repository para a persistência real
+        return criarOuAtualizar(novoLivro);
+    }
+
+    @Transactional
+    public Livro atualizarLivroComInteresses(Long id, InputLivroDTO dto) {
+        Livro livroExistente = livroRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Livro com o ID " + id + " não encontrado para atualização."));
+
+        livroExistente.setTitulo(dto.getTitulo());
+        livroExistente.setAutor(dto.getAutor());
+        livroExistente.setDescricao(dto.getDescricao());
+
+        livroExistente.getInteresses().clear();
+
+        if (dto.getInteressesIds() != null && dto.getInteressesIds().length > 0) {
+            List<Long> idsList = Arrays.asList(dto.getInteressesIds());
+            List<Interesse> novosInteresses = interesseRepository.findAllById(idsList);
+
+            livroExistente.getInteresses().addAll(novosInteresses);
+        }
+
+        return livroRepository.save(livroExistente);
+    }
+
+    protected Livro criarOuAtualizar(Livro livro) {
+        if (livro.getId() == null && livroRepository.existsByTituloAndAutor(livro.getTitulo(), livro.getAutor())) {
+            throw new IllegalArgumentException("Já existe um livro com o mesmo Título e Autor.");
+        }
         return livroRepository.save(livro);
     }
 
-    /**
-     * Retorna todos os livros.
-     */
     public List<Livro> buscarTodos() {
         return livroRepository.findAll();
     }
 
-    /**
-     * Busca um livro pelo ID.
-     * Retorna um Optional<Livro> para indicar que o livro pode não existir.
-     */
     public Optional<Livro> buscarPorId(Long id) {
         return livroRepository.findById(id);
     }
 
-    /**
-     * Busca livros por parte do título (usando o Query Method personalizado).
-     */
     public List<Livro> buscarPorTitulo(String titulo) {
         return livroRepository.findByTituloContainingIgnoreCase(titulo);
     }
 
-    /**
-     * Lógica: Exclui um livro, mas primeiro verifica se ele existe.
-     */
+    @Transactional
     public void deletarLivro(Long id) {
         if (!livroRepository.existsById(id)) {
-            // Lançar uma exceção de negócio se o recurso não for encontrado.
             throw new IllegalArgumentException("Livro com o ID " + id + " não encontrado para exclusão.");
         }
         livroRepository.deleteById(id);
