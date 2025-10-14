@@ -15,10 +15,10 @@ public class CustomUserDetailsService implements UserDetailsService {
     public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
         User user = repository.findByEmailIgnoreCase(email)
                 .orElseThrow(() -> new UsernameNotFoundException("Usuário não encontrado"));
-        return org.springframework.security.core.userdetails.User
-                .withUsername(user.getEmail())
-                .password(user.getSenha())
-                .authorities("USER")
-                .build();
+
+        // CORREÇÃO: Em vez de usar a implementação padrão do Spring,
+        // retornamos a nossa implementação CustomUserDetails, que
+        // está configurada para extrair a Role (ROLE_USER/ROLE_ADMIN) corretamente.
+        return new CustomUserDetails(user);
     }
 }
