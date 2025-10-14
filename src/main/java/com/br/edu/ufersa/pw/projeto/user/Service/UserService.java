@@ -14,8 +14,11 @@ import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.NoSuchElementException;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
@@ -39,6 +42,11 @@ public class UserService implements UserDetailsService {
                 .orElseThrow(() -> new UsernameNotFoundException("Usuário não encontrado com o email: " + email));
     }
 
+    public Optional<User> findById(Long userId) {
+        return repository.findById(userId);
+    }
+
+    //metodos get
     public List<ReturnUserDTO> buscarPorNome(String name) {
         List<User> users = repository.findByNomeContainingIgnoreCase(name);
         return users.stream()
@@ -48,41 +56,104 @@ public class UserService implements UserDetailsService {
 
     public List<ReturnUserDTO> listarTodos(){
         List<User> todosUsuarios = repository.findAll();
-        return todosUsuarios.stream().map(user-> new ReturnUserDTO(user)).toList();
+        return todosUsuarios.stream().map(ReturnUserDTO::new).toList();
     }
 
+    // crud
+    @Transactional
     public ReturnUserDTO save(InputUserDTO dto){
+        // 1. Validação de Email (Regra de Negócio)
         if (repository.findByEmailIgnoreCase(dto.getEmail()).isPresent()) {
-            throw new IllegalArgumentException("O email já está em uso.");
+            // Alterado de IllegalArgumentException para IllegalStateException, mais comum em Services
+            throw new IllegalStateException("O email já está em uso.");
         }
 
         User user = new User(dto);
 
-        // Lógica de Role (Segurança Correta)
-        if ("admin@seu-dominio.com".equalsIgnoreCase(dto.getEmail())) {
-            user.setRole(Role.ROLE_ADMIN);
-        } else {
-            user.setRole(Role.ROLE_USER);
-        }
+        // 2. Lógica de Role (Segurança)
+        user.setRole("admin@seu-dominio.com".equalsIgnoreCase(dto.getEmail()) ? Role.ROLE_ADMIN : Role.ROLE_USER);
 
-        // Criptografia de Senha (Segurança Correta)
-        String encodedPassword = passwordEncoder.encode(dto.getSenha());
-        user.setSenha(encodedPassword);
+        // 3. Criptografia de Senha (Segurança)
+        user.setSenha(passwordEncoder.encode(dto.getSenha()));
 
-        // Lógica de Interesses (Associação)
+        // 4. Lógica de Interesses (Associação)
         if (dto.getInteressesIds() != null && !dto.getInteressesIds().isEmpty()) {
             if (dto.getInteressesIds().size() > 3) {
-                throw new IllegalArgumentException("O usuário só pode escolher até 3 interesses.");
+                throw new IllegalStateException("O usuário só pode escolher até 3 interesses.");
             }
 
-            // Busca e associa a lista à entidade antes do salvamento final
             List<Interesse> interesses = interesseRepository.findAllById(dto.getInteressesIds());
+            // Verifica se todos os IDs foram encontrados, se não, lança exceção
+            if (interesses.size() != dto.getInteressesIds().size()) {
+                throw new NoSuchElementException("Um ou mais IDs de interesse não são válidos.");
+            }
             user.setInteresses(interesses);
         }
 
-        // Salva a entidade User (com as associações de interesse) de uma ÚNICA vez.
+        // 5. Salva e Retorna DTO
         User savedUser = repository.save(user);
-
         return new ReturnUserDTO(savedUser);
+    }
+
+    @Transactional
+    public ReturnUserDTO update(Long userId, InputUserDTO dto) {
+        User user = repository.findById(userId)
+                .orElseThrow(() -> new NoSuchElementException("Usuário com ID " + userId + " não encontrado."));
+
+        // Atualiza campos que podem ser modificados (Nome, por exemplo)
+        if (dto.getNome() != null) {
+            user.setNome(dto.getNome());
+        }
+
+        // Se a senha for fornecida, ela deve ser atualizada e criptografada
+        if (dto.getSenha() != null && !dto.getSenha().isEmpty()) {
+            user.setSenha(passwordEncoder.encode(dto.getSenha()));
+        }
+
+        // Lógica de Interesses
+        if (dto.getInteressesIds() != null) {
+            if (dto.getInteressesIds().size() > 3) {
+                throw new IllegalStateException("O usuário só pode escolher até 3 interesses.");
+            }
+            List<Interesse> interesses = interesseRepository.findAllById(dto.getInteressesIds());
+            if (interesses.size() != dto.getInteressesIds().size()) {
+                throw new NoSuchElementException("Um ou mais IDs de interesse não são válidos.");
+            }
+            user.setInteresses(interesses);
+        }
+
+        User updatedUser = repository.save(user);
+        return new ReturnUserDTO(updatedUser);
+    }
+
+    @Transactional
+    public ReturnUserDTO updatePassword(String email, String newPassword) {
+        User user = repository.findByEmailIgnoreCase(email)
+                .orElseThrow(() -> new NoSuchElementException("Usuário com email " + email + " não encontrado."));
+
+        if (newPassword == null || newPassword.isEmpty()) {
+            throw new IllegalStateException("A nova senha não pode ser vazia.");
+        }
+
+        user.setSenha(passwordEncoder.encode(newPassword));
+        User updatedUser = repository.save(user);
+
+        return new ReturnUserDTO(updatedUser);
+    }
+
+    @Transactional
+    public void deleteById(Long userId) {
+        if (!repository.existsById(userId)) {
+            throw new NoSuchElementException("Usuário com ID " + userId + " não encontrado.");
+        }
+        repository.deleteById(userId);
+    }
+
+    @Transactional
+    public void deleteByEmail(String email) {
+        User user = repository.findByEmailIgnoreCase(email)
+                .orElseThrow(() -> new NoSuchElementException("Usuário com email " + email + " não encontrado."));
+
+        repository.delete(user);
     }
 }
