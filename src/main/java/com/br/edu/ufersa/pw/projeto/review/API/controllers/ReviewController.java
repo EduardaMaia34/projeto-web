@@ -2,7 +2,12 @@ package com.br.edu.ufersa.pw.projeto.review.API.controllers;
 
 import com.br.edu.ufersa.pw.projeto.review.API.dto.InputReviewDTO;
 import com.br.edu.ufersa.pw.projeto.review.API.dto.ReturnReviewDTO;
+import com.br.edu.ufersa.pw.projeto.review.Model.entity.Review;
 import com.br.edu.ufersa.pw.projeto.review.Service.ReviewService;
+import com.br.edu.ufersa.pw.projeto.Security.CustomUserDetails;
+import com.br.edu.ufersa.pw.projeto.user.Model.entity.Seguindo;
+import com.br.edu.ufersa.pw.projeto.user.Service.UserService;
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.*;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -10,6 +15,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/v1/reviews")
@@ -18,23 +24,20 @@ public class ReviewController {
     @Autowired
     private ReviewService service;
 
+    @Autowired
+    private UserService userService;
+
     @PostMapping("/{livroId}")
     public ResponseEntity<ReturnReviewDTO> criarReview(
             @PathVariable Long livroId,
-            // INJEÇÃO CORRIGIDA: Injeta como String para evitar erro de conversão automática
-            @AuthenticationPrincipal String userIdStr,
+            @AuthenticationPrincipal CustomUserDetails loggedInUser,
             @RequestBody InputReviewDTO dto) {
 
-        if (userIdStr == null || userIdStr.isEmpty() || userIdStr.equals("anonymousUser")) {
+        if (loggedInUser == null || loggedInUser.getId() == null) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Token inválido ou usuário não autenticado.");
         }
 
-        Long userId;
-        try {
-            userId = Long.valueOf(userIdStr);
-        } catch (NumberFormatException e) {
-            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "ID do usuário no token é inválido.");
-        }
+        Long userId = loggedInUser.getId();
 
         ReturnReviewDTO review = service.criarReview(userId, livroId, dto);
         return ResponseEntity.status(HttpStatus.CREATED).body(review);
@@ -53,10 +56,10 @@ public class ReviewController {
     @PutMapping("/{reviewId}")
     public ResponseEntity<ReturnReviewDTO> atualizar(
             @PathVariable Long reviewId,
-            @AuthenticationPrincipal String userIdStr,
+            @AuthenticationPrincipal CustomUserDetails loggedInUser,
             @RequestBody InputReviewDTO dto) {
 
-        Long userId = Long.valueOf(userIdStr);
+        Long userId = loggedInUser.getId();
         ReturnReviewDTO updated = service.atualizarReview(reviewId, userId, dto);
         return ResponseEntity.ok(updated);
     }
@@ -64,10 +67,12 @@ public class ReviewController {
     @DeleteMapping("/{reviewId}")
     public ResponseEntity<Void> deletar(
             @PathVariable Long reviewId,
-            @AuthenticationPrincipal String userIdStr) {
+            @AuthenticationPrincipal CustomUserDetails loggedInUser) {
 
-        Long userId = Long.valueOf(userIdStr);
+        Long userId = loggedInUser.getId();
         service.deletarReview(reviewId, userId);
         return ResponseEntity.noContent().build();
     }
+
+
 }

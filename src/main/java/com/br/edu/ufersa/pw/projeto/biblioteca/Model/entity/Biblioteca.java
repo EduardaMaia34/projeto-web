@@ -1,5 +1,6 @@
 package com.br.edu.ufersa.pw.projeto.biblioteca.Model.entity;
 
+import com.br.edu.ufersa.pw.projeto.user.Model.entity.Estado;
 import com.br.edu.ufersa.pw.projeto.user.Model.entity.User;
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
@@ -23,11 +24,13 @@ public class Biblioteca {
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
-    // ID do Filme. Usaremos String para o ID do serviço externo (ex: TMDb)
+
     @Column(name = "livro_id", nullable = false)
     private String livroId;
 
-    // 3. Rastreamento (Metadados da Inclusão)
+    @Enumerated(EnumType.STRING)
+    @Column(name = "status", nullable = false)
+    private Estado status = Estado.QUERO_LER;
 
     // Data e hora em que o filme foi adicionado à lista
     @Column(name = "added_at", updatable = false)
@@ -50,6 +53,7 @@ public class Biblioteca {
     public Biblioteca(User user, String livroId) {
         this.user = user;
         this.livroId = livroId;
+        this.status = Estado.QUERO_LER;
     }
 
     // --- Getters ---
@@ -72,8 +76,7 @@ public class Biblioteca {
 
     // --- Setters ---
 
-    // O Setter para o ID é útil em algumas situações (ex: testes),
-    // embora o valor seja gerenciado pelo DB.
+
     public void setId(Long id) {
         this.id = id;
     }
@@ -86,8 +89,8 @@ public class Biblioteca {
         this.livroId = livroId;
     }
 
-    // O Setter para addedAt é geralmente omitido ou privado devido ao @PrePersist,
-    // mas pode ser mantido para flexibilidade.
+    public Estado getStatus() { return status; }
+    public void setStatus(Estado status) { this.status = status; }
     public void setAddedAt(LocalDateTime addedAt) {
         this.addedAt = addedAt;
     }

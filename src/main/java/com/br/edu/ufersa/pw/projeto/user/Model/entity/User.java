@@ -46,6 +46,11 @@ public class User implements UserDetails {
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Todo> todoList;
 
+    @OneToMany(mappedBy = "seguidor", cascade = CascadeType.ALL)
+    private List<Seguindo> seguindo;
+
+    @OneToMany(mappedBy = "seguido", cascade = CascadeType.ALL)
+    private List<Seguindo> seguidores;
 
     @ManyToMany
     @JoinTable(
@@ -53,6 +58,9 @@ public class User implements UserDetails {
             joinColumns = @JoinColumn(name = "usuario_id"),
             inverseJoinColumns = @JoinColumn(name = "interesse_id")
     )
+
+
+
     private List<Interesse> interesses;
 
     public User() {

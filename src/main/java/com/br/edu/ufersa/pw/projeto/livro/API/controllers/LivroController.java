@@ -27,9 +27,6 @@ public class LivroController {
         this.service = service;
     }
 
-    // ----------------------------------------------------------------------
-    // GET: Listar e Buscar por ID/Título (Métodos existentes no Service)
-    // ----------------------------------------------------------------------
 
     @GetMapping()
     public ResponseEntity<List<ReturnLivroDTO>> list(
@@ -60,13 +57,10 @@ public class LivroController {
     }
 
 
-    // ----------------------------------------------------------------------
-    // POST: Criar novo livro - CORRIGIDO para usar o DTO
-    // ----------------------------------------------------------------------
     @PostMapping()
     public ResponseEntity<ReturnLivroDTO> create(@Valid @RequestBody InputLivroDTO livroDTO){
         try {
-            // CORREÇÃO ESSENCIAL: Chama o método que recebe o DTO e associa os Interesses
+
             Livro livroSalvo = service.criarLivroComInteresses(livroDTO);
 
             return new ResponseEntity<>(toReturnDTO(livroSalvo), HttpStatus.CREATED);
@@ -76,9 +70,7 @@ public class LivroController {
         }
     }
 
-    // ----------------------------------------------------------------------
-    // DELETE: Remover por ID - Adaptado para o método deletarLivro
-    // ----------------------------------------------------------------------
+
     @DeleteMapping("/{id}")
     public ResponseEntity removeById(@PathVariable Long id) {
         try {

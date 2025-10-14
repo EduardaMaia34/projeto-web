@@ -2,8 +2,10 @@ package com.br.edu.ufersa.pw.projeto.user.Service;
 
 import com.br.edu.ufersa.pw.projeto.user.API.dto.InputUserDTO;
 import com.br.edu.ufersa.pw.projeto.user.API.dto.ReturnUserDTO;
+import com.br.edu.ufersa.pw.projeto.user.Model.entity.Seguindo;
 import com.br.edu.ufersa.pw.projeto.user.Model.entity.User;
 import com.br.edu.ufersa.pw.projeto.user.Model.entity.Role;
+import com.br.edu.ufersa.pw.projeto.user.Model.repository.SeguindoRepository;
 import com.br.edu.ufersa.pw.projeto.user.Model.repository.UserRepository;
 import com.br.edu.ufersa.pw.projeto.user.Model.entity.Interesse;
 import com.br.edu.ufersa.pw.projeto.user.Model.repository.InteresseRepository;
@@ -27,6 +29,9 @@ public class UserService implements UserDetailsService {
     private final UserRepository repository;
     private final InteresseRepository interesseRepository;
     private final PasswordEncoder passwordEncoder;
+
+    @Autowired
+    private SeguindoRepository seguindoRepository;
 
     @Autowired
     public UserService(UserRepository repository, InteresseRepository interesseRepository,
@@ -155,5 +160,55 @@ public class UserService implements UserDetailsService {
                 .orElseThrow(() -> new NoSuchElementException("Usuário com email " + email + " não encontrado."));
 
         repository.delete(user);
+    }
+
+
+    public void seguirUsuario(Long seguidorId, Long seguidoId) {
+        if (seguidorId.equals(seguidoId)) {
+            throw new IllegalArgumentException("Você não pode seguir a si mesmo");
+        }
+
+        // CORREÇÃO 1.1: Carregar entidades User para uso no existsBy
+        User seguidor = repository.findById(seguidorId)
+                .orElseThrow(() -> new NoSuchElementException("Seguidor não encontrado."));
+        User seguido = repository.findById(seguidoId)
+                .orElseThrow(() -> new NoSuchElementException("Seguido não encontrado."));
+
+        // CORREÇÃO 1.2: Usar o método de repositório que aceita entidades User
+        boolean jaSegue = seguindoRepository.existsBySeguidorAndSeguido(seguidor, seguido);
+
+        if (!jaSegue) {
+            Seguindo seguindo = new Seguindo();
+            // CORREÇÃO 1.3: Usar o setter de entidade User
+            seguindo.setSeguidor(seguidor);
+            seguindo.setSeguido(seguido);
+
+            seguindoRepository.save(seguindo);
+        }
+    }
+
+    public void deixarDeSeguir(Long seguidorId, Long seguidoId) {
+        // CORREÇÃO 2.1: Carregar entidades User para a deleção
+        User seguidor = repository.findById(seguidorId)
+                .orElseThrow(() -> new NoSuchElementException("Seguidor não encontrado."));
+        User seguido = repository.findById(seguidoId)
+                .orElseThrow(() -> new NoSuchElementException("Seguido não encontrado."));
+
+
+        if (seguindoRepository.existsBySeguidorAndSeguido(seguidor, seguido)) {
+            // CORREÇÃO 2.2: Chamar o método delete que aceita entidades.
+            // Nota: O método deleteBySeguidorAndSeguido no Repository é o mais eficiente aqui.
+            seguindoRepository.deleteBySeguidorAndSeguido(seguidor, seguido);
+        }
+    }
+
+    // CORREÇÃO 3.1: Mudar para findBySeguidor_Id para resolver o erro de inicialização do JPA
+    public List<Seguindo> listarSeguindo(Long userId) {
+        return seguindoRepository.findBySeguidor_Id(userId);
+    }
+
+    // CORREÇÃO 3.2: Mudar para findBySeguido_Id para resolver o erro de inicialização do JPA
+    public List<Seguindo> listarSeguidores(Long userId) {
+        return seguindoRepository.findBySeguido_Id(userId);
     }
 }

@@ -5,6 +5,8 @@ import com.br.edu.ufersa.pw.projeto.livro.Model.entity.Livro;
 import com.br.edu.ufersa.pw.projeto.user.Model.entity.User;
 import jakarta.persistence.*;
 
+import java.time.LocalDateTime;
+
 @Entity
 @Table(name= "tb_reviews")
 public class Review {
@@ -12,11 +14,14 @@ public class Review {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = true, length = 2048)
+    @Column(name = "review", nullable = true, length = 2048)
     private String review;
 
-    @Column(nullable = true)
+    @Column(name= "nota", nullable = true)
     private double nota;
+
+    @Column(name= "data", nullable = false)
+    private LocalDateTime data = LocalDateTime.now();
 
     @ManyToOne
     @JoinColumn(name="user_id", nullable=false)
@@ -40,4 +45,7 @@ public class Review {
 
     public Livro getLivro() { return livro; }
     public void setLivro(Livro livro) { this.livro = livro; }
+
+    public LocalDateTime getData() { return data; }
+    public void setData(LocalDateTime data) { this.data = data; }
 }

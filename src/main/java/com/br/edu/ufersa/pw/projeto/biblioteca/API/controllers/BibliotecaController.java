@@ -3,6 +3,7 @@ package com.br.edu.ufersa.pw.projeto.biblioteca.API.controllers;
 import com.br.edu.ufersa.pw.projeto.biblioteca.API.dto.InputBibliotecaDTO;
 import com.br.edu.ufersa.pw.projeto.biblioteca.API.dto.ReturnBibliotecaDTO;
 import com.br.edu.ufersa.pw.projeto.biblioteca.Service.BibliotecaService;
+import com.br.edu.ufersa.pw.projeto.user.API.dto.InputUpdateStatusDTO;
 import com.br.edu.ufersa.pw.projeto.user.Service.UserService;
 import com.br.edu.ufersa.pw.projeto.Security.CustomUserDetails; // Importar a classe correta
 import jakarta.validation.Valid;
@@ -21,7 +22,7 @@ public class BibliotecaController {
     private final BibliotecaService bibliotecaService;
     private final UserService userService;
 
-
+    // Injeção de Dependências via Construtor
     public BibliotecaController(BibliotecaService bibliotecaService, UserService userService) {
         this.bibliotecaService = bibliotecaService;
         this.userService = userService;
@@ -37,7 +38,7 @@ public class BibliotecaController {
 
 
         try {
-            // Usa o getId() de CustomUserDetails para obter o ID do usuário logado
+
             ReturnBibliotecaDTO novoLivro = bibliotecaService.adicionarLivro(loggedInUser.getId(), inputDTO);
             return ResponseEntity.status(HttpStatus.CREATED).body(novoLivro);
 
@@ -53,7 +54,7 @@ public class BibliotecaController {
 
 
     @DeleteMapping("/{livroId}")
-    public ResponseEntity<Void> removerFilme(
+    public ResponseEntity<Void> removerLivro(
 
             @AuthenticationPrincipal CustomUserDetails loggedInUser,
             @PathVariable String livroId) {
@@ -61,10 +62,10 @@ public class BibliotecaController {
         boolean removido = bibliotecaService.removerLivro(loggedInUser.getId(), livroId);
 
         if (removido) {
-            return ResponseEntity.noContent().build(); // HTTP 204 No Content para sucesso sem retorno
+            return ResponseEntity.noContent().build();
         } else {
-            // Se o filme não foi encontrado na Watchlist do usuário (NOT_FOUND - 404)
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Filme não encontrado na sua biblioteca.");
+
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Livro não encontrado na sua biblioteca.");
         }
     }
 
@@ -92,5 +93,49 @@ public class BibliotecaController {
 
         Page<ReturnBibliotecaDTO> watchlist = bibliotecaService.getWatchlistPorUsuario(userId, pageable);
         return ResponseEntity.ok(watchlist);
+    }
+
+
+    @GetMapping("/estante")
+    public ResponseEntity<Page<ReturnBibliotecaDTO>> getEstanteComReview(
+            @AuthenticationPrincipal CustomUserDetails loggedInUser,
+            Pageable pageable) {
+
+        if (loggedInUser == null || loggedInUser.getId() == null) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Usuário não autenticado.");
+        }
+
+        Long userId = loggedInUser.getId();
+
+        Page<ReturnBibliotecaDTO> estante = bibliotecaService.getEstanteComReview(userId, pageable);
+        return ResponseEntity.ok(estante);
+    }
+
+    @PutMapping("/{livroId}/status")
+    public ResponseEntity<ReturnBibliotecaDTO> updateLivroStatus(
+            @AuthenticationPrincipal CustomUserDetails loggedInUser,
+            @PathVariable String livroId,
+            @Valid @RequestBody InputUpdateStatusDTO inputDTO) {
+
+        if (loggedInUser == null || loggedInUser.getId() == null) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Usuário não autenticado.");
+        }
+
+        try {
+            ReturnBibliotecaDTO updatedLivro = bibliotecaService.updateLivroStatus(
+                    loggedInUser.getId(),
+                    livroId,
+                    inputDTO.getStatus()
+            );
+
+            return ResponseEntity.ok(updatedLivro);
+
+        } catch (IllegalStateException e) {
+            // Se o livro não for encontrado na biblioteca do usuário
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, e.getMessage());
+        } catch (Exception e) {
+            e.printStackTrace();
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Erro ao atualizar o status do livro.");
+        }
     }
 }

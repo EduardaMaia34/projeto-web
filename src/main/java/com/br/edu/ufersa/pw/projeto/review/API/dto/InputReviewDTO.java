@@ -2,12 +2,14 @@ package com.br.edu.ufersa.pw.projeto.review.API.dto;
 
 import com.br.edu.ufersa.pw.projeto.user.API.dto.InputUserDTO;
 
+import java.time.LocalDateTime;
 import java.util.Objects;
 
 public class InputReviewDTO {
     private String review;
     private double nota;
     private Long livroId;
+    private LocalDateTime data;
 
     public  String getReview() {
         return review;
@@ -28,6 +30,13 @@ public class InputReviewDTO {
     }
     public void setLivroId(Long livroId) {
         this.livroId = livroId;
+    }
+
+    public LocalDateTime getData() {
+        return data;
+    }
+    public void setData(LocalDateTime data) {
+        this.data = data;
     }
 
     @Override

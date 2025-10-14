@@ -29,7 +29,9 @@ public class SecurityConfig {
                         .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/v1/livros/**").permitAll()
                         .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/v1/reviews").permitAll()
                         .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/v1/reviews/**").permitAll()
-
+                        .requestMatchers(
+                                org.springframework.http.HttpMethod.GET, "/feed"
+                        ).hasAnyRole("USER", "ADMIN")
                         .requestMatchers(
                                 org.springframework.http.HttpMethod.POST, "/api/v1/livros"
                         ).hasRole("ADMIN")
@@ -44,6 +46,9 @@ public class SecurityConfig {
                                 org.springframework.http.HttpMethod.POST, "/api/v1/reviews/**"
                         ).hasAnyRole("USER", "ADMIN")
                         .requestMatchers(
+                                org.springframework.http.HttpMethod.POST, "/api/v1/biblioteca"
+                        ).hasAnyRole("USER", "ADMIN")
+                        .requestMatchers(
                                 org.springframework.http.HttpMethod.PUT, "/api/v1/reviews/**"
                         ).hasAnyRole("USER", "ADMIN")
                         .requestMatchers(
@@ -52,6 +57,16 @@ public class SecurityConfig {
                         .requestMatchers(
                                 org.springframework.http.HttpMethod.DELETE, "/api/v1/biblioteca/**"
                         ).hasAnyRole("USER", "ADMIN")
+                        .requestMatchers(
+                                org.springframework.http.HttpMethod.GET, "/api/v1/biblioteca/estante"
+                        ).hasAnyRole("USER", "ADMIN")
+                        .requestMatchers(
+                                org.springframework.http.HttpMethod.POST, "/api/v1/seguir/**"
+                        ).hasAnyRole("USER", "ADMIN")
+                        .requestMatchers(
+                                org.springframework.http.HttpMethod.GET, "/feed/**"
+                        ).hasAnyRole("USER", "ADMIN")
+
 
                         .anyRequest().authenticated()
                 )

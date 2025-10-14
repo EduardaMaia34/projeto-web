@@ -4,37 +4,41 @@ import com.br.edu.ufersa.pw.projeto.biblioteca.API.dto.InputBibliotecaDTO;
 import com.br.edu.ufersa.pw.projeto.biblioteca.API.dto.ReturnBibliotecaDTO;
 import com.br.edu.ufersa.pw.projeto.biblioteca.Model.entity.Biblioteca;
 import com.br.edu.ufersa.pw.projeto.biblioteca.Model.repository.BibliotecaRepository;
+import com.br.edu.ufersa.pw.projeto.review.Model.repository.ReviewRepository;
+import com.br.edu.ufersa.pw.projeto.user.Model.entity.Estado;
 import com.br.edu.ufersa.pw.projeto.user.Model.entity.User;
 import com.br.edu.ufersa.pw.projeto.user.Service.UserService;
-import jakarta.transaction.Transactional;
+// Importação removida, use a do Spring
+// import jakarta.transaction.Transactional;
+import org.springframework.transaction.annotation.Transactional; // ⬅️ USAR ESTE IMPORT
+import org.springframework.transaction.annotation.Propagation; // ⬅️ NOVO IMPORT
+
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Service
 public class BibliotecaService {
 
     private final BibliotecaRepository bibliotecaRepository;
-    private final UserService userService; // Para buscar o objeto User (se necessário)
+    private final UserService userService;
+    private final ReviewRepository reviewRepository;
 
-    // Injeção de Dependências
-    public BibliotecaService(BibliotecaRepository bibliotecaRepository, UserService userService) {
+
+    public BibliotecaService(BibliotecaRepository bibliotecaRepository, UserService userService, ReviewRepository reviewRepository) {
         this.bibliotecaRepository = bibliotecaRepository;
         this.userService = userService;
+        this.reviewRepository = reviewRepository;
     }
 
-    /**
-     * Adiciona um filme à Watchlist do usuário.
-     * Implementa a regra de negócio: não permitir filmes duplicados.
-     *
-     * @param userId O ID do usuário logado.
-     * @param inputDTO DTO contendo o ID do filme.
-     * @return O DTO da entrada da biblioteca criada.
-     */
-    @Transactional // Necessário para operações de escrita
-    public ReturnBibliotecaDTO adicionarLivro(Long userId, InputBibliotecaDTO inputDTO) {
+    // ⬅️ CORREÇÃO: Transação isolada para que falhas aqui não afetem a transação da Review
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public ReturnBibliotecaDTO adicionarLivro(Long userId, InputBibliotecaDTO inputDTO) { //
 
         String livroId = inputDTO.getLivroId();
 
@@ -50,20 +54,45 @@ public class BibliotecaService {
 
         // 3. Converter DTO para Entidade e Salvar
         Biblioteca novaEntrada = new Biblioteca(user, livroId);
+        if (inputDTO.getStatus() != null) {
+            novaEntrada.setStatus(inputDTO.getStatus());
+        }
+
         Biblioteca savedEntrada = bibliotecaRepository.save(novaEntrada);
 
         // 4. Converter Entidade Salva para DTO de Retorno
         return new ReturnBibliotecaDTO(savedEntrada);
     }
 
-    /**
-     * Remove um filme da Watchlist do usuário.
-     *
-     * @param userId O ID do usuário logado.
-     * @param livroId O ID do filme a ser removido.
-     * @return true se o filme foi removido com sucesso, false caso contrário.
-     */
-    @Transactional
+    public Page<ReturnBibliotecaDTO> getEstanteComReview(Long userId, Pageable pageable) {
+        Page<Biblioteca> lidosPage = bibliotecaRepository.findByUserIdAndStatusOrderByAddedAtDesc(
+                userId, Estado.LIDO, pageable
+        );
+
+        List<ReturnBibliotecaDTO> listaComReview = lidosPage.stream()
+                .map(biblioteca -> {
+
+                    Long livroIdLong;
+                    try {
+                        livroIdLong = Long.valueOf(biblioteca.getLivroId());
+                    } catch (NumberFormatException e) {
+                        return null;
+                    }
+
+                    boolean hasReview = reviewRepository.existsByUserIdAndLivroId(userId, livroIdLong);
+
+                    if (hasReview) {
+                        return new ReturnBibliotecaDTO(biblioteca);
+                    }
+                    return null;
+                })
+                .filter(dto -> dto != null)
+                .collect(Collectors.toList());
+
+        return new PageImpl<>(listaComReview, pageable, lidosPage.getTotalElements());
+    }
+
+    @Transactional // Mantido para operações de deleção
     public boolean removerLivro(Long userId, String livroId) {
 
         // 1. Verificar se a entrada existe antes de tentar deletar
@@ -78,13 +107,7 @@ public class BibliotecaService {
         return false;
     }
 
-    /**
-     * Busca a Watchlist de um usuário específico com paginação.
-     *
-     * @param userId O ID do usuário.
-     * @param pageable Objeto para definir a página, tamanho e ordenação.
-     * @return Uma página de DTOs da Watchlist.
-     */
+
     public Page<ReturnBibliotecaDTO> getWatchlistPorUsuario(Long userId, Pageable pageable) {
 
         // 1. Buscar a lista paginada do repositório
@@ -95,15 +118,24 @@ public class BibliotecaService {
         return bibliotecaPage.map(ReturnBibliotecaDTO::new);
     }
 
-    /**
-     * Busca uma única entrada da biblioteca (útil para verificar o status na UI).
-     *
-     * @param userId O ID do usuário.
-     * @param livroId O ID do filme.
-     * @return Um Optional contendo o DTO, se encontrado.
-     */
+
     public Optional<ReturnBibliotecaDTO> findEntryByUserIdAndLivroId(Long userId, String livroId) {
         return bibliotecaRepository.findByUserIdAndLivroId(userId, livroId)
                 .map(ReturnBibliotecaDTO::new); // Converte a Entidade para DTO se existir
+    }
+
+    // ⬅️ CORREÇÃO: Transação isolada para que falhas aqui não afetem a transação da Review
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public ReturnBibliotecaDTO updateLivroStatus(Long userId, String livroId, Estado newStatus) { //
+
+        Biblioteca biblioteca = bibliotecaRepository.findByUserIdAndLivroId(userId, livroId)
+                .orElseThrow(() -> new IllegalStateException("Livro não encontrado na sua biblioteca."));
+
+
+        biblioteca.setStatus(newStatus);
+
+        Biblioteca updatedEntrada = bibliotecaRepository.save(biblioteca);
+
+        return new ReturnBibliotecaDTO(updatedEntrada);
     }
 }

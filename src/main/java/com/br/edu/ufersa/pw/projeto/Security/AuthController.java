@@ -24,8 +24,7 @@ public class AuthController {
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody LoginDTO loginDto) {
         try {
-            // 1. Tenta autenticar o usuário. Se as credenciais estiverem incorretas,
-            // uma AuthenticationException (BadCredentialsException) será lançada.
+
             Authentication authentication = authenticationManager.authenticate(
                     new UsernamePasswordAuthenticationToken(
                             loginDto.getEmail(),
@@ -33,15 +32,12 @@ public class AuthController {
                     )
             );
 
-            // 2. Se for bem-sucedido, gera o token JWT
             String token = jwtTokenProvider.generateToken(authentication);
 
-            // 3. Retorna o token com status 200 OK
             return ResponseEntity.ok(new TokenDTO(token));
 
         } catch (AuthenticationException e) {
-            // 4. CAPTURA A FALHA DE AUTENTICAÇÃO e retorna 401 Unauthorized.
-            // Isso previne que o filtro de segurança retorne o 403 Forbidden incorreto.
+
             System.err.println("Falha no login para o usuário " + loginDto.getEmail() + ": " + e.getMessage());
 
             return ResponseEntity

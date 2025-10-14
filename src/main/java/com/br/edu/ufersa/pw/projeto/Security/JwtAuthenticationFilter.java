@@ -30,7 +30,6 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     @Autowired
     private JwtTokenProvider tokenProvider;
 
-    // ✅ CORREÇÃO 1: Injeta o UserDetailsService e usa @Qualifier para resolver o conflito
     @Autowired
     @Qualifier("customUserDetailsService")
     private UserDetailsService userDetailsService;
@@ -47,13 +46,10 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
             if (jwt != null && tokenProvider.validateToken(jwt)) {
 
-                // Obtém o nome de usuário (geralmente o email) para buscar o UserDetails completo
                 String username = tokenProvider.getUsernameFromToken(jwt);
 
-                // 🛑 CORREÇÃO 2: Busca o objeto UserDetails (CustomUserDetails) completo do banco
                 UserDetails userDetails = userDetailsService.loadUserByUsername(username);
 
-                // ✅ CORREÇÃO 3: Define o objeto UserDetails completo como o Principal
                 UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
                         userDetails, // <-- Agora injeta o objeto CustomUserDetails completo
                         null,
@@ -66,8 +62,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 SecurityContextHolder.getContext().setAuthentication(authentication);
             }
         } catch (Exception ex) {
-            // ✅ DEBUGGING: Mantém a impressão da stack trace para diagnosticar erros de token (Expired, Signature)
-            ex.printStackTrace();
+
             logger.error("Falha na validação do token JWT ou extração de Roles.", ex);
         }
 
