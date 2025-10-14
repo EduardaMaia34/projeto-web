@@ -7,7 +7,7 @@ import java.time.LocalDateTime;
 @Entity
 @Table(name = "tb_biblioteca",
         uniqueConstraints = {
-                @UniqueConstraint(columnNames = {"user_id", "film_id"})
+                @UniqueConstraint(columnNames = {"user_id", "livro_id"})
         })
 public class Biblioteca {
 
@@ -24,8 +24,8 @@ public class Biblioteca {
     private User user;
 
     // ID do Filme. Usaremos String para o ID do serviço externo (ex: TMDb)
-    @Column(name = "film_id", nullable = false)
-    private String filmId;
+    @Column(name = "livro_id", nullable = false)
+    private String livroId;
 
     // 3. Rastreamento (Metadados da Inclusão)
 
@@ -47,9 +47,9 @@ public class Biblioteca {
     public Biblioteca() {}
 
     // Construtor útil para criar uma nova entrada
-    public Biblioteca(User user, String filmId) {
+    public Biblioteca(User user, String livroId) {
         this.user = user;
-        this.filmId = filmId;
+        this.livroId = livroId;
     }
 
     // --- Getters ---
@@ -62,8 +62,8 @@ public class Biblioteca {
         return user;
     }
 
-    public String getFilmId() {
-        return filmId;
+    public String getLivroId() {
+        return livroId;
     }
 
     public LocalDateTime getAddedAt() {
@@ -82,8 +82,8 @@ public class Biblioteca {
         this.user = user;
     }
 
-    public void setFilmId(String filmId) {
-        this.filmId = filmId;
+    public void setLivroId(String livroId) {
+        this.livroId = livroId;
     }
 
     // O Setter para addedAt é geralmente omitido ou privado devido ao @PrePersist,

@@ -7,7 +7,7 @@ public class ReturnBibliotecaDTO {
 
     private Long id;
     private Long userId; // ID do Usuário
-    private String filmId;
+    private String livroId;
     private LocalDateTime addedAt;
 
     // Construtor padrão
@@ -18,7 +18,7 @@ public class ReturnBibliotecaDTO {
         this.id = biblioteca.getId();
         // Garantindo que o user_id seja carregado. O campo 'user' na Entity é LAZY.
         this.userId = biblioteca.getUser().getId();
-        this.filmId = biblioteca.getFilmId();
+        this.livroId = biblioteca.getLivroId();
         this.addedAt = biblioteca.getAddedAt();
     }
 
@@ -40,12 +40,12 @@ public class ReturnBibliotecaDTO {
         this.userId = userId;
     }
 
-    public String getFilmId() {
-        return filmId;
+    public String getLivroId() {
+        return livroId;
     }
 
-    public void setFilmId(String filmId) {
-        this.filmId = filmId;
+    public void setLivroId(String livroId) {
+        this.livroId = livroId;
     }
 
     public LocalDateTime getAddedAt() {

@@ -34,14 +34,14 @@ public class BibliotecaService {
      * @return O DTO da entrada da biblioteca criada.
      */
     @Transactional // Necessário para operações de escrita
-    public ReturnBibliotecaDTO adicionarFilme(Long userId, InputBibliotecaDTO inputDTO) {
+    public ReturnBibliotecaDTO adicionarLivro(Long userId, InputBibliotecaDTO inputDTO) {
 
-        String filmId = inputDTO.getFilmId();
+        String livroId = inputDTO.getLivroId();
 
         // 1. Regra de Negócio: Verificar se o filme já está na Watchlist
-        Optional<Biblioteca> existingEntry = bibliotecaRepository.findByUserIdAndFilmId(userId, filmId);
+        Optional<Biblioteca> existingEntry = bibliotecaRepository.findByUserIdAndLivroId(userId, livroId);
         if (existingEntry.isPresent()) {
-            throw new IllegalStateException("O filme com ID " + filmId + " já está na sua biblioteca (watchlist).");
+            throw new IllegalStateException("O filme com ID " + livroId + " já está na sua biblioteca (watchlist).");
         }
 
         // 2. Buscar a Entidade User (Opcional, mas necessário para a relação @ManyToOne)
@@ -49,7 +49,7 @@ public class BibliotecaService {
                 .orElseThrow(() -> new IllegalStateException("Usuário não encontrado."));
 
         // 3. Converter DTO para Entidade e Salvar
-        Biblioteca novaEntrada = new Biblioteca(user, filmId);
+        Biblioteca novaEntrada = new Biblioteca(user, livroId);
         Biblioteca savedEntrada = bibliotecaRepository.save(novaEntrada);
 
         // 4. Converter Entidade Salva para DTO de Retorno
@@ -60,18 +60,18 @@ public class BibliotecaService {
      * Remove um filme da Watchlist do usuário.
      *
      * @param userId O ID do usuário logado.
-     * @param filmId O ID do filme a ser removido.
+     * @param livroId O ID do filme a ser removido.
      * @return true se o filme foi removido com sucesso, false caso contrário.
      */
     @Transactional
-    public boolean removerFilme(Long userId, String filmId) {
+    public boolean removerLivro(Long userId, String livroId) {
 
         // 1. Verificar se a entrada existe antes de tentar deletar
-        Optional<Biblioteca> entry = bibliotecaRepository.findByUserIdAndFilmId(userId, filmId);
+        Optional<Biblioteca> entry = bibliotecaRepository.findByUserIdAndLivroId(userId, livroId);
 
         if (entry.isPresent()) {
             // 2. Usar o método de exclusão personalizado do Repository
-            bibliotecaRepository.deleteByUserIdAndFilmId(userId, filmId);
+            bibliotecaRepository.deleteByUserIdAndLivroId(userId, livroId);
             return true;
         }
 
@@ -99,11 +99,11 @@ public class BibliotecaService {
      * Busca uma única entrada da biblioteca (útil para verificar o status na UI).
      *
      * @param userId O ID do usuário.
-     * @param filmId O ID do filme.
+     * @param livroId O ID do filme.
      * @return Um Optional contendo o DTO, se encontrado.
      */
-    public Optional<ReturnBibliotecaDTO> findEntryByUserIdAndFilmId(Long userId, String filmId) {
-        return bibliotecaRepository.findByUserIdAndFilmId(userId, filmId)
+    public Optional<ReturnBibliotecaDTO> findEntryByUserIdAndLivroId(Long userId, String livroId) {
+        return bibliotecaRepository.findByUserIdAndLivroId(userId, livroId)
                 .map(ReturnBibliotecaDTO::new); // Converte a Entidade para DTO se existir
     }
 }

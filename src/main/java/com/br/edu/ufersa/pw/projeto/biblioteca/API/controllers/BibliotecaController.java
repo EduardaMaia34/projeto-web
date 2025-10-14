@@ -21,29 +21,25 @@ public class BibliotecaController {
     private final BibliotecaService bibliotecaService;
     private final UserService userService;
 
-    // Injeção de Dependências via Construtor
+
     public BibliotecaController(BibliotecaService bibliotecaService, UserService userService) {
         this.bibliotecaService = bibliotecaService;
         this.userService = userService;
     }
 
-    // --- ENDPOINT 1: ADICIONAR FILME À WATCHLIST (POST) ---
-    // POST /api/v1/biblioteca
+
 
     @PostMapping
-    public ResponseEntity<ReturnBibliotecaDTO> adicionarFilme(
-            // ✅ CORREÇÃO APLICADA: Injeta CustomUserDetails, o objeto real no SecurityContext
+    public ResponseEntity<ReturnBibliotecaDTO> adicionarLivro(
+
             @AuthenticationPrincipal CustomUserDetails loggedInUser,
             @Valid @RequestBody InputBibliotecaDTO inputDTO) {
 
-        // Não há necessidade de verificar se loggedInUser é null, pois o filtro de segurança
-        // (AuthorizationFilter) garante que o usuário está autenticado antes de chegar aqui.
-        // O erro de NPE anterior foi corrigido pela mudança de tipo.
 
         try {
             // Usa o getId() de CustomUserDetails para obter o ID do usuário logado
-            ReturnBibliotecaDTO novoFilme = bibliotecaService.adicionarFilme(loggedInUser.getId(), inputDTO);
-            return ResponseEntity.status(HttpStatus.CREATED).body(novoFilme);
+            ReturnBibliotecaDTO novoLivro = bibliotecaService.adicionarLivro(loggedInUser.getId(), inputDTO);
+            return ResponseEntity.status(HttpStatus.CREATED).body(novoLivro);
 
         } catch (IllegalStateException e) {
             // Captura erro de filme já adicionado (Regra de Negócio: CONFLICT - 409)
@@ -55,16 +51,14 @@ public class BibliotecaController {
         }
     }
 
-    // --- ENDPOINT 2: REMOVER FILME DA WATCHLIST (DELETE) ---
-    // DELETE /api/v1/biblioteca/{filmId}
 
-    @DeleteMapping("/{filmId}")
+    @DeleteMapping("/{livroId}")
     public ResponseEntity<Void> removerFilme(
-            // ✅ CORREÇÃO APLICADA
-            @AuthenticationPrincipal CustomUserDetails loggedInUser,
-            @PathVariable String filmId) {
 
-        boolean removido = bibliotecaService.removerFilme(loggedInUser.getId(), filmId);
+            @AuthenticationPrincipal CustomUserDetails loggedInUser,
+            @PathVariable String livroId) {
+
+        boolean removido = bibliotecaService.removerLivro(loggedInUser.getId(), livroId);
 
         if (removido) {
             return ResponseEntity.noContent().build(); // HTTP 204 No Content para sucesso sem retorno
@@ -74,12 +68,10 @@ public class BibliotecaController {
         }
     }
 
-    // --- ENDPOINT 3: BUSCAR WATCHLIST DO USUÁRIO LOGADO (GET) ---
-    // GET /api/v1/biblioteca
 
     @GetMapping
     public ResponseEntity<Page<ReturnBibliotecaDTO>> getMinhaWatchlist(
-            // ✅ CORREÇÃO APLICADA
+
             @AuthenticationPrincipal CustomUserDetails loggedInUser,
             Pageable pageable) {
 
@@ -87,15 +79,13 @@ public class BibliotecaController {
         return ResponseEntity.ok(watchlist);
     }
 
-    // --- ENDPOINT 4: BUSCAR WATCHLIST DE OUTRO USUÁRIO (GET) ---
-    // GET /api/v1/biblioteca/users/{userId}
 
     @GetMapping("/users/{userId}")
     public ResponseEntity<Page<ReturnBibliotecaDTO>> getWatchlistDeOutroUsuario(
             @PathVariable Long userId,
             Pageable pageable) {
 
-        // Verifica se o usuário existe antes de buscar a lista
+
         if (userService.findById(userId).isEmpty()) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Usuário não encontrado.");
         }
