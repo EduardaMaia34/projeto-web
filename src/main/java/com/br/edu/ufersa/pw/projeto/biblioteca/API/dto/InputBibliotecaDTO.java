@@ -7,22 +7,22 @@ public class InputBibliotecaDTO {
 
     @NotBlank(message = "O ID do filme não pode estar vazio.")
     @Size(max = 50, message = "O ID do filme é muito longo.")
-    private String filmId;
+    private String livroId;
 
     // Construtor padrão
     public InputBibliotecaDTO() {}
 
     // Construtor com todos os campos
-    public InputBibliotecaDTO(String filmId) {
-        this.filmId = filmId;
+    public InputBibliotecaDTO(String livroId) {
+        this.livroId = livroId;
     }
 
     // Getters e Setters
-    public String getFilmId() {
-        return filmId;
+    public String getLivroId() {
+        return livroId;
     }
 
-    public void setFilmId(String filmId) {
-        this.filmId = filmId;
+    public void setLivroId(String livroId) {
+        this.livroId = livroId;
     }
 }

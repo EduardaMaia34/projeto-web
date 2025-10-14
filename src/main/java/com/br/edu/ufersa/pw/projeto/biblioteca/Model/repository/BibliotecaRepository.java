@@ -18,12 +18,12 @@ public interface BibliotecaRepository extends JpaRepository<Biblioteca, Long> {
 
     // 2. verificar
 
-    Optional<Biblioteca> findByUserIdAndFilmId(Long userId, String filmId);
+    Optional<Biblioteca> findByUserIdAndLivroId(Long userId, String livroId);
 
     // 3. delete
 
     @Transactional
-    void deleteByUserIdAndFilmId(Long userId, String filmId);
+    void deleteByUserIdAndLivroId(Long userId, String livroId);
 
     // 4. conta quantos filmes o usuario tem
 

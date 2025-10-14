@@ -12,13 +12,16 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
-import java.util.Arrays;
 import java.util.Collection;
+import java.util.Arrays;
 import java.util.stream.Collectors;
 
 import io.jsonwebtoken.Claims;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.beans.factory.annotation.Qualifier; // Import necessário para o Qualifier
 
 
 @Component
@@ -26,6 +29,11 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     @Autowired
     private JwtTokenProvider tokenProvider;
+
+    // ✅ CORREÇÃO 1: Injeta o UserDetailsService e usa @Qualifier para resolver o conflito
+    @Autowired
+    @Qualifier("customUserDetailsService")
+    private UserDetailsService userDetailsService;
 
     @Value("${jwt.secret:MINHACHAVESECRETAFORTE1234567890ABCDEF}")
     private String jwtSecret;
@@ -39,32 +47,27 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
             if (jwt != null && tokenProvider.validateToken(jwt)) {
 
+                // Obtém o nome de usuário (geralmente o email) para buscar o UserDetails completo
                 String username = tokenProvider.getUsernameFromToken(jwt);
-                Long userId = tokenProvider.getUserIdFromToken(jwt); // Obtém o ID do Subject do token
 
-                Claims claims = tokenProvider.getAllClaimsFromToken(jwt);
+                // 🛑 CORREÇÃO 2: Busca o objeto UserDetails (CustomUserDetails) completo do banco
+                UserDetails userDetails = userDetailsService.loadUserByUsername(username);
 
-                String rolesString = claims.get("roles", String.class);
-
-                Collection<SimpleGrantedAuthority> authorities = Arrays.stream(rolesString.split(","))
-                        .map(String::trim)
-                        .filter(role -> !role.isEmpty())
-                        .map(SimpleGrantedAuthority::new)
-                        .collect(Collectors.toList());
-
-                // CORREÇÃO: Usamos o userId como String para o objeto principal
-                // (isso funcionará com @AuthenticationPrincipal Long userId)
+                // ✅ CORREÇÃO 3: Define o objeto UserDetails completo como o Principal
                 UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
-                        String.valueOf(userId),
+                        userDetails, // <-- Agora injeta o objeto CustomUserDetails completo
                         null,
-                        authorities
+                        userDetails.getAuthorities() // Usa as autoridades do objeto UserDetails
                 );
 
                 authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
 
+                // Define a autenticação no contexto de segurança
                 SecurityContextHolder.getContext().setAuthentication(authentication);
             }
         } catch (Exception ex) {
+            // ✅ DEBUGGING: Mantém a impressão da stack trace para diagnosticar erros de token (Expired, Signature)
+            ex.printStackTrace();
             logger.error("Falha na validação do token JWT ou extração de Roles.", ex);
         }
 
