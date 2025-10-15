@@ -33,8 +33,8 @@ public class UserService implements UserDetailsService {
     private final UserRepository repository;
     private final InteresseRepository interesseRepository;
     private final PasswordEncoder passwordEncoder;
-    private final ReviewRepository reviewRepository; // NOVO
-    private final BibliotecaRepository bibliotecaRepository; // NOVO
+    private final ReviewRepository reviewRepository;
+    private final BibliotecaRepository bibliotecaRepository;
 
     @Autowired
     private SeguindoRepository seguindoRepository;

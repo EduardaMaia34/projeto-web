@@ -23,4 +23,7 @@ public interface BibliotecaRepository extends JpaRepository<Biblioteca, Long> {
 
     @Transactional
     void deleteByUserId(Long userId);
+
+    @Transactional
+    void deleteByLivroId(String livroId);
 }

@@ -29,4 +29,7 @@ public interface ReviewRepository extends JpaRepository<Review,Long> {
 
     @Transactional
     void deleteByUserId(Long userId);
+
+    @Transactional
+    void deleteByLivroId(Long livroId);
 }

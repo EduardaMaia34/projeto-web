@@ -22,7 +22,6 @@ public class BibliotecaController {
     private final BibliotecaService bibliotecaService;
     private final UserService userService;
 
-    // Injeção de Dependências via Construtor
     public BibliotecaController(BibliotecaService bibliotecaService, UserService userService) {
         this.bibliotecaService = bibliotecaService;
         this.userService = userService;
@@ -43,10 +42,8 @@ public class BibliotecaController {
             return ResponseEntity.status(HttpStatus.CREATED).body(novoLivro);
 
         } catch (IllegalStateException e) {
-            // Captura erro de filme já adicionado (Regra de Negócio: CONFLICT - 409)
             throw new ResponseStatusException(HttpStatus.CONFLICT, e.getMessage());
         } catch (Exception e) {
-            // ✅ DEBUG: e.printStackTrace() está mantido para capturar o erro real de persistência (500)
             e.printStackTrace();
             throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Erro ao adicionar filme à biblioteca.");
         }
@@ -131,7 +128,6 @@ public class BibliotecaController {
             return ResponseEntity.ok(updatedLivro);
 
         } catch (IllegalStateException e) {
-            // Se o livro não for encontrado na biblioteca do usuário
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, e.getMessage());
         } catch (Exception e) {
             e.printStackTrace();
