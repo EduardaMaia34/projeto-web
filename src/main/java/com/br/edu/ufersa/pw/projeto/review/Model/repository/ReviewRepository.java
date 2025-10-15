@@ -28,11 +28,12 @@ public interface ReviewRepository extends JpaRepository<Review,Long> {
 
     boolean existsByUserAndLivro(User user, Livro livro);
 
-    @Query("SELECT r.livro, COUNT(r.livro) as reviewCount " +
+
+    @Query("SELECT r.livro " + // Seleciona apenas o objeto Livro
             "FROM Review r " +
             "WHERE r.data >= :dataLimite " +
             "GROUP BY r.livro " +
-            "ORDER BY reviewCount DESC")
+            "ORDER BY COUNT(r.livro) DESC") // Ordena pela contagem (que não está no SELECT)
     List<Livro> findTopReviewedLivrosLastWeek(@Param("dataLimite") java.time.LocalDateTime dataLimite);
 
     @Transactional
