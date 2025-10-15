@@ -9,6 +9,10 @@ import com.br.edu.ufersa.pw.projeto.user.Model.repository.SeguindoRepository;
 import com.br.edu.ufersa.pw.projeto.user.Model.repository.UserRepository;
 import com.br.edu.ufersa.pw.projeto.user.Model.entity.Interesse;
 import com.br.edu.ufersa.pw.projeto.user.Model.repository.InteresseRepository;
+// IMPORTAÇÕES NECESSÁRIAS PARA DELEÇÃO EM CASCATA
+import com.br.edu.ufersa.pw.projeto.review.Model.repository.ReviewRepository;
+import com.br.edu.ufersa.pw.projeto.biblioteca.Model.repository.BibliotecaRepository;
+
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -29,16 +33,20 @@ public class UserService implements UserDetailsService {
     private final UserRepository repository;
     private final InteresseRepository interesseRepository;
     private final PasswordEncoder passwordEncoder;
+    private final ReviewRepository reviewRepository; // NOVO
+    private final BibliotecaRepository bibliotecaRepository; // NOVO
 
     @Autowired
     private SeguindoRepository seguindoRepository;
 
     @Autowired
     public UserService(UserRepository repository, InteresseRepository interesseRepository,
-                       PasswordEncoder passwordEncoder) {
+                       PasswordEncoder passwordEncoder, ReviewRepository reviewRepository, BibliotecaRepository bibliotecaRepository) { // NOVO CONSTRUTOR
         this.repository = repository;
         this.interesseRepository = interesseRepository;
         this.passwordEncoder = passwordEncoder;
+        this.reviewRepository = reviewRepository;
+        this.bibliotecaRepository = bibliotecaRepository;
     }
 
     @Override
@@ -67,35 +75,28 @@ public class UserService implements UserDetailsService {
     // crud
     @Transactional
     public ReturnUserDTO save(InputUserDTO dto){
-        // 1. Validação de Email (Regra de Negócio)
         if (repository.findByEmailIgnoreCase(dto.getEmail()).isPresent()) {
-            // Alterado de IllegalArgumentException para IllegalStateException, mais comum em Services
             throw new IllegalStateException("O email já está em uso.");
         }
 
         User user = new User(dto);
 
-        // 2. Lógica de Role (Segurança)
         user.setRole("admin@seu-dominio.com".equalsIgnoreCase(dto.getEmail()) ? Role.ROLE_ADMIN : Role.ROLE_USER);
 
-        // 3. Criptografia de Senha (Segurança)
         user.setSenha(passwordEncoder.encode(dto.getSenha()));
 
-        // 4. Lógica de Interesses (Associação)
         if (dto.getInteressesIds() != null && !dto.getInteressesIds().isEmpty()) {
             if (dto.getInteressesIds().size() > 3) {
                 throw new IllegalStateException("O usuário só pode escolher até 3 interesses.");
             }
 
             List<Interesse> interesses = interesseRepository.findAllById(dto.getInteressesIds());
-            // Verifica se todos os IDs foram encontrados, se não, lança exceção
             if (interesses.size() != dto.getInteressesIds().size()) {
                 throw new NoSuchElementException("Um ou mais IDs de interesse não são válidos.");
             }
             user.setInteresses(interesses);
         }
 
-        // 5. Salva e Retorna DTO
         User savedUser = repository.save(user);
         return new ReturnUserDTO(savedUser);
     }
@@ -105,17 +106,12 @@ public class UserService implements UserDetailsService {
         User user = repository.findById(userId)
                 .orElseThrow(() -> new NoSuchElementException("Usuário com ID " + userId + " não encontrado."));
 
-        // Atualiza campos que podem ser modificados (Nome, por exemplo)
         if (dto.getNome() != null) {
             user.setNome(dto.getNome());
         }
 
-        // Se a senha for fornecida, ela deve ser atualizada e criptografada
-        if (dto.getSenha() != null && !dto.getSenha().isEmpty()) {
-            user.setSenha(passwordEncoder.encode(dto.getSenha()));
-        }
 
-        // Lógica de Interesses
+
         if (dto.getInteressesIds() != null) {
             if (dto.getInteressesIds().size() > 3) {
                 throw new IllegalStateException("O usuário só pode escolher até 3 interesses.");
@@ -147,10 +143,36 @@ public class UserService implements UserDetailsService {
     }
 
     @Transactional
-    public void deleteById(Long userId) {
-        if (!repository.existsById(userId)) {
-            throw new NoSuchElementException("Usuário com ID " + userId + " não encontrado.");
+    public ReturnUserDTO updatePasswordByUser(Long userId, String newPassword) {
+        User user = repository.findById(userId)
+                .orElseThrow(() -> new NoSuchElementException("Usuário não encontrado."));
+
+        if (newPassword == null || newPassword.isEmpty()) {
+            throw new IllegalStateException("A nova senha não pode ser vazia.");
         }
+
+        user.setSenha(passwordEncoder.encode(newPassword));
+        User updatedUser = repository.save(user);
+
+        return new ReturnUserDTO(updatedUser);
+    }
+
+    @Transactional
+    public void deleteById(Long userId) {
+        User user = repository.findById(userId)
+                .orElseThrow(() -> new NoSuchElementException("Usuário com ID " + userId + " não encontrado."));
+
+
+        reviewRepository.deleteByUserId(userId);
+        bibliotecaRepository.deleteByUserId(userId);
+        seguindoRepository.deleteBySeguidor(user);
+        seguindoRepository.deleteBySeguido(user);
+
+        if (user.getInteresses() != null) {
+            user.getInteresses().clear();
+        }
+        repository.save(user);
+
         repository.deleteById(userId);
     }
 
@@ -159,7 +181,7 @@ public class UserService implements UserDetailsService {
         User user = repository.findByEmailIgnoreCase(email)
                 .orElseThrow(() -> new NoSuchElementException("Usuário com email " + email + " não encontrado."));
 
-        repository.delete(user);
+        deleteById(user.getId());
     }
 
 
@@ -168,18 +190,15 @@ public class UserService implements UserDetailsService {
             throw new IllegalArgumentException("Você não pode seguir a si mesmo");
         }
 
-        // CORREÇÃO 1.1: Carregar entidades User para uso no existsBy
         User seguidor = repository.findById(seguidorId)
                 .orElseThrow(() -> new NoSuchElementException("Seguidor não encontrado."));
         User seguido = repository.findById(seguidoId)
                 .orElseThrow(() -> new NoSuchElementException("Seguido não encontrado."));
 
-        // CORREÇÃO 1.2: Usar o método de repositório que aceita entidades User
         boolean jaSegue = seguindoRepository.existsBySeguidorAndSeguido(seguidor, seguido);
 
         if (!jaSegue) {
             Seguindo seguindo = new Seguindo();
-            // CORREÇÃO 1.3: Usar o setter de entidade User
             seguindo.setSeguidor(seguidor);
             seguindo.setSeguido(seguido);
 
@@ -187,8 +206,8 @@ public class UserService implements UserDetailsService {
         }
     }
 
+    @Transactional
     public void deixarDeSeguir(Long seguidorId, Long seguidoId) {
-        // CORREÇÃO 2.1: Carregar entidades User para a deleção
         User seguidor = repository.findById(seguidorId)
                 .orElseThrow(() -> new NoSuchElementException("Seguidor não encontrado."));
         User seguido = repository.findById(seguidoId)
@@ -196,18 +215,15 @@ public class UserService implements UserDetailsService {
 
 
         if (seguindoRepository.existsBySeguidorAndSeguido(seguidor, seguido)) {
-            // CORREÇÃO 2.2: Chamar o método delete que aceita entidades.
-            // Nota: O método deleteBySeguidorAndSeguido no Repository é o mais eficiente aqui.
+
             seguindoRepository.deleteBySeguidorAndSeguido(seguidor, seguido);
         }
     }
 
-    // CORREÇÃO 3.1: Mudar para findBySeguidor_Id para resolver o erro de inicialização do JPA
     public List<Seguindo> listarSeguindo(Long userId) {
         return seguindoRepository.findBySeguidor_Id(userId);
     }
 
-    // CORREÇÃO 3.2: Mudar para findBySeguido_Id para resolver o erro de inicialização do JPA
     public List<Seguindo> listarSeguidores(Long userId) {
         return seguindoRepository.findBySeguido_Id(userId);
     }

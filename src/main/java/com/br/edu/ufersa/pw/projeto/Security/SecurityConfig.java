@@ -24,7 +24,7 @@ public class SecurityConfig {
 
                         .requestMatchers("/api/v1/auth/**").permitAll()
                         .requestMatchers(org.springframework.http.HttpMethod.POST, "/api/v1/users").permitAll()
-
+                        .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/v1/users").permitAll()
                         .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/v1/livros").permitAll()
                         .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/v1/livros/**").permitAll()
                         .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/v1/reviews").permitAll()
@@ -61,6 +61,19 @@ public class SecurityConfig {
                                 org.springframework.http.HttpMethod.GET, "/api/v1/biblioteca/estante"
                         ).hasAnyRole("USER", "ADMIN")
                         .requestMatchers(
+                                org.springframework.http.HttpMethod.POST, "/api/v1/users/seguir/**"
+                        ).hasAnyRole("USER", "ADMIN")
+                        .requestMatchers(
+                                org.springframework.http.HttpMethod.DELETE, "/api/v1/users/deixarDeSeguir/**"
+                        ).hasAnyRole("USER", "ADMIN")
+                        .requestMatchers(
+                                org.springframework.http.HttpMethod.DELETE, "/api/v1/users/**"
+                        ).hasAnyRole("USER", "ADMIN")
+                        .requestMatchers(
+                                org.springframework.http.HttpMethod.GET, "/api/v1/users/seguindo"
+                        ).hasAnyRole("USER", "ADMIN")
+                        .requestMatchers(
+                                org.springframework.http.HttpMethod.GET, "/api/v1/users/seguidores"
                                 org.springframework.http.HttpMethod.POST, "/api/v1/users/seguir/**"
                         ).hasAnyRole("USER", "ADMIN")
                         .requestMatchers(
