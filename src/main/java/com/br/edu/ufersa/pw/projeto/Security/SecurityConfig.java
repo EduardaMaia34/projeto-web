@@ -22,6 +22,7 @@ public class SecurityConfig {
         http.csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(auth -> auth
                         // ROTAS LIBERADAS PUBLICAMENTE: Adicionamos a rota raiz e de erro
+                        .requestMatchers("/").permitAll()
                         .requestMatchers("/", "/error", "/api/v1/auth/**").permitAll()
                         .requestMatchers(org.springframework.http.HttpMethod.POST, "/api/v1/users").permitAll()
                         .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/v1/users").permitAll()
