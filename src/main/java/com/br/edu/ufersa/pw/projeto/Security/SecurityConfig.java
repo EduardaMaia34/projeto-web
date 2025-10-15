@@ -21,14 +21,16 @@ public class SecurityConfig {
     public SecurityFilterChain filterChain(HttpSecurity http, JwtAuthenticationFilter jwtFilter) throws Exception {
         http.csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(auth -> auth
-
-                        .requestMatchers("/api/v1/auth/**").permitAll()
+                        // ROTAS LIBERADAS PUBLICAMENTE: Adicionamos a rota raiz e de erro
+                        .requestMatchers("/", "/error", "/api/v1/auth/**").permitAll()
                         .requestMatchers(org.springframework.http.HttpMethod.POST, "/api/v1/users").permitAll()
                         .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/v1/users").permitAll()
                         .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/v1/livros").permitAll()
                         .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/v1/livros/**").permitAll()
                         .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/v1/reviews").permitAll()
                         .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/v1/reviews/**").permitAll()
+
+                        // ROTAS RESTRITAS - Exige autenticacao e/ou autorizacao
                         .requestMatchers(
                                 org.springframework.http.HttpMethod.GET, "/feed"
                         ).hasAnyRole("USER", "ADMIN")
