@@ -1,8 +1,10 @@
 package com.br.edu.ufersa.pw.projeto.livro.Service;
 
+import com.br.edu.ufersa.pw.projeto.biblioteca.Model.repository.BibliotecaRepository;
 import com.br.edu.ufersa.pw.projeto.livro.API.dto.InputLivroDTO;
 import com.br.edu.ufersa.pw.projeto.livro.Model.entity.Livro;
 import com.br.edu.ufersa.pw.projeto.livro.Model.repository.LivroRepository;
+import com.br.edu.ufersa.pw.projeto.review.Model.repository.ReviewRepository;
 import com.br.edu.ufersa.pw.projeto.user.Model.entity.Interesse;
 import com.br.edu.ufersa.pw.projeto.user.Model.repository.InteresseRepository;
 
@@ -21,11 +23,15 @@ public class LivroService {
 
     private final LivroRepository livroRepository;
     private final InteresseRepository interesseRepository;
+    private final ReviewRepository reviewRepository;
+    private final BibliotecaRepository bibliotecaRepository;
 
     @Autowired
-    public LivroService(LivroRepository livroRepository, InteresseRepository interesseRepository) {
+    public LivroService(LivroRepository livroRepository, InteresseRepository interesseRepository, ReviewRepository reviewRepository, BibliotecaRepository bibliotecaRepository) {
         this.livroRepository = livroRepository;
         this.interesseRepository = interesseRepository;
+        this.reviewRepository = reviewRepository;
+        this.bibliotecaRepository = bibliotecaRepository;
     }
 
     @Transactional
@@ -87,6 +93,9 @@ public class LivroService {
         if (!livroRepository.existsById(id)) {
             throw new IllegalArgumentException("Livro com o ID " + id + " não encontrado para exclusão.");
         }
+        reviewRepository.deleteByLivroId(id);
+        String livroIdString = String.valueOf(id);
+        bibliotecaRepository.deleteByLivroId(livroIdString);
         livroRepository.deleteById(id);
     }
 }
