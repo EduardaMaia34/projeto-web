@@ -187,6 +187,7 @@ public class UserService implements UserDetailsService {
         }
     }
 
+    @Transactional
     public void deixarDeSeguir(Long seguidorId, Long seguidoId) {
         // CORREÇÃO 2.1: Carregar entidades User para a deleção
         User seguidor = repository.findById(seguidorId)

@@ -61,21 +61,17 @@ public class SecurityConfig {
                                 org.springframework.http.HttpMethod.GET, "/api/v1/biblioteca/estante"
                         ).hasAnyRole("USER", "ADMIN")
                         .requestMatchers(
-                                org.springframework.http.HttpMethod.POST, "/api/v1/users/seguir/**"
+                                org.springframework.http.HttpMethod.POST, "/api/v1/seguir/**"
+                        ).hasAnyRole("USER", "ADMIN")
+                        .requestMatchers(
+                                org.springframework.http.HttpMethod.GET, "/feed/**"
                         ).hasAnyRole("USER", "ADMIN")
                         .requestMatchers(
                                 org.springframework.http.HttpMethod.DELETE, "/api/v1/users/deixarDeSeguir/**"
                         ).hasAnyRole("USER", "ADMIN")
                         .requestMatchers(
-                                org.springframework.http.HttpMethod.GET, "/api/v1/users/seguindo"
+                                org.springframework.http.HttpMethod.DELETE, "/api/v1/users/**"
                         ).hasAnyRole("USER", "ADMIN")
-                        .requestMatchers(
-                                org.springframework.http.HttpMethod.GET, "/api/v1/users/seguidores"
-                        ).hasAnyRole("USER", "ADMIN")
-                        .requestMatchers(
-                                org.springframework.http.HttpMethod.GET, "/feed/**"
-                        ).hasAnyRole("USER", "ADMIN")
-
 
                         .anyRequest().authenticated()
                 )
