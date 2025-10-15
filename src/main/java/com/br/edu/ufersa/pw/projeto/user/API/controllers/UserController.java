@@ -1,5 +1,6 @@
 package com.br.edu.ufersa.pw.projeto.user.API.controllers;
 
+import com.br.edu.ufersa.pw.projeto.Security.CustomUserDetails;
 import com.br.edu.ufersa.pw.projeto.Security.JwtTokenProvider;
 import com.br.edu.ufersa.pw.projeto.user.API.dto.InputUserDTO;
 import com.br.edu.ufersa.pw.projeto.user.API.dto.ReturnUserDTO;
@@ -10,7 +11,9 @@ import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
 
@@ -22,10 +25,12 @@ public class UserController {
 
     @Autowired
     private JwtTokenProvider jwtTokenProvider;
+
     @Autowired
     public UserController(UserService service){
         this.service = service;
     }
+
 
     @GetMapping()
     public ResponseEntity<List<ReturnUserDTO>> list(
@@ -49,21 +54,69 @@ public class UserController {
         return response;
     }
 
+
     @DeleteMapping("/{userId}")
-    public ResponseEntity removeById(@PathVariable Long userId)
-    {   return null; }
+    public ResponseEntity<Void> removeById(@PathVariable Long userId) {
+        try {
+            service.deleteById(userId);
+            return ResponseEntity.noContent().build(); // 204 No Content
+        } catch (Exception e) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Usuário não encontrado ou erro de exclusão.", e);
+        }
+    }
+
+    @DeleteMapping("/me")
+    public ResponseEntity<Void> removeMyAccount(@AuthenticationPrincipal CustomUserDetails loggedInUser) {
+        if (loggedInUser == null || loggedInUser.getId() == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+        try {
+            service.deleteById(loggedInUser.getId());
+            return ResponseEntity.noContent().build(); // 204 No Content
+        } catch (Exception e) {
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Erro ao deletar a conta.", e);
+        }
+    }
 
     @DeleteMapping()
     public ResponseEntity<InputUserDTO> removeByEmail(@RequestBody InputUserDTO user)
-    {return null;}
+    { return ResponseEntity.status(HttpStatus.METHOD_NOT_ALLOWED).build(); }
 
-    @PutMapping()
-    public ResponseEntity<ReturnUserDTO> update (@RequestBody  InputUserDTO todo)
-    {return null;}
+    @PutMapping("/me")
+    public ResponseEntity<ReturnUserDTO> updateMe(
+            @AuthenticationPrincipal CustomUserDetails loggedInUser,
+            @RequestBody InputUserDTO dto) {
+
+        if (loggedInUser == null || loggedInUser.getId() == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+
+        ReturnUserDTO updatedUser = service.update(loggedInUser.getId(), dto);
+        return ResponseEntity.ok(updatedUser);
+    }
+
+
+    @PatchMapping("/me/password")
+    public ResponseEntity<ReturnUserDTO> updateMyPassword(
+            @AuthenticationPrincipal CustomUserDetails loggedInUser,
+            @RequestBody InputUserDTO dto) { // Usa DTO apenas para extrair a nova senha
+
+        if (loggedInUser == null || loggedInUser.getId() == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+
+        if (dto.getSenha() == null || dto.getSenha().isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "A nova senha não pode ser vazia.");
+        }
+
+        ReturnUserDTO updatedUser = service.updatePasswordByUser(loggedInUser.getId(), dto.getSenha());
+        return ResponseEntity.ok(updatedUser);
+    }
 
     @PatchMapping("/{email}")
     public ResponseEntity<ReturnUserDTO> updatePassword (@PathVariable String email)
-    {return null;}
+    { return ResponseEntity.status(HttpStatus.METHOD_NOT_ALLOWED).build(); }
+
 
 
     @PostMapping("/seguir/{seguidoId}")
