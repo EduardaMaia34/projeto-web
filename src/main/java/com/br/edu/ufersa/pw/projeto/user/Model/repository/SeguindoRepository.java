@@ -7,6 +7,7 @@ import com.br.edu.ufersa.pw.projeto.user.Model.entity.User;
 import org.springframework.data.domain.Limit;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
@@ -20,9 +21,12 @@ public interface SeguindoRepository extends JpaRepository<Seguindo, Long> {
 
     List<Seguindo> findBySeguido_Id(Long seguidoId);
 
-    // CORREÇÃO NECESSÁRIA: existsBySeguidor_IdAndSeguido_Id
     boolean existsBySeguidor_IdAndSeguido_Id(Long seguidorId, Long seguidoId);
 
-    // CORREÇÃO NECESSÁRIA: findBySeguidor_IdAndSeguido_Id
     Seguindo findBySeguidor_IdAndSeguido_Id(Long seguidorId, Long seguidoId);
+
+    @Transactional
+    void deleteBySeguido(User user);
+    @Transactional
+    void deleteBySeguidor(User user);
 }
