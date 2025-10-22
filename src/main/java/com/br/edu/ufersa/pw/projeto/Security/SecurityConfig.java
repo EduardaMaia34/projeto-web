@@ -74,7 +74,6 @@ public class SecurityConfig {
                         ).hasAnyRole("USER", "ADMIN")
                         .requestMatchers(
                                 org.springframework.http.HttpMethod.GET, "/api/v1/users/seguidores"
-                                org.springframework.http.HttpMethod.POST, "/api/v1/users/seguir/**"
                         ).hasAnyRole("USER", "ADMIN")
                         .requestMatchers(
                                 org.springframework.http.HttpMethod.DELETE, "/api/v1/users/deixarDeSeguir/**"
