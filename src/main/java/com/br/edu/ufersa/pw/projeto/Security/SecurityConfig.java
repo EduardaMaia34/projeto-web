@@ -74,6 +74,7 @@ public class SecurityConfig {
                         ).hasAnyRole("USER", "ADMIN")
                         .requestMatchers(
                                 org.springframework.http.HttpMethod.GET, "/api/v1/users/seguidores"
+
                         ).hasAnyRole("USER", "ADMIN")
                         .requestMatchers(
                                 org.springframework.http.HttpMethod.GET, "/feed/**"
