@@ -2,6 +2,7 @@ package com.br.edu.ufersa.pw.projeto.livro.Service;
 
 import com.br.edu.ufersa.pw.projeto.biblioteca.Model.repository.BibliotecaRepository;
 import com.br.edu.ufersa.pw.projeto.livro.API.dto.InputLivroDTO;
+import com.br.edu.ufersa.pw.projeto.livro.API.dto.ReturnLivroDTO;
 import com.br.edu.ufersa.pw.projeto.livro.Model.entity.Livro;
 import com.br.edu.ufersa.pw.projeto.livro.Model.repository.LivroRepository;
 import com.br.edu.ufersa.pw.projeto.review.Model.repository.ReviewRepository;
@@ -14,6 +15,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.NoSuchElementException;
 import java.util.Set;
 import java.util.Arrays;
 import java.util.stream.Collectors;
@@ -32,6 +34,35 @@ public class LivroService {
         this.interesseRepository = interesseRepository;
         this.reviewRepository = reviewRepository;
         this.bibliotecaRepository = bibliotecaRepository;
+    }
+
+    public ReturnLivroDTO toReturnLivroDTO(Livro livro) {
+        if (livro == null) {
+            return null;
+        }
+
+        Set<String> interessesNomes = null;
+        if (livro.getInteresses() != null) {
+            interessesNomes = livro.getInteresses().stream()
+                    .map(Interesse::getNome)
+                    .collect(Collectors.toSet());
+        }
+
+        return new ReturnLivroDTO(
+                livro.getId(),
+                livro.getTitulo(),
+                livro.getAutor(),
+                livro.getDescricao(),
+                livro.getDataCriacao(),
+                interessesNomes,
+                livro.getUrlCapa() // 💡 Campo essencial para o frontend
+        );
+    }
+
+    @Transactional(readOnly = true)
+    public Livro findLivroEntityById(Long livroId) {
+        return livroRepository.findById(livroId)
+                .orElseThrow(() -> new NoSuchElementException("Livro com ID " + livroId + " não encontrado."));
     }
 
     @Transactional
@@ -98,4 +129,5 @@ public class LivroService {
         bibliotecaRepository.deleteByLivroId(livroIdString);
         livroRepository.deleteById(id);
     }
+
 }

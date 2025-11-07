@@ -2,6 +2,7 @@ package com.br.edu.ufersa.pw.projeto.user.API.dto;
 
 import com.br.edu.ufersa.pw.projeto.user.Model.entity.Interesse;
 import com.br.edu.ufersa.pw.projeto.user.Model.entity.User;
+import com.br.edu.ufersa.pw.projeto.livro.API.dto.LivroCapaDTO;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -16,6 +17,8 @@ public class ReturnUserDTO {
     private String bio;
     private LocalDateTime dataCadastro;
     private String fotoPerfil;
+
+    private List<LivroCapaDTO> livrosFavoritos;
 
     public ReturnUserDTO() {
     }
@@ -33,6 +36,12 @@ public class ReturnUserDTO {
                 .map(Interesse::getId)
                 .collect(Collectors.toList())
                 : null;
+    }
+
+    public ReturnUserDTO(User user, List<LivroCapaDTO> livrosFavoritos){
+        this(user);
+
+        this.livrosFavoritos = livrosFavoritos;
     }
 
     public Long getId() { return id; }
@@ -55,4 +64,13 @@ public class ReturnUserDTO {
 
     public String getFotoPerfil() { return fotoPerfil; }
     public void setFotoPerfil(String fotoPerfil) { this.fotoPerfil = fotoPerfil; }
+
+
+    public List<LivroCapaDTO> getLivrosFavoritos() {
+        return livrosFavoritos;
+    }
+
+    public void setLivrosFavoritos(List<LivroCapaDTO> livrosFavoritos) {
+        this.livrosFavoritos = livrosFavoritos;
+    }
 }

@@ -13,6 +13,8 @@ public class ReturnLivroDTO {
     private String autor;
     private String descricao;
 
+    private String urlCapa;
+
     private LocalDateTime dataCriacao;
 
     // Simplificando o relacionamento Estilos (Many-to-Many) para uma lista de nomes
@@ -24,13 +26,14 @@ public class ReturnLivroDTO {
     public ReturnLivroDTO() {}
 
     // Construtor principal para facilitar a conversão da Entity para o DTO
-    public ReturnLivroDTO(Long id, String titulo, String autor, String descricao, LocalDateTime dataCriacao, Set<String> interesses) {
+    public ReturnLivroDTO(Long id, String titulo, String autor, String descricao, LocalDateTime dataCriacao, Set<String> interesses, String urlCapa) {
         this.id = id;
         this.titulo = titulo;
         this.autor = autor;
         this.descricao = descricao;
         this.dataCriacao = dataCriacao;
         this.interesses = interesses;
+        this.urlCapa = urlCapa;
     }
 
     // --- GETTERS E SETTERS CORRIGIDOS ---
@@ -83,4 +86,13 @@ public class ReturnLivroDTO {
      public void setInteresses(Set<String> interesses) {
         this.interesses = interesses;
      }
+
+    public String getUrlCapa() {
+        return urlCapa;
+    }
+
+    public void setUrlCapa(String urlCapa) {
+        this.urlCapa = urlCapa;
+    }
+
 }

@@ -12,7 +12,8 @@ import com.br.edu.ufersa.pw.projeto.user.Model.repository.InteresseRepository;
 // IMPORTAÇÕES NECESSÁRIAS PARA DELEÇÃO EM CASCATA
 import com.br.edu.ufersa.pw.projeto.review.Model.repository.ReviewRepository;
 import com.br.edu.ufersa.pw.projeto.biblioteca.Model.repository.BibliotecaRepository;
-
+import com.br.edu.ufersa.pw.projeto.livro.API.dto.ReturnLivroDTO;
+import com.br.edu.ufersa.pw.projeto.livro.Service.LivroService;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -39,14 +40,18 @@ public class UserService implements UserDetailsService {
     @Autowired
     private SeguindoRepository seguindoRepository;
 
+    private final LivroService livroService;
+
     @Autowired
     public UserService(UserRepository repository, InteresseRepository interesseRepository,
-                       PasswordEncoder passwordEncoder, ReviewRepository reviewRepository, BibliotecaRepository bibliotecaRepository) { // NOVO CONSTRUTOR
+                       PasswordEncoder passwordEncoder, ReviewRepository reviewRepository,
+                       BibliotecaRepository bibliotecaRepository, LivroService livroService) { // NOVO CONSTRUTOR
         this.repository = repository;
         this.interesseRepository = interesseRepository;
         this.passwordEncoder = passwordEncoder;
         this.reviewRepository = reviewRepository;
         this.bibliotecaRepository = bibliotecaRepository;
+        this.livroService = livroService;
     }
 
     @Override
