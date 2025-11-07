@@ -1,8 +1,10 @@
 package com.br.edu.ufersa.pw.projeto.user.Model.entity;
 
+import com.br.edu.ufersa.pw.projeto.livro.Model.entity.Livro;
 import com.br.edu.ufersa.pw.projeto.todoAPI.Model.entity.Todo;
 import com.br.edu.ufersa.pw.projeto.user.API.dto.InputUserDTO;
 import jakarta.persistence.*;
+import org.hibernate.annotations.Columns;
 import org.springframework.security.core.GrantedAuthority; // Import
 import org.springframework.security.core.authority.SimpleGrantedAuthority; // Import
 import org.springframework.security.core.userdetails.UserDetails; // Import
@@ -58,10 +60,15 @@ public class User implements UserDetails {
             joinColumns = @JoinColumn(name = "usuario_id"),
             inverseJoinColumns = @JoinColumn(name = "interesse_id")
     )
-
-
-
     private List<Interesse> interesses;
+
+    @ManyToMany
+    @JoinTable(
+            name = "tb_usuario_favoritos", // Nome da tabela intermediária (tabela de ligação)
+            joinColumns = @JoinColumn(name = "usuario_id"),
+            inverseJoinColumns = @JoinColumn(name = "livro_id") // ID da entidade Livro
+    )
+    private List<Livro> livrosFavoritos;
 
     public User() {
         this.dataCadastro = LocalDateTime.now();

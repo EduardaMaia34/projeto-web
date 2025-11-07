@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Menu Perfil - Bookly (Bootstrap)</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+
+    <style>
+        /* Cor de fundo próxima à da imagem */
+        body {
+            background-color: #f5f4ed; /* Um bege bem claro/cinza */
+        }
+        /* Estilo para a imagem de perfil */
+        .profile-img {
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 2px solid #333; /* Opcional: para destacar a borda */
+        }
+        /* Estilo para a barra superior e caixas de livros */
+        .header-bar, .profile-card, .book-card, .sidebar-link {
+            background-color: #fff; /* Fundo branco para os elementos internos */
+            border-radius: 8px;
+            box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+        }
+        /* Ajuste fino para a seção de estatísticas (Lidos, Este ano, Salvos) */
+        .stats-item {
+            display: inline-block;
+            margin-right: 1.5rem;
+            text-align: center;
+        }
+        /* Ajuste dos botões de gênero */
+        .genre-btn {
+            background-color: #d1e7dd; /* Cor verde/mint próxima à da imagem */
+            color: #155724;
+            border: none;
+            padding: 5px 10px;
+            margin-right: 5px;
+            border-radius: 50rem; /* pill shape */
+            font-size: 0.8rem;
+        }
+    </style>
+</head>
+<body>
+
+<nav class="navbar navbar-light header-bar p-3 mb-4">
+    <div class="container-fluid">
+        <a class="navbar-brand d-flex align-items-center" href="#">
+            <span style="font-size: 1.5rem; margin-right: 5px;">📖</span>
+            <span class="fs-4 fw-bold">Bookly</span>
+        </a>
+
+        <div class="d-flex align-items-center">
+            <img src="https://via.placeholder.com/30/808080/FFFFFF?text=Mari" alt="Perfil Mari" class="rounded-circle me-3" style="width: 30px; height: 30px; object-fit: cover;">
+            <button class="btn btn-link text-dark me-3"><i class="bi bi-search"></i> Q</button>
+            <button class="btn btn-success me-3 d-flex align-items-center">
+                <span style="font-size: 1.2rem; line-height: 1;">+</span> Livro
+            </button>
+            <button class="btn btn-link text-dark"><i class="bi bi-box-arrow-right"></i> →</button>
+        </div>
+    </div>
+</nav>
+
+<div class="container">
+    <div class="row">
+
+        <div class="col-lg-8">
+
+            <div class="profile-card p-4 mb-4 d-flex align-items-start">
+                <img src="https://via.placeholder.com/100/A0A0A0/FFFFFF?text=Mari" alt="Foto de Perfil" class="profile-img me-4">
+                <div>
+                    <h4 class="mb-0">Mari</h4>
+                    <p class="text-muted small">
+                        <span class="badge bg-secondary me-2">ESTILO DE PERFIL</span>
+                        <br>
+                        Em Gosto de: <span class="fw-bold">Romance, Ficção Científica, Suspense</span>
+                    </p>
+
+                    <div class="mt-3">
+                        <div class="stats-item">
+                            <h5 class="mb-0">40</h5>
+                            <small class="text-muted">Lidos</small>
+                        </div>
+                        <div class="stats-item">
+                            <h5 class="mb-0">10</h5>
+                            <small class="text-muted">Este ano</small>
+                        </div>
+                        <div class="stats-item">
+                            <h5 class="mb-0">90</h5>
+                            <small class="text-muted">Salvos</small>
+                        </div>
+                    </div>
+
+                    <div class="mt-3">
+                        <span class="genre-btn">Romance</span>
+                        <span class="genre-btn">Ficção Científica</span>
+                        <span class="genre-btn">Suspense</span>
+                    </div>
+                </div>
+            </div>
+
+            <h5 class="mb-3">Favoritos</h5>
+            <div class="row mb-5">
+
+                <div class="col-6 col-md-3 mb-4">
+                    <div class="book-card text-center p-2">
+                        <img src="https://via.placeholder.com/150x225/DC143C/FFFFFF?text=Vermelho" class="img-fluid mb-2" alt="Capa Livro 1">
+                        <small class="text-muted d-block">Estrelas: ★★★☆☆</small>
+                    </div>
+                </div>
+
+                <div class="col-6 col-md-3 mb-4">
+                    <div class="book-card text-center p-2">
+                        <img src="https://via.placeholder.com/150x225/228B22/FFFFFF?text=Verde" class="img-fluid mb-2" alt="Capa Livro 2">
+                        <small class="text-muted d-block">Estrelas: ★★★☆☆</small>
+                    </div>
+                </div>
+
+                <div class="col-6 col-md-3 mb-4">
+                    <div class="book-card text-center p-2">
+                        <img src="https://via.placeholder.com/150x225/00BFFF/FFFFFF?text=Amor" class="img-fluid mb-2" alt="Capa Livro 3">
+                        <small class="text-muted d-block">Estrelas: ★★★☆☆</small>
+                    </div>
+                </div>
+
+                <div class="col-6 col-md-3 mb-4">
+                    <div class="book-card text-center p-2">
+                        <img src="https://via.placeholder.com/150x225/A9A9A9/FFFFFF?text=Verity" class="img-fluid mb-2" alt="Capa Livro 4">
+                        <small class="text-muted d-block">Estrelas: ★★☆☆☆</small>
+                    </div>
+                </div>
+            </div>
+
+            <h5 class="mb-3">Em andamento</h5>
+            <div class="row">
+                <div class="col-6 col-md-3 mb-4">
+                    <div class="book-card text-center p-2">
+                        <img src="https://via.placeholder.com/150x225/800080/FFFFFF?text=Daisy" class="img-fluid mb-2" alt="Capa Livro Em Andamento">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-4">
+            <div class="p-3">
+
+                <a href="#" class="sidebar-link d-flex align-items-center p-3 mb-3 text-dark text-decoration-none">
+                    <span style="margin-right: 10px;">📚</span> Biblioteca
+                </a>
+
+                <a href="#" class="sidebar-link d-flex align-items-center p-3 mb-3 text-dark text-decoration-none">
+                    <span style="margin-right: 10px;">✅</span> Lidos
+                </a>
+
+                <a href="#" class="sidebar-link d-flex align-items-center p-3 mb-3 text-dark text-decoration-none">
+                    <span style="margin-right: 10px;">📝</span> Reviews
+                </a>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+</body>
+</html>

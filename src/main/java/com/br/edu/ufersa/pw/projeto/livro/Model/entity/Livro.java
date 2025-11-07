@@ -25,6 +25,9 @@ public class Livro {
     @Column(nullable = false, length = 1024)
     private String descricao;
 
+    @Column(name = "url_capa", length = 500) // Assumindo que 500 caracteres é suficiente
+    private String urlCapa;
+
 
     @Column(name = "data_criacao", updatable = false)
     private LocalDateTime dataCriacao;
@@ -45,6 +48,7 @@ public class Livro {
         this.titulo = titulo;
         this.autor=autor;
         this.descricao=descricao;
+        this.urlCapa = urlCapa;
     }
 
     //getters e setters
@@ -94,6 +98,14 @@ public class Livro {
    public void setInteresses(Set<Interesse> interesses) {
         this.interesses = interesses;
    }
+
+    public String getUrlCapa() {
+        return urlCapa;
+    }
+
+    public void setUrlCapa(String urlCapa) {
+        this.urlCapa = urlCapa;
+    }
 
     // --- MÉTODOS DE CICLO DE VIDA ---
 
