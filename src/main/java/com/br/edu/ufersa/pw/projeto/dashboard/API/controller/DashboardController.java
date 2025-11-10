@@ -42,6 +42,7 @@ public class DashboardController {
         model.addAttribute("amigos", amigos);
         model.addAttribute("userName", userLogado != null ? userLogado.getNome() : "Visitante");
 
-        return "dashboard";
+
+        return "dashboard-user";
     }
 }
