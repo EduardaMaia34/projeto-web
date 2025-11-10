@@ -5,6 +5,7 @@ import com.br.edu.ufersa.pw.projeto.user.Model.entity.User;
 import com.br.edu.ufersa.pw.projeto.livro.Model.entity.Livro;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional; // Importar para exclusão
 
@@ -26,6 +27,13 @@ public interface ReviewRepository extends JpaRepository<Review,Long> {
     boolean existsByUserIdAndLivroId(Long userId, Long livroId);
 
     boolean existsByUserAndLivro(User user, Livro livro);
+
+    @Query("SELECT r.livro, COUNT(r.livro) as reviewCount " +
+            "FROM Review r " +
+            "WHERE r.data >= :dataLimite " +
+            "GROUP BY r.livro " +
+            "ORDER BY reviewCount DESC")
+    List<Livro> findTopReviewedLivrosLastWeek(@Param("dataLimite") java.time.LocalDateTime dataLimite);
 
     @Transactional
     void deleteByUserId(Long userId);

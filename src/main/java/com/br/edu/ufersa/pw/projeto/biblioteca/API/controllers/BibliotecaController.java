@@ -14,7 +14,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
-
+@CrossOrigin(origins = "*")
 @RestController
 @RequestMapping("/api/v1/biblioteca")
 public class BibliotecaController {
