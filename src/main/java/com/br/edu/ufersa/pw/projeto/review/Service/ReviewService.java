@@ -15,6 +15,7 @@ import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -121,4 +122,10 @@ public class ReviewService {
     public List<Review> listarFeed(List<Long> userIds) {
         return reviewRepository.findReviewsByUserIds(userIds);
     }
+
+
+    public List<Livro> encontrarLivrosMaisRevisadosNaSemana() {
+            LocalDateTime umaSemanaAtras = LocalDateTime.now().minusDays(7);
+            return reviewRepository.findTopReviewedLivrosLastWeek(umaSemanaAtras);
+        }
 }
