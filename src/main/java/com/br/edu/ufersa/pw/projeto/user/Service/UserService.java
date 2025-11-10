@@ -15,7 +15,9 @@ import com.br.edu.ufersa.pw.projeto.biblioteca.Model.repository.BibliotecaReposi
 import com.br.edu.ufersa.pw.projeto.livro.API.dto.ReturnLivroDTO;
 import com.br.edu.ufersa.pw.projeto.livro.Service.LivroService;
 
+
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
@@ -45,7 +47,7 @@ public class UserService implements UserDetailsService {
     @Autowired
     public UserService(UserRepository repository, InteresseRepository interesseRepository,
                        PasswordEncoder passwordEncoder, ReviewRepository reviewRepository,
-                       BibliotecaRepository bibliotecaRepository, LivroService livroService) { // NOVO CONSTRUTOR
+                       BibliotecaRepository bibliotecaRepository, @Lazy LivroService livroService) { // NOVO CONSTRUTOR
         this.repository = repository;
         this.interesseRepository = interesseRepository;
         this.passwordEncoder = passwordEncoder;
@@ -104,6 +106,17 @@ public class UserService implements UserDetailsService {
 
         User savedUser = repository.save(user);
         return new ReturnUserDTO(savedUser);
+    }
+
+    @Transactional(readOnly = true)
+    public List<Long> getIdsDosSeguidos(Long seguidorId) {
+        // 1. Encontra a lista de objetos Seguindo onde o seguidor é o ID fornecido
+        List<Seguindo> seguidos = seguindoRepository.findBySeguidor_Id(seguidorId);
+
+        // 2. Mapeia a lista de objetos Seguindo para uma lista de IDs dos usuários Seguidos
+        return seguidos.stream()
+                .map(s -> s.getSeguido().getId())
+                .collect(Collectors.toList());
     }
 
     @Transactional
