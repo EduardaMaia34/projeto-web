@@ -120,13 +120,11 @@
         <h3 class="titulo-login">Login</h3>
         <p class="subtitulo-login">Entrar</p>
         <form method="POST" action="/login">
-            <label class="form-label" for="emailUsuarioLogin">E-mail ou usuário</label>
-            <input type="text" id="emailUsuarioLogin" class="form-control" placeholder="">
+            <input type="text" name="username" class="form-control" placeholder="Seu E-mail">
 
-            <label class="form-label" for="senhaLogin">Senha</label>
-            <input type="password" id="senhaLogin" class="form-control" placeholder="">
+            <input type="password" name="password" class="form-control" placeholder="Sua Senha">
 
-            <button type="submit" class="btn btn-login">Acessar conta</button>
+            <button type="submit">Acessar conta</button>
 
             <a href="#" class="link-esqueci">Esqueci a senha</a>
 

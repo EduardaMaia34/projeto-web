@@ -76,20 +76,19 @@
 
 <div class="form-box">
     <h3>Cadastrar</h3>
-    <form>
-        <label class="form-label" for="nomeCompleto">Nome completo</label>
-        <input type="text" id="nomeCompleto" class="form-control" placeholder="">
+    <form method="POST" action="/register">
+        <label for="email_id">E-mail</label>
+        <input type="email" id="email_id" name="email" class="form-control" required>
 
-        <label class="form-label" for="emailCadastro">E-mail</label>
-        <input type="email" id="emailCadastro" class="form-control" placeholder="">
+        <label for="nome_id">Nome de Usuário</label>
+        <input type="text" id="nome_id" name="nome" class="form-control" required>
 
-        <label class="form-label" for="senhaCadastro">Senha</label>
-        <input type="password" id="senhaCadastro" class="form-control" placeholder="">
+        <label for="senha_id">Senha</label>
+        <input type="password" id="senha_id" name="senha" class="form-control" required>
 
-        <label class="form-label" for="confirmaSenha">Confirme a senha</label>
-        <input type="password" id="confirmaSenha" class="form-control" placeholder="">
+        <input type="text" name="bio" placeholder="Sua Bio">
 
-        <button type="submit" class="btn btn-cadastro mt-4">Cadastrar</button>
+        <button type="submit">Criar Conta</button>
     </form>
 </div>
 

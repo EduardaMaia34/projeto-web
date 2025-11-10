@@ -133,7 +133,7 @@
 
         <div class="d-flex align-items-center">
             <span class="profile-pic"></span>
-            <span class="text-light me-3">Mari</span>
+            <span class="text-light me-3" th:text="${userName}">Mari</span>
 
             <span class="text-light me-3">&#128269;</span>
 
@@ -147,19 +147,17 @@
 </nav>
 
 <div class="container main-content">
-    <h2 class="welcome-header">Bem-vindo de volta Mari!</h2>
+    <h2 class="welcome-header" th:text="'Bem-vindo de volta ' + ${userName} + '!'">Bem-vindo de volta Mari!</h2>
 
     <h3 class="section-title">Famosos no Momento</h3>
     <div class="row mb-5">
 
         <div class="col-lg-3 col-md-4 col-6 book-card" th:each="livroFamoso : ${famosos}">
-
             <div class="book-cover"
-                 th:style="'background-color: ' + (${livroFamoso.capaCor} ?: 'gray') + ';'">
-            </div>
-
+                 th:style="${livroFamoso.urlCapa}
+                   ? 'background-image: url(\'' + ${livroFamoso.urlCapa} + '\'); background-size: cover; background-color: gray;'
+                   : 'background-color: gray;'"> </div>
             <p class="rating">★★★★☆</p>
-
             <small class="d-block" th:text="${livroFamoso.titulo}">VERMELHO, BRANCO E SANGUE AZUL</small>
         </div>
 
@@ -172,11 +170,9 @@
     <div class="row">
 
         <div class="col-lg-3 col-md-4 col-6 book-card" th:each="amigoLivro : ${amigos}">
-
             <div class="book-cover"
                  th:style="'background-color: ' + (${amigoLivro.capaCor} ?: 'gray') + ';'">
             </div>
-
             <small class="d-block" th:text="${amigoLivro.titulo}">Nome do Livro do Amigo</small>
         </div>
 
@@ -185,8 +181,6 @@
         </div>
     </div>
 
-</div>
-
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+</div> <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
