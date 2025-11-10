@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            /* Fundo principal da tela de login (cor escura da imagem original) */
+            background-color: #eee0c8;
+            height: 90vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            /* Mais REDUÇÃO: padding superior bem pequeno */
+            padding-top: 15px;
+            overflow: hidden;
+        }
+
+        .login-container {
+            /* Fundo bege da área do formulário */
+            background-color: #eee0c8;
+            max-width: 600px;
+            width: 100%;
+            /* REDUÇÃO: Diminui o padding vertical e garante que caiba */
+            padding: 20px 0;
+            margin-top: 15px; /* Menos margem superior */
+            flex-grow: 1; /* Permite que o container se ajuste ao espaço restante */
+            display: flex;
+            flex-direction: column;
+            justify-content: center; /* Centraliza o formulário verticalmente */
+        }
+
+        .form-box {
+            max-width: 350px;
+            margin: 0 auto;
+            /* REDUÇÃO: Padding vertical diminuído */
+            padding: 10px 30px;
+        }
+
+        .form-control {
+            /* Caixas arredondadas */
+            border-radius: 5px;
+
+            /* Mais REDUÇÃO: Diminui a margem abaixo dos campos */
+            margin-bottom: 5px;
+            background-color: white;
+            border: 1px solid #777;
+            padding: 5px 10px;
+            height: auto;
+            font-size: 0.9rem;
+        }
+
+        .form-label {
+            /* REDUÇÃO: Diminui margem da label */
+            margin-bottom: 3px;
+            font-size: 0.9rem;
+        }
+
+        .btn-login {
+            background-color: #70635e;
+            border-color: #70635e;
+            color: white;
+            width: 100%;
+            /* Borda arredondada no botão */
+            border-radius: 5px;
+            margin-bottom: 8px; /* Redução */
+            margin-top: 10px !important; /* Redução */
+            padding: 8px;
+        }
+
+        .link-esqueci {
+            display: block;
+            text-align: center;
+            font-size: 0.9rem;
+            color: #70635e;
+            text-decoration: none;
+            margin-bottom: 10px; /* Espaço após o link */
+        }
+
+        .link-criar-conta {
+            color: black;
+            border: 1px solid black;
+            padding: 5px 10px;
+            margin-top: 10px; /* Redução */
+            text-transform: uppercase;
+            font-weight: bold;
+            display: block;
+            text-align: center;
+            border-radius: 5px; /* Arredonda o botão "Criar Conta" */
+        }
+
+        .titulo-login {
+            text-align: center;
+            color: #70635e;
+            font-size: 2rem;
+            /* REDUÇÃO: Diminui margem */
+            margin-bottom: 20px;
+        }
+
+        .subtitulo-login {
+            text-align: center;
+            font-size: 1.2rem;
+            /* REDUÇÃO: Diminui margem */
+            margin-bottom: 10px;
+        }
+
+        h5.top-header {
+            text-align: center;
+            color: #eee0c8; /* Cor clara para aparecer no fundo escuro */
+            margin-bottom: 10px; /* Redução */
+        }
+    </style>
+</head>
+<body>
+
+<div class="login-container">
+    <div class="form-box">
+        <h3 class="titulo-login">Login</h3>
+        <p class="subtitulo-login">Entrar</p>
+        <form method="POST" action="/login">
+            <label class="form-label" for="emailUsuarioLogin">E-mail ou usuário</label>
+            <input type="text" id="emailUsuarioLogin" class="form-control" placeholder="">
+
+            <label class="form-label" for="senhaLogin">Senha</label>
+            <input type="password" id="senhaLogin" class="form-control" placeholder="">
+
+            <button type="submit" class="btn btn-login">Acessar conta</button>
+
+            <a href="#" class="link-esqueci">Esqueci a senha</a>
+
+            <a href="/register" class="link-criar-conta">Criar Conta</a>
+        </form>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

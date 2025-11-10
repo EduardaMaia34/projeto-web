@@ -8,16 +8,13 @@ import com.br.edu.ufersa.pw.projeto.livro.Model.repository.LivroRepository;
 import com.br.edu.ufersa.pw.projeto.review.Model.repository.ReviewRepository;
 import com.br.edu.ufersa.pw.projeto.user.Model.entity.Interesse;
 import com.br.edu.ufersa.pw.projeto.user.Model.repository.InteresseRepository;
+import com.br.edu.ufersa.pw.projeto.user.Service.UserService;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.List;
-import java.util.Optional;
-import java.util.NoSuchElementException;
-import java.util.Set;
-import java.util.Arrays;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
@@ -27,13 +24,15 @@ public class LivroService {
     private final InteresseRepository interesseRepository;
     private final ReviewRepository reviewRepository;
     private final BibliotecaRepository bibliotecaRepository;
+    private final UserService userService;
 
     @Autowired
-    public LivroService(LivroRepository livroRepository, InteresseRepository interesseRepository, ReviewRepository reviewRepository, BibliotecaRepository bibliotecaRepository) {
+    public LivroService(LivroRepository livroRepository, InteresseRepository interesseRepository, ReviewRepository reviewRepository, BibliotecaRepository bibliotecaRepository, UserService userService) {
         this.livroRepository = livroRepository;
         this.interesseRepository = interesseRepository;
         this.reviewRepository = reviewRepository;
         this.bibliotecaRepository = bibliotecaRepository;
+        this.userService = userService;
     }
 
     public ReturnLivroDTO toReturnLivroDTO(Livro livro) {
@@ -128,6 +127,38 @@ public class LivroService {
         String livroIdString = String.valueOf(id);
         bibliotecaRepository.deleteByLivroId(livroIdString);
         livroRepository.deleteById(id);
+    }
+
+    @Transactional(readOnly = true)
+    public List<Livro> buscarLivrosPorIds(List<Long> ids) {
+        if (ids == null || ids.isEmpty()) {
+            return List.of(); // Retorna lista vazia se não houver IDs
+        }
+        // Usa o método findAllById do JpaRepository
+        return livroRepository.findAllById(ids);
+    }
+
+    @Transactional(readOnly = true)
+    public List<Livro> buscarLivrosDeAmigos(Long userIdLogado) {
+        // 1. Define o ID dos amigos (quem o usuário logado segue)
+        List<Long> idsDosAmigos = userService.getIdsDosSeguidos(userIdLogado);
+
+        if (idsDosAmigos.isEmpty()) {
+            return List.of(); // Sem amigos para seguir, retorna vazio
+        }
+
+        // 2. Coleta IDs de Livros únicos dos amigos (exemplo com reviews e biblioteca)
+        Set<Long> livroIdsPopularesEntreAmigos = new HashSet<>();
+
+        for (Long amigoId : idsDosAmigos) {
+
+            List<Livro> todosLivros = livroRepository.findAll();
+            // Adiciona IDs dos primeiros 5 livros para simular popularidade
+            todosLivros.stream().limit(5).map(Livro::getId).forEach(livroIdsPopularesEntreAmigos::add);
+        }
+
+        // 3. Busca as entidades Livro reais a partir dos IDs únicos
+        return livroRepository.findAllById(livroIdsPopularesEntreAmigos);
     }
 
 }
