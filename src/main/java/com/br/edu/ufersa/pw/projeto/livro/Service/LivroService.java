@@ -55,7 +55,8 @@ public class LivroService {
                 livro.getDescricao(),
                 livro.getDataCriacao(),
                 interessesNomes,
-                livro.getUrlCapa() // 💡 Campo essencial para o frontend
+                livro.getUrlCapa(),
+                livro.getAno()
         );
     }
 
@@ -67,7 +68,12 @@ public class LivroService {
 
     @Transactional
     public Livro criarLivroComInteresses(InputLivroDTO dto) {
-        Livro novoLivro = new Livro(dto.getTitulo(), dto.getAutor(), dto.getDescricao());
+
+        Livro novoLivro = new Livro(dto.getTitulo(), dto.getAutor(), dto.getDescricao()); // Construtor com 3 argumentos
+
+        novoLivro.setUrlCapa(dto.getUrlCapa());
+        novoLivro.setAno(dto.getAno());
+
 
         if (dto.getInteressesIds() != null && dto.getInteressesIds().length > 0) {
             List<Long> idsList = Arrays.asList(dto.getInteressesIds());
@@ -87,6 +93,9 @@ public class LivroService {
         livroExistente.setTitulo(dto.getTitulo());
         livroExistente.setAutor(dto.getAutor());
         livroExistente.setDescricao(dto.getDescricao());
+        livroExistente.setAno(dto.getAno()); // Adicionado o mapeamento para ano
+
+        livroExistente.setUrlCapa(dto.getUrlCapa());
 
         livroExistente.getInteresses().clear();
 
