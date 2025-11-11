@@ -56,7 +56,7 @@ public class SecurityConfig {
                         ).hasAnyRole("USER", "ADMIN")
                         .requestMatchers(
                                 org.springframework.http.HttpMethod.POST, "/api/v1/biblioteca"
-                        ).hasAnyRole("USER", "ADMIN")
+                        ).permitAll()
                         .requestMatchers(
                                 org.springframework.http.HttpMethod.PUT, "/api/v1/reviews/**"
                         ).hasAnyRole("USER", "ADMIN")
@@ -88,6 +88,9 @@ public class SecurityConfig {
                         .requestMatchers(
                                 org.springframework.http.HttpMethod.GET, "/feed/**"
                         ).hasAnyRole("USER", "ADMIN")
+                        .requestMatchers(
+                                org.springframework.http.HttpMethod.GET, "/api/v1/biblioteca"
+                        ).permitAll()
 
 
                         .anyRequest().authenticated()

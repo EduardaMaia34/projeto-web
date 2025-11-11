@@ -14,6 +14,9 @@ public class InputLivroDTO {
     @NotBlank(message = "A descrição é obrigatória.")
     private String descricao;
 
+    private int ano;
+
+    private String urlCapa;
 
     private Long[] interessesIds;
 
@@ -29,9 +32,20 @@ public class InputLivroDTO {
     public String getDescricao() { return descricao; }
     public void setDescricao(String descricao) { this.descricao = descricao; }
 
+
+    public String getUrlCapa() { return urlCapa; }
+    public void setUrlCapa(String urlCapa) { this.urlCapa = urlCapa; }
+
     public Long[] getInteressesIds() { return interessesIds; }
 
     public void setInteressesIds(Long[] interessesIds) {
         this.interessesIds = interessesIds;
+    }
+
+    public int getAno() {
+        return ano;
+    }
+    public void setAno(int ano) {
+        this.ano = ano;
     }
 }

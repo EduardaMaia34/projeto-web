@@ -1,0 +1,562 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Minhas Reviews - Bookly</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Unicase:wght@400;700&display=swap" rel="stylesheet">
+
+    <style>
+        body {
+            background-color: #f5f4ed;
+            font-family: 'Cormorant Unicase', serif;
+            color: #594A47;
+        }
+
+        .header-bar { background-color: #DED2C2; box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075); }
+
+        .search-bar-hidden {
+            width: 0;
+            opacity: 0;
+            transition: width 0.3s ease-in-out, opacity 0.3s ease-in-out;
+            overflow: hidden;
+        }
+
+        .search-bar-visible-navbar {
+            width: 300px;
+            opacity: 1;
+            margin-right: 15px;
+            border-radius: 5px;
+        }
+
+        .profile-group-hidden {
+            display: none !important;
+            opacity: 0;
+            transition: opacity 0.3s ease-in-out;
+        }
+
+        .review-list-item {
+            display: flex;
+            padding: 15px 0;
+            border-bottom: 1px solid #ddd;
+        }
+        .review-list-item:last-child {
+            border-bottom: none;
+        }
+
+        .book-cover-review {
+            width: 70px;
+            height: 105px;
+            object-fit: cover;
+            margin-right: 15px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .review-content {
+            flex-grow: 1;
+        }
+
+        .review-actions {
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-start;
+            gap: 5px;
+        }
+
+        .star-rating {
+            font-size: 1rem;
+            color: gold;
+            margin-right: 10px;
+        }
+
+        .review-date-text {
+            font-size: 0.85rem;
+            color: #888;
+        }
+
+        .review-quote {
+            margin-top: 5px;
+            font-style: italic;
+            color: #594A47;
+            border-left: 2px solid #DED2C2;
+            padding-left: 8px;
+        }
+
+        .btn-link.text-dark, .btn-link {
+            color: #594A47 !important;
+        }
+
+        .custom-modal-header {
+            border-bottom: none;
+            padding: 1.5rem 1.5rem 0.5rem 1.5rem;
+            font-family: 'Cormorant Unicase', serif;
+        }
+        .custom-modal-content {
+            background-color: #f5f4ed;
+            color: #594A47;
+        }
+        .custom-modal-footer {
+            background-color: #DED2C2;
+            border-top: none;
+            padding: 10px;
+        }
+        .modal-title {
+            font-weight: 700;
+        }
+        .modal-review-text {
+            border: 1px solid #DED2C2;
+            padding: 10px;
+            background-color: white;
+        }
+        .modal-cover {
+            width: 90px;
+            height: 135px;
+            object-fit: cover;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        .modal-rating-input .star-rating {
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: gold;
+            transition: color 0.1s;
+        }
+        .modal-rating-input .star-rating i.bi-star {
+            color: lightgray !important;
+        }
+    </style>
+</head>
+<body>
+
+<nav class="navbar navbar-light header-bar p-3 mb-4">
+    <div class="container-fluid">
+        <a class="navbar-brand d-flex align-items-center" href="#">
+            <img src="https://imgur.com/HLvpHYn.png" alt="Bookly Logo" height="30" class="d-inline-block align-text-top me-2" style="height: 50px">
+        </a>
+
+        <div class="d-flex align-items-center ms-auto">
+
+            <div id="searchBarContainerNavbar" class="search-bar-hidden">
+                <input type="text" id="searchInputNavbar" class="form-control" placeholder="Pesquisar livros, autores...">
+            </div>
+
+            <button class="btn btn-link text-dark me-3" id="searchToggleBtnNavbar">
+                <i class="bi bi-search"></i>
+            </button>
+
+            <div id="profileGroupNavbar" class="d-flex align-items-center">
+
+                <a href="perfil.html" class="d-flex align-items-center me-3">
+                    <img src="https://imgur.com/pcf2EUA.png" alt="Perfil Mari" class="rounded-circle" style="width: 30px; height: 30px; object-fit: cover;">
+                </a>
+
+                <span class="fw-bold me-3">Mari</span>
+                <button class="btn btn-success me-3 d-flex align-items-center">
+                    <span style="font-size: 1.2rem; line-height: 1;">+</span> Livro
+                </button>
+                <button class="btn btn-link text-dark">
+                    <i class="bi bi-box-arrow-right"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+</nav>
+
+<div class="container" style="max-width: 800px;">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h3 id="pageTitle">Minhas Reviews</h3>
+
+        <div class="d-flex align-items-center">
+
+            <div id="searchBarEstanteContainer" class="search-bar-hidden">
+                <input type="text" id="searchInputEstante" class="form-control" placeholder="Pesquisar reviews, títulos...">
+            </div>
+
+            <button class="btn btn-link text-dark" id="searchToggleBtnEstante">
+                <i class="bi bi-search"></i>
+            </button>
+        </div>
+
+    </div>
+
+    <div id="reviewsListContainer" class="list-group list-group-flush">
+        <p class="text-muted">Carregando reviews...</p>
+    </div>
+
+    <div id="pagination-controls" class="d-flex justify-content-center mt-5">
+    </div>
+</div>
+
+<div class="modal fade" id="editReviewModal" tabindex="-1" aria-labelledby="editReviewModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content custom-modal-content">
+            <div class="modal-header custom-modal-header">
+                <h5 class="modal-title" id="editReviewModalLabel">Editar review</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-4">
+                <div class="d-flex">
+                    <img id="modalBookCover" class="modal-cover me-3" alt="Capa do Livro">
+                    <div>
+                        <h4 id="modalBookTitle" class="fw-bold"></h4>
+                        <p class="text-muted mb-2">Finalizado em: <span id="modalFinishedDate"></span></p>
+
+                        <div class="mb-3">
+                            <span class="d-block fw-bold mb-1">Sua nota:</span>
+                            <div id="modalRatingInput" class="modal-rating-input">
+                            </div>
+                            <input type="hidden" id="modalRatingValue" value="0">
+                        </div>
+                    </div>
+                </div>
+
+                <textarea id="modalReviewText" class="form-control mt-3 modal-review-text" rows="4" placeholder="Escreva sua review aqui..." style="resize: none;"></textarea>
+
+                <input type="hidden" id="modalReviewId" value="">
+            </div>
+            <div class="modal-footer custom-modal-footer d-flex justify-content-center">
+                <button type="button" class="btn btn-success fw-bold" id="modalSaveButton">Salvar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    const API_BASE_URL = 'http://localhost:8081/api/v1';
+    const CONTAINER = document.getElementById('reviewsListContainer');
+
+    // IMPORTANTE: Use um token real aqui. Assumimos que o 'sub' (subject) do JWT é o ID do usuário.
+    const MOCK_JWT_TOKEN = 'eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIyIiwidXNlcm5hbWUiOiJtYXJpM0BnbWFpbC5jb20iLCJyb2xlcyI6IlJPTEVfVVNFUiIsImlhdCI6MTc2Mjc4OTA4NCwiZXhwIjoxNzYyODc1NDg0fQ.F2mDRDRpA1N5zl1XLlj78q9AdJVBGhsohpPaq-r_f94';
+
+    let globalReviewsData = [];
+
+    // FUNÇÃO PARA SIMULAR A OBTENÇÃO DO USER ID DO TOKEN
+    function getUserIdFromToken() {
+        if (!MOCK_JWT_TOKEN) return null;
+        try {
+            const base64Url = MOCK_JWT_TOKEN.split('.')[1];
+            const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+            const jsonPayload = decodeURIComponent(atob(base64).split('').map(function(c) {
+                return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+            }).join(''));
+
+            const payload = JSON.parse(jsonPayload);
+            // Retorna o 'sub' (subject), que é o ID do usuário no seu JWT mockado ("2")
+            return payload.sub;
+        } catch (e) {
+            console.error("Erro ao decodificar o token:", e);
+            return null;
+        }
+    }
+
+
+    function renderStarsForInput(rating) {
+        const displayRating = parseFloat(rating) || 0;
+        let html = '';
+
+        for (let i = 1; i <= 5; i++) {
+            let iconClass;
+
+            if (i <= displayRating) {
+                iconClass = 'bi-star-fill';
+            } else if (i - 0.5 <= displayRating) {
+                iconClass = 'bi-star-half';
+            } else {
+                iconClass = 'bi-star';
+            }
+
+            html += `<span class="star-rating" data-rating="${i}"><i class="bi ${iconClass}"></i></span>`;
+        }
+        return html;
+    }
+
+    function displayStarRating(rating) {
+        const displayRating = parseFloat(rating) || 0;
+        let html = '';
+
+        for (let i = 1; i <= 5; i++) {
+            if (i <= displayRating) {
+                html += '<i class="bi bi-star-fill"></i>';
+            } else if (i - 0.5 <= displayRating) {
+                html += '<i class="bi bi-star-half"></i>';
+            } else {
+                html += '<i class="bi bi-star"></i>';
+            }
+        }
+        return html;
+    }
+
+
+    function formatDate(dateString) {
+        if (!dateString) return '';
+        const date = new Date(dateString);
+        return date.toLocaleDateString('pt-BR');
+    }
+
+    function createBookCardHtml(reviewData) {
+        const livro = reviewData.livro || {}; // Assume que o backend envia o objeto 'livro'
+        const reviewId = reviewData.id;
+
+        const titulo = livro.titulo || 'Livro Desconhecido';
+        const ano = livro.ano || '';
+        const coverUrl = livro.urlCapa || `https://placehold.co/70x105/A0A0A0/FFFFFF?text=Capa`;
+
+        const starsHtml = displayStarRating(reviewData.nota);
+
+        const reviewText = reviewData.review || "Nenhuma descrição fornecida.";
+        const dataFinalizacao = formatDate(reviewData.data);
+
+        return `
+            <div class="review-list-item">
+                <img src="${coverUrl}" class="book-cover-review" alt="Capa de ${titulo}">
+
+                <div class="review-content">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0 fw-bold">
+                            ${titulo}
+                            <span class="text-muted fw-normal">${ano}</span>
+                        </h5>
+                    </div>
+
+                    <div class="d-flex align-items-center mt-1 mb-2">
+                        <span class="star-rating">${starsHtml}</span>
+                        <span class="review-date-text">Finalizado em ${dataFinalizacao}</span>
+                    </div>
+
+                    <p class="review-quote">${reviewText}</p>
+                </div>
+
+                <div class="review-actions text-end ms-3">
+                    <button class="btn btn-link p-0 text-dark" title="Editar Review" onclick="openEditModal('${reviewId}')">
+                        <i class="bi bi-pencil-square"></i>
+                    </button>
+                    <button class="btn btn-link p-0 text-dark" title="Excluir Review" onclick="deleteReview('${reviewId}', '${titulo}')">
+                        <i class="bi bi-trash"></i>
+                    </button>
+                </div>
+            </div>
+        `;
+    }
+
+    function loadReviews(reviews) {
+        globalReviewsData = reviews;
+        CONTAINER.innerHTML = '';
+        if (!reviews || reviews.length === 0) {
+            CONTAINER.innerHTML = '<p class="text-muted">Você ainda não fez nenhuma review.</p>';
+            return;
+        }
+        reviews.forEach(review => {
+            CONTAINER.innerHTML += createBookCardHtml(review);
+        });
+    }
+
+    function updateStarDisplay(rating) {
+        const ratingInputContainer = document.getElementById('modalRatingInput');
+        ratingInputContainer.innerHTML = renderStarsForInput(rating);
+    }
+
+    function setupRatingInput() {
+        const ratingInputContainer = document.getElementById('modalRatingInput');
+        const ratingInput = document.getElementById('modalRatingValue');
+
+        ratingInputContainer.addEventListener('click', (event) => {
+            let target = event.target;
+
+            if (target.tagName === 'I') {
+                target = target.closest('.star-rating');
+            }
+
+            if (!target || !target.classList.contains('star-rating')) return;
+
+            const starValue = parseInt(target.getAttribute('data-rating'));
+            const currentRating = parseFloat(ratingInput.value);
+
+            let newRating;
+
+            if (currentRating >= starValue) {
+                newRating = starValue - 0.5;
+            }
+            else if (currentRating === starValue - 0.5) {
+                newRating = starValue;
+            }
+            else {
+                newRating = starValue;
+            }
+
+            if (newRating < 0) newRating = 0;
+            if (newRating > 5) newRating = 5;
+
+            ratingInput.value = newRating;
+            updateStarDisplay(newRating);
+        });
+    }
+
+    function openEditModal(reviewId) {
+        const review = globalReviewsData.find(r => r.id == reviewId);
+
+        if (!review) {
+            console.error("Review não encontrada para o ID:", reviewId);
+            return;
+        }
+
+        const livro = review.livro || {};
+
+        document.getElementById('modalBookCover').src = livro.urlCapa || 'https://placehold.co/90x135/A0A0A0/FFFFFF?text=Capa';
+        document.getElementById('modalBookTitle').textContent = `${livro.titulo || 'Livro Desconhecido'} ${livro.ano || ''}`;
+        document.getElementById('modalFinishedDate').textContent = formatDate(review.data);
+
+        const currentRating = review.nota || 0;
+        document.getElementById('modalRatingValue').value = currentRating;
+        updateStarDisplay(currentRating);
+
+        document.getElementById('modalReviewText').value = review.review || '';
+        document.getElementById('modalReviewId').value = reviewId;
+
+        const editModal = new bootstrap.Modal(document.getElementById('editReviewModal'));
+        editModal.show();
+    }
+
+    function setupSaveButton() {
+        document.getElementById('modalSaveButton').addEventListener('click', async () => {
+            const reviewId = document.getElementById('modalReviewId').value;
+            const newRating = document.getElementById('modalRatingValue').value;
+            const newReviewText = document.getElementById('modalReviewText').value;
+
+            const updatePayload = {
+                nota: parseFloat(newRating),
+                review: newReviewText
+            };
+
+            const editModal = bootstrap.Modal.getInstance(document.getElementById('editReviewModal'));
+            const token = MOCK_JWT_TOKEN;
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/reviews/${reviewId}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify(updatePayload)
+                });
+
+                if (response.ok) {
+                    editModal.hide();
+                    await fetchReviews();
+                    console.log(`Review ID ${reviewId} salva com sucesso.`);
+                    alert('Review atualizada com sucesso!');
+                } else {
+                    const errorData = await response.json().catch(() => ({ message: 'Resposta do servidor inválida.' }));
+                    const errorMessage = errorData.message || 'Erro desconhecido ao salvar a review.';
+                    alert(`Falha ao salvar a review: ${response.status} - ${errorMessage}`);
+                }
+            } catch (error) {
+                console.error('Erro na requisição PUT:', error);
+                alert('Erro de conexão com o servidor ao tentar salvar.');
+            }
+        });
+    }
+
+    async function deleteReview(reviewId, livroTitulo) {
+        if (!confirm(`Tem certeza que deseja deletar a review do livro "${livroTitulo}"? Essa ação é irreversível.`)) {
+            return;
+        }
+
+        const token = MOCK_JWT_TOKEN;
+
+        try {
+            const response = await fetch(`${API_BASE_URL}/reviews/${reviewId}`, {
+                method: 'DELETE',
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+
+            if (response.status === 204 || response.ok) {
+                alert(`Review de "${livroTitulo}" deletada com sucesso!`);
+                await fetchReviews();
+            } else {
+                const errorData = await response.json().catch(() => ({ message: 'Resposta do servidor inválida.' }));
+                const errorMessage = errorData.message || 'Erro desconhecido ao deletar a review.';
+                alert(`Falha ao deletar a review: ${response.status} - ${errorMessage}`);
+            }
+        } catch (error) {
+            console.error('Erro na requisição DELETE:', error);
+            alert('Erro de conexão com o servidor ao tentar deletar.');
+        }
+    }
+
+
+    async function fetchReviews() {
+        // OBTÉM O ID DO USUÁRIO DO TOKEN (Substituindo o endpoint /minhas-reviews)
+        const userId = getUserIdFromToken();
+
+        if (!userId) {
+            CONTAINER.innerHTML = '<p class="text-danger">ERRO: Token inválido ou não autenticado (Não foi possível obter o ID do usuário).</p>';
+            return;
+        }
+
+        // USA O ENDPOINT EXISTENTE: /usuario/{userId}
+        const url = `${API_BASE_URL}/reviews/usuario/${userId}`;
+        const token = MOCK_JWT_TOKEN;
+
+        CONTAINER.innerHTML = '<p class="text-muted">Carregando reviews...</p>';
+        const headers = { 'Authorization': `Bearer ${token}` };
+
+        try {
+            const response = await fetch(url, {
+                method: 'GET',
+                headers: headers
+            });
+
+            if (response.ok) {
+                let reviewsData = await response.json();
+                loadReviews(reviewsData);
+
+            } else if (response.status === 401 || response.status === 403) {
+                CONTAINER.innerHTML = '<p class="text-danger">Acesso Negado. Seu token pode ter expirado ou é inválido. (403/401).</p>';
+            } else {
+                CONTAINER.innerHTML = `<p class="text-danger">Erro ao carregar as reviews: ${response.status}.</p>`;
+            }
+        } catch (error) {
+            CONTAINER.innerHTML = '<p class="text-danger">Erro de conexão com o servidor.</p>';
+            console.error('Erro na requisição das reviews:', error);
+        }
+    }
+
+    function setupNavbarSearch() {
+        const searchToggleBtnNavbar = document.getElementById('searchToggleBtnNavbar');
+        const searchBarContainerNavbar = document.getElementById('searchBarContainerNavbar');
+        const profileGroupNavbar = document.getElementById('profileGroupNavbar');
+        const searchInputNavbar = document.getElementById('searchInputNavbar');
+
+        if (searchToggleBtnNavbar) {
+            searchToggleBtnNavbar.addEventListener('click', () => {
+                const isVisible = searchBarContainerNavbar.classList.toggle('search-bar-visible-navbar');
+
+                if (isVisible) {
+                    profileGroupNavbar.classList.add('profile-group-hidden');
+                    setTimeout(() => {
+                        searchInputNavbar.focus();
+                    }, 300);
+                } else {
+                    profileGroupNavbar.classList.remove('profile-group-hidden');
+                    searchInputNavbar.value = '';
+                }
+            });
+        }
+    }
+
+
+    document.addEventListener('DOMContentLoaded', () => {
+        fetchReviews();
+        setupNavbarSearch();
+        setupRatingInput();
+        setupSaveButton();
+    });
+</script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+</body>
+</html>
