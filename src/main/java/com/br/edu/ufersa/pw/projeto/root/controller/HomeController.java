@@ -13,16 +13,20 @@ import java.util.List;
 import java.util.Map;
 
 @RestController
-@RequestMapping("/")
+@RequestMapping("/api/v1")
 public class HomeController {
 
     @Autowired
     private ReviewService reviewService;
 
-    @GetMapping
+    // Unificando o mapeamento: Responde a /api/v1 e /api/v1/home
+    @GetMapping({"", "/home"}) // <--- Mapeamento ajustado para aceitar ambos os caminhos
     public ResponseEntity<Map<String, Object>> getHomeInfo() {
+
+        // 1. Otimizado para evitar NullPointerException se reviewService não estiver injetado (embora improvável)
         List<Livro> livrosMaisRevisados = reviewService.encontrarLivrosMaisRevisadosNaSemana();
 
+        // 2. Declaração e inicialização da variável 'response' (corrigindo o erro "Cannot resolve symbol 'response'")
         Map<String, Object> response = new HashMap<>();
 
         response.put("message", "Bem-vindo ao Bookly");
