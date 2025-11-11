@@ -3,14 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Menu Perfil - Bookly</title>
+    <title>Menu Perfil - Bookly (Visual da Imagem Modificado)</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
 
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Unicase:wght@400;700&display=swap" rel-stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Unicase:wght@400;700&display=swap" rel="stylesheet">
 
     <style>
-        /* CSS Consistente com os outros arquivos */
+        /* CSS Consistente com os outros arquivos - Copiado do perfil.html */
         body {
             background-color: #f5f4ed; /* Bege claro */
             font-family: 'Cormorant Unicase', serif;
@@ -22,7 +22,7 @@
             box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
         }
 
-        /* ESTILOS DA NAVBAR DINÂMICA */
+        /* ESTILOS DA NAVBAR DINÂMICA (Manter para a navbar) */
         .search-bar-hidden {
             width: 0;
             opacity: 0;
@@ -53,8 +53,6 @@
             color: #594A47 !important;
         }
 
-        /* REMOVIDO: .profile-card (Para não ter fundo branco) */
-
         .profile-img {
             width: 100px;
             height: 100px;
@@ -69,9 +67,11 @@
             border-radius: 50%;
             object-fit: cover;
             border: 3px solid #DED2C2;
+            width: 90px; /* Reduzido para bater mais com a imagem */
+            height: 90px;
         }
 
-        /* NOVO ESTILO PARA O BOTÃO/SPAN DE EDITAR PERFIL */
+        /* Botão/span de EDITAR PERFIL */
         .edit-profile-tag {
             background-color: #DED2C2;
             color: #594A47;
@@ -81,38 +81,90 @@
             font-weight: 700;
             cursor: pointer;
             margin-left: 10px;
-            white-space: nowrap; /* Não quebra a linha */
+            white-space: nowrap;
         }
 
-        /* NOVO ESTILO PARA AS TAGS DE INTERESSE */
-        .interest-tag {
-            background-color: #387638; /* Verde escuro firme */
-            color: #DED2C2; /* Texto claro */
+        /* NOVO: Botões de Ação na imagem (Concluído/Cancelar) */
+        .action-tag-success {
+            background-color: #7AA27D; /* Verde (Concluído) */
+            color: white;
+            padding: 2px 8px;
+            border-radius: 5px;
+            font-size: 0.9rem;
+            font-weight: 700;
+            cursor: pointer;
+            margin-left: 10px;
+            /* Garante que o link não tenha sublinhado */
+            text-decoration: none;
+        }
+
+        .action-tag-danger {
+            background-color: #C85F5F; /* Vermelho (Cancelar) */
+            color: white;
+            padding: 2px 8px;
+            border-radius: 5px;
+            font-size: 0.9rem;
+            font-weight: 700;
+            cursor: pointer;
+            margin-left: 10px;
+            /* Garante que o link não tenha sublinhado */
+            text-decoration: none;
+        }
+
+        /* NOVO ESTILO PARA AS TAGS DE INTERESSE (Botões com ícones) */
+        .interest-tag-button {
+            background-color: #7AA27D; /* Verde mais claro na imagem */
+            color: white;
             padding: 5px 10px;
             margin-right: 10px;
             border-radius: 5px;
             font-weight: 700;
-            display: inline-block;
-            cursor: default; /* Não parece um link/botão */
-        }
-
-        .stats-item {
-            display: inline-block;
-            margin-right: 1.5rem;
-            text-align: center;
-        }
-        /* Ajuste do espaçamento entre as stats para simular o layout da imagem */
-        .stats-container {
-            display: flex;
+            display: inline-flex;
             align-items: center;
-            margin-left: 50px; /* Espaçamento para a direita da descrição */
+            border: none;
+            font-size: 0.9rem;
+            height: 35px; /* Altura fixa */
         }
-        .stats-item {
-            margin-right: 2.5rem; /* Aumenta o espaço entre as colunas de stats */
+        .interest-tag-button i {
+            margin-left: 5px;
+            font-size: 1rem;
         }
 
+        /* NOVO: Tag de Gênero para simular a cor do Suspense */
+        .interest-tag-suspense {
+            background-color: #C85F5F; /* Vermelho mais escuro/marrom */
+            color: white;
+            padding: 5px 10px;
+            margin-right: 10px;
+            border-radius: 5px;
+            font-weight: 700;
+            display: inline-flex;
+            align-items: center;
+            border: none;
+            font-size: 0.9rem;
+            height: 35px;
+        }
+
+        /* NOVO: Botão de adicionar tag */
+        .add-tag-button {
+            background-color: #7AA27D;
+            color: white;
+            border-radius: 50%;
+            width: 35px;
+            height: 35px;
+            display: inline-flex;
+            justify-content: center;
+            align-items: center;
+            border: none;
+            font-size: 1.5rem;
+            line-height: 1;
+        }
 
         /* ESTILO DOS LIVROS */
+        .book-cover-container {
+            position: relative;
+            display: inline-block;
+        }
         .book-cover {
             width: 150px;
             height: 225px;
@@ -125,44 +177,54 @@
             transform: scale(1.05);
         }
 
+        /* Ícone de fechar nos livros (NOVO) */
+        .remove-book-icon {
+            position: absolute;
+            top: 5px;
+            right: 5px;
+            background-color: #C85F5F;
+            color: white;
+            border-radius: 50%;
+            width: 25px;
+            height: 25px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 0.8rem;
+            font-weight: bold;
+            cursor: pointer;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+            z-index: 10;
+        }
+
+        /* Estilo para o placeholder do livro (NOVO) */
+        .book-placeholder {
+            width: 150px;
+            height: 225px;
+            background-color: #DED2C2;
+            border-radius: 4px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 2rem;
+            color: #594A47;
+        }
+
         .star-rating {
             font-size: 0.9rem;
             color: gold;
             display: block;
         }
 
-        /* ESTILOS DA SIDEBAR E HOVER */
-        .sidebar-link {
-            display: flex;
-            align-items: center;
-            padding: 1rem !important;
-            margin-bottom: 0.75rem !important;
-            color: #594A47 !important;
-            text-decoration: none;
-            background-color: transparent;
-            border-radius: 5px;
-            transition: background-color 0.2s, color 0.2s, box-shadow 0.2s, border 0.2s;
-            font-weight: 700;
-            border: 1px solid transparent;
+        /* ESTILOS DA SIDEBAR (Removidos/Inativos) */
+        .sidebar-item-container {
+            /* Mantenho a classe para evitar erros, mas não será usada */
+        }
+        .sidebar-link-image {
+            /* Mantenho a classe para evitar erros, mas não será usada */
         }
 
-        .sidebar-link:hover {
-            background-color: #594A47;
-            color: #DED2C2 !important;
-            box-shadow: 0 0 5px rgba(89, 74, 71, 0.5);
-            border: 1px #DED2C2;
-        }
-
-        .sidebar-link:hover .sidebar-icon {
-            color: #DED2C2;
-        }
-
-        .sidebar-icon {
-            margin-right: 10px;
-            font-size: 1.2rem;
-            color: #594A47;
-            transition: color 0.2s;
-        }
     </style>
 </head>
 <body>
@@ -170,14 +232,13 @@
 <nav class="navbar navbar-light header-bar p-3 mb-4">
     <div class="container-fluid">
         <a class="navbar-brand d-flex align-items-center" href="#">
-            <img src="https://imgur.com/HLvpHYn.png" alt="Bookly Logo" height="30" class="d-inline-block align-text-top me-2" style="height: 50px">
+            <div class="d-flex align-items-center me-2" style="font-size: 2rem; font-weight: 700;">
+                <img src="https://imgur.com/HLvpHYn.png" alt="Bookly Logo" height="30" class="d-inline-block align-text-top me-2" style="height: 50px">
+                Bookly
+            </div>
         </a>
 
         <div class="d-flex align-items-center ms-auto">
-
-            <div id="searchBarContainerNavbar" class="search-bar-hidden">
-                <input type="text" id="searchInputNavbar" class="form-control" placeholder="Pesquisar livros, autores...">
-            </div>
 
             <button class="btn btn-link text-dark me-3" id="searchToggleBtnNavbar">
                 <i class="bi bi-search"></i>
@@ -185,7 +246,7 @@
 
             <div id="profileGroupNavbar" class="d-flex align-items-center">
 
-                <a href="perfil.html" class="d-flex align-items-center me-3">
+                <a href="#" class="d-flex align-items-center me-3">
                     <img src="https://imgur.com/pcf2EUA.png" alt="Perfil Mari" class="rounded-circle" style="width: 30px; height: 30px; object-fit: cover;">
                 </a>
 
@@ -202,9 +263,9 @@
 </nav>
 
 <div class="container">
-    <div class="row">
+    <div class="row justify-content-center">
 
-        <div class="col-lg-7">
+        <div class="col-lg-10">
 
             <div class="d-flex align-items-start mb-5">
 
@@ -213,8 +274,9 @@
                 <div class="d-flex flex-column pt-3">
                     <div class="d-flex align-items-baseline mb-2">
                         <h4 class="mb-0 fw-bold me-2" style="font-size: 2rem;">Mari</h4>
-                        <a href="editarPerfil.html">
-                        <span class="edit-profile-tag">EDITAR PERFIL</span></a>
+
+                        <a href="perfil.html" class="action-tag-success text-decoration-none">Concluído</a>
+                        <a href="perfil.html" class="action-tag-danger text-decoration-none">Cancelar</a>
                     </div>
 
                     <p class="text-muted small mb-3" style="font-size: 1.1rem; line-height: 1.2; text-transform: uppercase;">
@@ -222,74 +284,52 @@
                     </p>
 
                     <div class="d-flex mt-2 mb-4">
-                        <span class="interest-tag">Romance</span>
-                        <span class="interest-tag">Ficção Científica</span>
-                        <span class="interest-tag">Suspense</span>
+                        <button class="interest-tag-button">
+                            Romance <i class="bi bi-x"></i>
+                        </button>
+                        <button class="interest-tag-button">
+                            Ficção Científica <i class="bi bi-x"></i>
+                        </button>
+                        <button class="interest-tag-suspense">
+                            Suspense <i class="bi bi-x"></i>
+                        </button>
+                        <button class="add-tag-button">+</button>
                     </div>
                 </div>
-
-                <div class="stats-container ms-auto pt-3">
-                    <div class="stats-item">
-                        <h5 class="mb-0 fw-bold">40</h5>
-                        <small class="text-muted">Lidos</small>
-                    </div>
-                    <div class="stats-item">
-                        <h5 class="mb-0 fw-bold">10</h5>
-                        <small class="text-muted">Este ano</small>
-                    </div>
-                    <div class="stats-item">
-                        <h5 class="mb-0 fw-bold">90</h5>
-                        <small class="text-muted">Salvos</small>
-                    </div>
-                </div>
-
             </div>
 
             <h5 class="mb-3 fw-bold">Favoritos</h5>
-            <div class="row mb-5 gx-2">
+            <div class="row mb-5 gx-4">
 
                 <div class="col-6 col-md-3 mb-4 text-center">
-                    <img src="https://i.imgur.com/k9b8f2G.png" class="book-cover mb-1" alt="Capa Vermelho, Branco e Sangue Azul">
+                    <div class="book-cover-container">
+                        <span class="remove-book-icon">X</span>
+                        <img src="https://i.imgur.com/k9b8f2G.png" class="book-cover mb-1" alt="Capa Vermelho, Branco e Sangue Azul">
+                    </div>
                     <span class="star-rating">★★★★☆</span>
                 </div>
 
                 <div class="col-6 col-md-3 mb-4 text-center">
-                    <img src="https://i.imgur.com/eBv6d1P.png" class="book-cover mb-1" alt="Capa O Livro da Capa Verde">
+                    <div class="book-cover-container">
+                        <span class="remove-book-icon">X</span>
+                        <img src="https://i.imgur.com/eBv6d1P.png" class="book-cover mb-1" alt="Capa O Livro da Capa Verde">
+                    </div>
                     <span class="star-rating">★★★★☆</span>
                 </div>
 
                 <div class="col-6 col-md-3 mb-4 text-center">
-                    <img src="https://i.imgur.com/pY40i0A.png" class="book-cover mb-1" alt="Capa A Hipótese do Amor">
+                    <div class="book-cover-container">
+                        <span class="remove-book-icon">X</span>
+                        <img src="https://i.imgur.com/pY40i0A.png" class="book-cover mb-1" alt="Capa A Hipótese do Amor">
+                    </div>
                     <span class="star-rating">★★★☆☆</span>
                 </div>
 
                 <div class="col-6 col-md-3 mb-4 text-center">
-                    <img src="https://i.imgur.com/j4C6s9x.png" class="book-cover mb-1" alt="Capa Verity">
-                    <span class="star-rating">★★★☆☆</span>
+                    <div class="book-cover-container">
+                        <div class="book-placeholder">+</div>
+                    </div>
                 </div>
-            </div>
-
-            <h5 class="mb-3 fw-bold">Em andamento</h5>
-            <div class="row gx-2">
-                <div class="col-6 col-md-3 mb-4 text-center">
-                    <img src="https://i.imgur.com/s6n5F5P.png" class="book-cover mb-2" alt="Capa Daisy Jones & The Six">
-                </div>
-            </div>
-        </div>
-
-        <div class="col-lg-4">
-            <div class="p-3">
-                <a href="Biblioteca.html" class="sidebar-link text-decoration-none">
-                    <span class="sidebar-icon bi bi-bookmarks-fill"></span> Biblioteca
-                </a>
-
-                <a href="Estante.html" class="sidebar-link text-decoration-none">
-                    <span class="sidebar-icon bi bi-book-fill"></span> Lidos
-                </a>
-
-                <a href="MinhasReviews.html" class="sidebar-link text-decoration-none">
-                    <span class="sidebar-icon bi bi-pencil-square"></span> Reviews
-                </a>
             </div>
         </div>
 
