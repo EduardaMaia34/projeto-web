@@ -31,44 +31,82 @@
         }
         .star-rating {
             font-size: 1.2rem;
-            color: gold; /* Define a cor principal como gold */
+            color: gold;
             margin-top: 5px;
             display: block;
         }
-        /* Estrela vazia em cinza claro */
         .star-rating i.bi-star {
             color: lightgray !important;
         }
-
+        .modal-footer-custom {
+            background-color: #DED2C2;
+            justify-content: center;
+            padding: 15px;
+        }
+        .btn-success {
+            background-color: #7AA27D;
+            border-color: #7AA27D;
+            color: white;
+            font-weight: 700;
+        }
+        #modalRatingInput .star-icon {
+            cursor: pointer;
+            transition: color 0.1s;
+        }
         .search-bar-hidden {
             width: 0;
             opacity: 0;
             transition: width 0.3s ease-in-out, opacity 0.3s ease-in-out;
             overflow: hidden;
         }
-
         .search-bar-visible-navbar {
             width: 300px;
             opacity: 1;
             margin-right: 15px;
             border-radius: 5px;
         }
-
         .profile-group-hidden {
             display: none !important;
             opacity: 0;
             transition: opacity 0.3s ease-in-out;
         }
-
         .search-bar-visible-estante {
             width: 300px;
             opacity: 1;
             margin-left: 15px;
             border-radius: 5px;
         }
-
         .btn-link.text-dark, .btn-link {
             color: #594A47 !important;
+        }
+
+        #searchResultList {
+            max-height: 250px;
+            overflow-y: auto;
+            border: 1px solid #DED2C2;
+            background-color: white;
+            border-radius: 5px;
+            margin-top: 10px;
+        }
+        .result-item {
+            padding: 8px 15px;
+            cursor: pointer;
+            border-bottom: 1px solid #eee;
+            transition: background-color 0.2s;
+        }
+        .result-item:hover {
+            background-color: #f0f0f0;
+        }
+        .result-item.selected {
+            background-color: #DED2C2;
+            font-weight: bold;
+        }
+        .result-cover {
+            width: 30px;
+            height: 45px;
+            object-fit: cover;
+            margin-right: 10px;
+            border-radius: 2px;
         }
     </style>
 </head>
@@ -97,7 +135,9 @@
                 </a>
 
                 <span class="fw-bold me-3">Mari</span>
-                <button class="btn btn-success me-3 d-flex align-items-center">
+                <button class="btn btn-success me-3 d-flex align-items-center"
+                        data-bs-toggle="modal"
+                        data-bs-target="#modalreview">
                     <span style="font-size: 1.2rem; line-height: 1;">+</span> Livro
                 </button>
                 <button class="btn btn-link text-dark">
@@ -133,11 +173,277 @@
     </div>
 </div>
 
+<div class="modal fade" id="modalreview" tabindex="-1" aria-labelledby="modalreviewLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content" style="background-color: #f5f4ed; color: #594A47; border-radius: 10px;">
+
+            <div class="modal-header border-0 pb-0">
+                <h5 class="modal-title fw-bold" id="modalreviewLabel" style="font-size: 1.5rem;">eu li...</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+
+            <div class="modal-body pt-2 px-4">
+
+                <div class="mb-3">
+                    <label for="livroSearchInput" class="form-label fw-bold">Pesquisar Livro</label>
+                    <div class="input-group">
+                        <input type="text"
+                               class="form-control"
+                               id="livroSearchInput"
+                               placeholder="Título ou Autor..."
+                               oninput="debounceSearch()">
+                        <button class="btn btn-outline-secondary" type="button" onclick="searchLivros()">
+                            <i class="bi bi-search"></i>
+                        </button>
+                    </div>
+                    <div id="searchResultList">
+                        <p class="p-2 text-muted small mb-0">Comece a digitar para buscar um livro.</p>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-4 d-flex flex-column align-items-center">
+                        <img id="modalBookCover"
+                             src="https://placehold.co/100x150/DED2C2/A0918D?text=Capa"
+                             class="mb-1"
+                             style="width: 100px; height: 150px; border-radius: 5px; object-fit: cover; border: 1px solid #DED2C2;">
+
+                        <p class="text-muted small mt-2 fw-bold" id="modalBookTitleDisplay">Nenhum Livro</p>
+
+                        <small class="d-block text-center mt-1 text-muted">Sua nota:</small>
+                        <div id="modalRatingInput" class="d-flex justify-content-center" style="color: gold; font-size: 1.2rem;">
+                            <span class="star-icon" data-rating="1"><i class="bi bi-star"></i></span>
+                            <span class="star-icon" data-rating="2"><i class="bi bi-star"></i></span>
+                            <span class="star-icon" data-rating="3"><i class="bi bi-star"></i></span>
+                            <span class="star-icon" data-rating="4"><i class="bi bi-star"></i></span>
+                            <span class="star-icon" data-rating="5"><i class="bi bi-star"></i></span>
+                        </div>
+                        <input type="hidden" id="modalRatingValue" value="0">
+                        <input type="hidden" id="modalLivroId" value="0">
+                    </div>
+
+                    <div class="col-8">
+                        <p class="text-muted small mb-1">Finalizado em: <span id="modalFinishedDate">10/09/2025</span></p>
+                        <textarea id="modalReviewText" class="form-control" rows="8" placeholder="Adicionar review..." style="resize: none; background-color: white; border: 1px solid #DED2C2;"></textarea>
+                    </div>
+                </div>
+            </div>
+
+            <div class="modal-footer modal-footer-custom border-0">
+                <button type="button" class="btn btn-success fw-bold" id="modalSaveButton">Salvar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script>
     const API_BASE_URL = 'http://localhost:8081/api/v1';
     const CONTAINER = document.getElementById('bookListContainer');
 
     const MOCK_JWT_TOKEN = 'eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIyIiwidXNlcm5hbWUiOiJtYXJpM0BnbWFpbC5jb20iLCJyb2xlcyI6IlJPTEVfVVNFUiIsImlhdCI6MTc2Mjg3Nzk3MywiZXhwIjoxNzYyOTY0MzczfQ.sRwC1qqycNrCqb0FSX43AIUWG2tj5O7P0uRF_xdrZBE';
+
+    let searchTimeout;
+
+    function debounceSearch() {
+        clearTimeout(searchTimeout);
+        searchTimeout = setTimeout(() => {
+            searchLivros();
+        }, 300);
+    }
+
+    async function searchLivros() {
+        const query = document.getElementById('livroSearchInput').value.trim();
+        const resultsContainer = document.getElementById('searchResultList');
+
+        if (query.length < 3) {
+            resultsContainer.innerHTML = '<p class="p-2 text-muted small mb-0">Comece a digitar para buscar um livro.</p>';
+            return;
+        }
+
+        resultsContainer.innerHTML = '<p class="p-2 text-muted small mb-0">Buscando...</p>';
+
+        try {
+            const response = await fetch(`${API_BASE_URL}/livros?titulo=${encodeURIComponent(query)}`);
+
+            if (response.ok) {
+                const livros = await response.json();
+                renderSearchResults(livros);
+            } else {
+                resultsContainer.innerHTML = '<p class="p-2 text-danger small mb-0">Erro ao buscar livros.</p>';
+            }
+        } catch (error) {
+            console.error('Erro na pesquisa:', error);
+            resultsContainer.innerHTML = '<p class="p-2 text-danger small mb-0">Erro de conexão com a API.</p>';
+        }
+    }
+
+    function renderSearchResults(livros) {
+        const resultsContainer = document.getElementById('searchResultList');
+        resultsContainer.innerHTML = '';
+
+        if (livros.length === 0) {
+            resultsContainer.innerHTML = '<p class="p-2 text-muted small mb-0">Nenhum livro encontrado.</p>';
+            return;
+        }
+
+        livros.forEach(livro => {
+            const placeholderUrl = 'https://placehold.co/100x150/DED2C2/A0918D?text=Capa';
+            const coverUrl = livro.urlCapa && livro.urlCapa.trim() !== '' ? livro.urlCapa : placeholderUrl;
+
+            const html = `
+                <div class="result-item d-flex align-items-center"
+                     data-id="${livro.id}"
+                     data-titulo="${livro.titulo}"
+                     data-capa="${coverUrl}"
+                     onclick="selectLivro(this)">
+                    <img src="${coverUrl}" class="result-cover">
+                    <span>${livro.titulo} <small class="text-muted">(${livro.autor})</small></span>
+                </div>
+            `;
+            resultsContainer.innerHTML += html;
+        });
+    }
+
+    function selectLivro(element) {
+        const livroId = element.getAttribute('data-id');
+        const titulo = element.getAttribute('data-titulo');
+        const capaUrl = element.getAttribute('data-capa') || 'https://placehold.co/100x150/DED2C2/A0918D?text=+';
+
+        document.querySelectorAll('#searchResultList .result-item').forEach(item => item.classList.remove('selected'));
+        element.classList.add('selected');
+
+        document.getElementById('modalLivroId').value = livroId;
+        document.getElementById('modalBookTitleDisplay').textContent = titulo;
+
+        const capaElement = document.getElementById('modalBookCover');
+        capaElement.src = capaUrl;
+        capaElement.onerror = () => {
+            capaElement.src = 'https://placehold.co/100x150/DED2C2/A0918D?text=+';
+        };
+
+        document.getElementById('searchResultList').innerHTML =
+            '<p class="p-2 text-muted small mb-0">Livro selecionado com sucesso. Salve a review!</p>';
+    }
+
+
+    function updateStarDisplay(rating) {
+        const stars = document.querySelectorAll('#modalRatingInput .star-icon');
+        const displayRating = parseFloat(rating) || 0;
+
+        stars.forEach((starContainer, index) => {
+            const starValue = index + 1;
+            const icon = starContainer.querySelector('i');
+
+            if (starValue <= displayRating) {
+                icon.className = 'bi bi-star-fill';
+            } else if (starValue - 0.5 <= displayRating) {
+                icon.className = 'bi bi-star-half';
+            } else {
+                icon.className = 'bi bi-star';
+            }
+        });
+    }
+
+    function setupRatingInput() {
+        const ratingInputContainer = document.getElementById('modalRatingInput');
+        const ratingInput = document.getElementById('modalRatingValue');
+
+        ratingInputContainer.addEventListener('click', (event) => {
+            let target = event.target.closest('.star-icon');
+            if (!target) return;
+
+            const starValue = parseInt(target.getAttribute('data-rating'));
+            const currentRating = parseFloat(ratingInput.value);
+            const rect = target.getBoundingClientRect();
+            const x = event.clientX - rect.left;
+            const width = rect.width;
+
+            let newRating;
+
+            if (x < width / 2) {
+                newRating = starValue - 0.5;
+            } else {
+                newRating = starValue;
+            }
+
+            if (currentRating === newRating) {
+                newRating = newRating - 0.5;
+            }
+            if (newRating < 0) newRating = 0;
+
+            ratingInput.value = newRating;
+            updateStarDisplay(newRating);
+        });
+    }
+
+    async function saveReview() {
+        const reviewText = document.getElementById('modalReviewText').value;
+        const nota = parseFloat(document.getElementById('modalRatingValue').value);
+        const livroId = document.getElementById('modalLivroId').value;
+
+        if (livroId === '0') {
+            alert('Por favor, selecione um livro para criar a review.');
+            return;
+        }
+        if (nota === 0) {
+            alert('Por favor, atribua uma nota ao livro.');
+            return;
+        }
+
+        const payload = {
+            review: reviewText,
+            nota: nota
+        };
+
+        const modalElement = document.getElementById('modalreview');
+        const reviewModal = bootstrap.Modal.getInstance(modalElement);
+
+        try {
+            const response = await fetch(`${API_BASE_URL}/reviews/${livroId}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${MOCK_JWT_TOKEN}`
+                },
+                body: JSON.stringify(payload)
+            });
+
+            if (response.ok) {
+                alert('Review criada e livro marcado como LIDO com sucesso!');
+                reviewModal.hide();
+            } else {
+                const errorData = await response.json().catch(() => ({ message: 'Erro desconhecido.' }));
+                alert(`Falha ao criar review: ${response.status} - ${errorData.message || 'Erro no servidor.'}`);
+            }
+        } catch (error) {
+            console.error('Erro na requisição POST:', error);
+            alert('Erro de conexão com o servidor ao tentar salvar a review.');
+        }
+    }
+
+    function setTodayDate() {
+        const dateElement = document.getElementById('modalFinishedDate');
+        if (dateElement) {
+            const today = new Date();
+            const day = String(today.getDate()).padStart(2, '0');
+            const month = String(today.getMonth() + 1).padStart(2, '0');
+            const year = today.getFullYear();
+            dateElement.textContent = `${day}/${month}/${year}`;
+        }
+    }
+
+    document.getElementById('modalreview').addEventListener('hidden.bs.modal', () => {
+        document.getElementById('modalLivroId').value = '0';
+        document.getElementById('modalRatingValue').value = '0';
+        document.getElementById('modalReviewText').value = '';
+        document.getElementById('modalBookTitleDisplay').textContent = 'Nenhum Livro';
+        document.getElementById('modalBookCover').src = 'https://placehold.co/100x150/DED2C2/A0918D?text=Capa';
+        document.getElementById('searchResultList').innerHTML = '<p class="p-2 text-muted small mb-0">Comece a digitar para buscar um livro.</p>';
+        document.getElementById('livroSearchInput').value = '';
+        updateStarDisplay(0);
+    });
+
+    document.getElementById('modalreview').addEventListener('show.bs.modal', setTodayDate);
 
     function displayStarRating(rating) {
         const displayRating = parseFloat(rating) || 0;
@@ -145,13 +451,10 @@
 
         for (let i = 1; i <= 5; i++) {
             if (i <= displayRating) {
-                // Estrela Cheia
                 html += '<i class="bi bi-star-fill"></i>';
             } else if (i - 0.5 <= displayRating) {
-                // Meia Estrela
                 html += '<i class="bi bi-star-half"></i>';
             } else {
-                // Estrela Vazia (Será cinza devido ao CSS .star-rating i.bi-star)
                 html += '<i class="bi bi-star"></i>';
             }
         }
@@ -160,24 +463,13 @@
 
     function createBookCardHtml(item) {
         const livro = item.livro || {};
-
-        const rating = item.nota || 0;
-        let starHtml = '';
-
-        if (rating > 0) {
-            starHtml = `<span class="star-rating">${displayStarRating(rating)}</span>`;
-        }
-
-
         const coverUrl = livro.urlCapa ||
             `https://placehold.co/150x225/A0A0A0/FFFFFF?text=${livro.titulo ? livro.titulo.substring(0, 6) : 'Capa'}`;
-
         const status = item.status || '';
 
         return `
             <div class="book-card">
                 <img src="${coverUrl}" class="book-cover mb-1" alt="Capa de ${livro.titulo || 'Livro Desconhecido'}">
-                ${starHtml}
                 <small class="d-block text-muted">${status}</small>
             </div>
         `;
@@ -205,7 +497,6 @@
             url = `${API_BASE_URL}/biblioteca/users/${userId}?page=0&size=20`;
             isMyShelf = false;
         } else {
-            // Endpoint que busca a Watchlist do usuário logado
             url = `${API_BASE_URL}/biblioteca?page=0&size=20`;
         }
         return { url, isMyShelf, token, userId };
@@ -213,11 +504,6 @@
 
     async function fetchEstante() {
         const config = getFetchConfig();
-
-        if (config.token === 'INSIRA_AQUI_UM_TOKEN_JWT_VALIDO_DE_TESTE') {
-            CONTAINER.innerHTML = '<p class="text-danger">ERRO: Insira um token JWT VÁLIDO na variável MOCK_JWT_TOKEN para carregar os dados.</p>';
-            return;
-        }
 
         CONTAINER.innerHTML = '<p class="text-muted">Carregando...</p>';
         const headers = { 'Authorization': `Bearer ${config.token}` };
@@ -246,6 +532,8 @@
 
     document.addEventListener('DOMContentLoaded', () => {
         fetchEstante();
+        setupRatingInput();
+        document.getElementById('modalSaveButton').addEventListener('click', saveReview);
 
         const searchToggleBtnNavbar = document.getElementById('searchToggleBtnNavbar');
         const searchBarContainerNavbar = document.getElementById('searchBarContainerNavbar');

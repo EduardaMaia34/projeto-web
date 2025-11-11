@@ -107,7 +107,6 @@ public class LivroController {
     // MÉTODOS DE MAPEAMENTO (DTO <-> ENTITY)
     // ----------------------------------------------------------------------
 
-    // Mapeia InputLivroDTO para Livro Entity - MÉTODO REMOVIDO/INUTILIZADO
     private Livro toEntity(InputLivroDTO dto) {
         Livro livro = new Livro(dto.getTitulo(), dto.getAutor(), dto.getDescricao());
         return livro;
@@ -120,11 +119,10 @@ public class LivroController {
         dto.setTitulo(livro.getTitulo());
         dto.setAutor(livro.getAutor());
         dto.setDescricao(livro.getDescricao());
+        dto.setAno(livro.getAno());
 
-        // CORREÇÃO: Mapeamento de Data de Criação
         dto.setDataCriacao(livro.getDataCriacao());
 
-        // CORREÇÃO: Mapeamento dos Interesses (Entidades para Nomes)
         Set<Interesse> interesses = livro.getInteresses();
         if (interesses != null && !interesses.isEmpty()) {
             Set<String> nomesInteresses = interesses.stream()
