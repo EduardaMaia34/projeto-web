@@ -5,7 +5,7 @@ import org.springframework.security.config.annotation.authentication.configurati
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.web.*;
-import org.springframework.security.config.http.SessionCreationPolicy; // Importação necessária
+import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.security.authentication.*;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
@@ -13,87 +13,92 @@ import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.CorsConfigurationSource;
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+
+import java.util.Arrays;
 
 @Configuration
 @EnableWebSecurity
 public class SecurityConfig {
-
-    // Certifique-se de que o JwtAuthenticationFilter está injetado (mesmo que não usado)
-    // Se ele for um bean, deve estar aqui ou você pode remover a injeção do método
-
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http, JwtAuthenticationFilter jwtFilter) throws Exception {
-        http.csrf(csrf -> csrf.disable())
+        http
+                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
+                .csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(auth -> auth
-
-                        // 1. Liberação Completa do Login, Registro e Estáticos
-                        // O Spring Security lida com a submissão do formulário POST em /login automaticamente
-                        // se o .formLogin().permitAll() estiver ativado.
-                        .requestMatchers(
-                                "/login",
-                                "/register"
-                        ).permitAll() // Libera GET/POST para /login e /register
-
-                        .requestMatchers(
-                                "/css/**",
-                                "/js/**",
-                                "/images/**",
-                                "/webjars/**"
-                        ).permitAll() // Libera arquivos estáticos
-
-                        // 2. Liberação de Endpoints de API PÚBLICOS (ex: buscar livros sem estar logado)
+                        .requestMatchers("/").permitAll()
+                        .requestMatchers(org.springframework.http.HttpMethod.GET,"/api/v1/").permitAll()
                         .requestMatchers("/api/v1/auth/**").permitAll()
                         .requestMatchers(org.springframework.http.HttpMethod.POST, "/api/v1/users").permitAll()
-
                         .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/v1/users").permitAll()
                         .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/v1/livros").permitAll()
                         .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/v1/livros/**").permitAll()
                         .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/v1/reviews").permitAll()
                         .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/v1/reviews/**").permitAll()
-
-                        // 3. Endpoints Protegidos (requerem login)
+                        .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/v1/biblioteca/users/**").permitAll()
                         .requestMatchers(
-                                org.springframework.http.HttpMethod.GET, "/feed", "/feed/**", "/dashboard"
+                                org.springframework.http.HttpMethod.GET, "/feed"
                         ).hasAnyRole("USER", "ADMIN")
-
-                        // ... (Manter todas as outras regras de ROLE que você já tinha) ...
-                        // Exemplo:
                         .requestMatchers(
                                 org.springframework.http.HttpMethod.POST, "/api/v1/livros"
                         ).hasRole("ADMIN")
+                        .requestMatchers(
+                                org.springframework.http.HttpMethod.PUT, "/api/v1/livros/**"
+                        ).hasRole("ADMIN")
+                        .requestMatchers(
+                                org.springframework.http.HttpMethod.DELETE, "/api/v1/livros/**"
+                        ).hasRole("ADMIN")
 
-                        // 4. Todas as Outras Requisições
+                        .requestMatchers(
+                                org.springframework.http.HttpMethod.POST, "/api/v1/reviews/**"
+                        ).hasAnyRole("USER", "ADMIN")
+                        .requestMatchers(
+                                org.springframework.http.HttpMethod.POST, "/api/v1/biblioteca"
+                        ).hasAnyRole("USER", "ADMIN")
+                        .requestMatchers(
+                                org.springframework.http.HttpMethod.PUT, "/api/v1/reviews/**"
+                        ).hasAnyRole("USER", "ADMIN")
+                        .requestMatchers(
+                                org.springframework.http.HttpMethod.DELETE, "/api/v1/reviews/**"
+                        ).hasAnyRole("USER", "ADMIN")
+                        .requestMatchers(
+                                org.springframework.http.HttpMethod.DELETE, "/api/v1/biblioteca/**"
+                        ).permitAll()
+                        .requestMatchers(
+                                org.springframework.http.HttpMethod.GET, "/api/v1/biblioteca/estante"
+                        ).hasAnyRole("USER", "ADMIN")
+                        .requestMatchers(
+                                org.springframework.http.HttpMethod.POST, "/api/v1/users/seguir/**"
+                        ).hasAnyRole("USER", "ADMIN")
+                        .requestMatchers(
+                                org.springframework.http.HttpMethod.DELETE, "/api/v1/users/deixarDeSeguir/**"
+                        ).hasAnyRole("USER", "ADMIN")
+                        .requestMatchers(
+                                org.springframework.http.HttpMethod.DELETE, "/api/v1/users/**"
+                        ).hasAnyRole("USER", "ADMIN")
+                        .requestMatchers(
+                                org.springframework.http.HttpMethod.GET, "/api/v1/users/seguindo"
+                        ).hasAnyRole("USER", "ADMIN")
+                        .requestMatchers(
+                                org.springframework.http.HttpMethod.GET, "/api/v1/users/seguidores"
+                        ).hasAnyRole("USER", "ADMIN")
+
+                        .requestMatchers(
+                                org.springframework.http.HttpMethod.GET, "/feed/**"
+                        ).hasAnyRole("USER", "ADMIN")
+                        .requestMatchers(
+                                org.springframework.http.HttpMethod.GET, "/api/v1/biblioteca"
+                        ).permitAll()
+
+
                         .anyRequest().authenticated()
                 )
-
-                // 5. Configuração do Form Login (Permitido)
-                .formLogin(form -> form
-                        .loginPage("/login") // O Spring usará essa URL para exibir o form
-                        .permitAll() // Essencial: Libera o acesso à página de login e seu processamento POST
-                        .defaultSuccessUrl("/dashboard", true)
-                )
-                .sessionManagement(session -> session
-                        // Garante que o Spring CRIE a sessão se necessária (padrão para formLogin)
-                        .sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED)
-                )
-                ;
-
-        // 6. Gerenciamento de Sessão (IF_REQUIRED ou comente para o padrão)
-        // Se você usar formLogin, não deve ser STATELESS. O padrão é IF_REQUIRED.
-        // Para ter certeza, você pode comentar, ou deixar como IF_REQUIRED:
-        // .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED));
-
-        // 7. Filtro JWT COMENTADO (para usar Sessão)
-        // .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
-
-        // Se você está usando formLogin, é bom remover o `sessionManagement` para usar o padrão
-        // STATEFUL/IF_REQUIRED, garantindo que o Spring possa criar a sessão de login.
-        // Eu removi, assumindo o comportamento padrão do Spring Security.
-
+                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
         return http.build();
     }
-
-    // ... (Manter os Beans de AuthenticationProvider, AuthenticationManager e PasswordEncoder) ...
 
     @Bean
     public DaoAuthenticationProvider authenticationProvider(@Qualifier("userService") UserDetailsService userDetailsService) {
@@ -111,5 +116,22 @@ public class SecurityConfig {
     @Bean
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
+    }
+
+    @Bean
+    public CorsConfigurationSource corsConfigurationSource() {
+        CorsConfiguration configuration = new CorsConfiguration();
+
+        configuration.setAllowedOrigins(Arrays.asList("*"));
+
+        configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"));
+
+        configuration.setAllowedHeaders(Arrays.asList("*"));
+
+        configuration.setAllowCredentials(false);
+
+        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+        source.registerCorsConfiguration("/**", configuration);
+        return source;
     }
 }

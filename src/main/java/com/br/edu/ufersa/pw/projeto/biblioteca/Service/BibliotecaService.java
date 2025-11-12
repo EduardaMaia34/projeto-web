@@ -8,10 +8,13 @@ import com.br.edu.ufersa.pw.projeto.review.Model.repository.ReviewRepository;
 import com.br.edu.ufersa.pw.projeto.user.Model.entity.Estado;
 import com.br.edu.ufersa.pw.projeto.user.Model.entity.User;
 import com.br.edu.ufersa.pw.projeto.user.Service.UserService;
-// Importação removida, use a do Spring
-// import jakarta.transaction.Transactional;
-import org.springframework.transaction.annotation.Transactional; // ⬅️ USAR ESTE IMPORT
-import org.springframework.transaction.annotation.Propagation; // ⬅️ NOVO IMPORT
+import com.br.edu.ufersa.pw.projeto.livro.Service.LivroService;
+import com.br.edu.ufersa.pw.projeto.livro.API.dto.ReturnLivroDTO;
+import com.br.edu.ufersa.pw.projeto.livro.Model.entity.Livro;
+import com.br.edu.ufersa.pw.projeto.review.Model.entity.Review; // ⬅️ NOVO IMPORT
+
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.annotation.Propagation;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
@@ -21,6 +24,7 @@ import org.springframework.stereotype.Service;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
+import java.util.NoSuchElementException;
 
 @Service
 public class BibliotecaService {
@@ -28,31 +32,55 @@ public class BibliotecaService {
     private final BibliotecaRepository bibliotecaRepository;
     private final UserService userService;
     private final ReviewRepository reviewRepository;
+    private final LivroService livroService;
 
-
-    public BibliotecaService(BibliotecaRepository bibliotecaRepository, UserService userService, ReviewRepository reviewRepository) {
+    public BibliotecaService(BibliotecaRepository bibliotecaRepository, UserService userService, ReviewRepository reviewRepository, LivroService livroService) {
         this.bibliotecaRepository = bibliotecaRepository;
         this.userService = userService;
         this.reviewRepository = reviewRepository;
+        this.livroService = livroService;
     }
 
-    // ⬅️ CORREÇÃO: Transação isolada para que falhas aqui não afetem a transação da Review
+    private ReturnBibliotecaDTO mapToReturnDTO(Biblioteca biblioteca) {
+        ReturnBibliotecaDTO dto = new ReturnBibliotecaDTO(biblioteca);
+
+        try {
+            Long livroId = Long.valueOf(biblioteca.getLivroId());
+
+            // 1. Mapeia Livro (para título/capa)
+            Livro livroEntity = livroService.findLivroEntityById(livroId);
+            ReturnLivroDTO livroDTO = livroService.toReturnLivroDTO(livroEntity);
+            dto.setLivro(livroDTO);
+
+            // 2. Mapeia a Nota da Review
+            Optional<Review> review = reviewRepository.findByUserIdAndLivroId(biblioteca.getUser().getId(), livroId);
+
+            review.ifPresent(r -> {
+                dto.setNota(r.getNota()); // ⬅️ DEFINE O VALOR DA NOTA NO DTO
+            });
+
+        } catch (NoSuchElementException e) {
+            System.err.println("Livro com ID " + biblioteca.getLivroId() + " referenciado na biblioteca, mas não encontrado.");
+        } catch (NumberFormatException e) {
+            System.err.println("livroId inválido: " + biblioteca.getLivroId());
+        }
+
+        return dto;
+    }
+
     @Transactional(propagation = Propagation.REQUIRES_NEW)
-    public ReturnBibliotecaDTO adicionarLivro(Long userId, InputBibliotecaDTO inputDTO) { //
+    public ReturnBibliotecaDTO adicionarLivro(Long userId, InputBibliotecaDTO inputDTO) {
 
         String livroId = inputDTO.getLivroId();
 
-        // 1. Regra de Negócio: Verificar se o filme já está na Watchlist
         Optional<Biblioteca> existingEntry = bibliotecaRepository.findByUserIdAndLivroId(userId, livroId);
         if (existingEntry.isPresent()) {
             throw new IllegalStateException("O filme com ID " + livroId + " já está na sua biblioteca (watchlist).");
         }
 
-        // 2. Buscar a Entidade User (Opcional, mas necessário para a relação @ManyToOne)
         User user = userService.findById(userId)
                 .orElseThrow(() -> new IllegalStateException("Usuário não encontrado."));
 
-        // 3. Converter DTO para Entidade e Salvar
         Biblioteca novaEntrada = new Biblioteca(user, livroId);
         if (inputDTO.getStatus() != null) {
             novaEntrada.setStatus(inputDTO.getStatus());
@@ -60,8 +88,7 @@ public class BibliotecaService {
 
         Biblioteca savedEntrada = bibliotecaRepository.save(novaEntrada);
 
-        // 4. Converter Entidade Salva para DTO de Retorno
-        return new ReturnBibliotecaDTO(savedEntrada);
+        return mapToReturnDTO(savedEntrada);
     }
 
     public Page<ReturnBibliotecaDTO> getEstanteComReview(Long userId, Pageable pageable) {
@@ -79,10 +106,12 @@ public class BibliotecaService {
                         return null;
                     }
 
+                    // A checagem de hasReview pode ser simplificada usando o repository
                     boolean hasReview = reviewRepository.existsByUserIdAndLivroId(userId, livroIdLong);
 
                     if (hasReview) {
-                        return new ReturnBibliotecaDTO(biblioteca);
+                        // Usa o mapeador que inclui o livro e a nota
+                        return mapToReturnDTO(biblioteca);
                     }
                     return null;
                 })
@@ -92,14 +121,12 @@ public class BibliotecaService {
         return new PageImpl<>(listaComReview, pageable, lidosPage.getTotalElements());
     }
 
-    @Transactional // Mantido para operações de deleção
+    @Transactional
     public boolean removerLivro(Long userId, String livroId) {
 
-        // 1. Verificar se a entrada existe antes de tentar deletar
         Optional<Biblioteca> entry = bibliotecaRepository.findByUserIdAndLivroId(userId, livroId);
 
         if (entry.isPresent()) {
-            // 2. Usar o método de exclusão personalizado do Repository
             bibliotecaRepository.deleteByUserIdAndLivroId(userId, livroId);
             return true;
         }
@@ -107,26 +134,24 @@ public class BibliotecaService {
         return false;
     }
 
-
     public Page<ReturnBibliotecaDTO> getWatchlistPorUsuario(Long userId, Pageable pageable) {
+        // Altera a chamada do repositório para buscar pelo Status = PARA_LER
+        Page<Biblioteca> bibliotecaPage = bibliotecaRepository.findByUserIdAndStatusOrderByAddedAtDesc(
+                userId,
+                Estado.QUERO_LER,
+                pageable
+        );
 
-        // 1. Buscar a lista paginada do repositório
-        Page<Biblioteca> bibliotecaPage = bibliotecaRepository.findByUserIdOrderByAddedAtDesc(userId, pageable);
-
-        // 2. Converter a Page de Entidades para Page de DTOs
-        // O método 'map' de Page é a forma idiomática de fazer isso no Spring Data
-        return bibliotecaPage.map(ReturnBibliotecaDTO::new);
+        return bibliotecaPage.map(this::mapToReturnDTO);
     }
-
 
     public Optional<ReturnBibliotecaDTO> findEntryByUserIdAndLivroId(Long userId, String livroId) {
         return bibliotecaRepository.findByUserIdAndLivroId(userId, livroId)
-                .map(ReturnBibliotecaDTO::new); // Converte a Entidade para DTO se existir
+                .map(this::mapToReturnDTO);
     }
 
-    // ⬅️ CORREÇÃO: Transação isolada para que falhas aqui não afetem a transação da Review
     @Transactional(propagation = Propagation.REQUIRES_NEW)
-    public ReturnBibliotecaDTO updateLivroStatus(Long userId, String livroId, Estado newStatus) { //
+    public ReturnBibliotecaDTO updateLivroStatus(Long userId, String livroId, Estado newStatus) {
 
         Biblioteca biblioteca = bibliotecaRepository.findByUserIdAndLivroId(userId, livroId)
                 .orElseThrow(() -> new IllegalStateException("Livro não encontrado na sua biblioteca."));
@@ -136,6 +161,6 @@ public class BibliotecaService {
 
         Biblioteca updatedEntrada = bibliotecaRepository.save(biblioteca);
 
-        return new ReturnBibliotecaDTO(updatedEntrada);
+        return mapToReturnDTO(updatedEntrada);
     }
 }
