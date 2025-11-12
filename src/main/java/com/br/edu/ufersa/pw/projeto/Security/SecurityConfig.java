@@ -1,6 +1,7 @@
 package com.br.edu.ufersa.pw.projeto.Security;
 
 import org.springframework.context.annotation.*;
+import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
@@ -23,80 +24,22 @@ import java.util.Arrays;
 @EnableWebSecurity
 public class SecurityConfig {
     @Bean
-    public SecurityFilterChain filterChain(HttpSecurity http, JwtAuthenticationFilter jwtFilter) throws Exception {
+    public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
-                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
-                .csrf(csrf -> csrf.disable())
+                .csrf(csrf -> csrf.disable()) // Mantido para evitar o 403
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/").permitAll()
-                        .requestMatchers(org.springframework.http.HttpMethod.GET,"/api/v1/").permitAll()
-                        .requestMatchers("/api/v1/auth/**").permitAll()
-                        .requestMatchers(org.springframework.http.HttpMethod.POST, "/api/v1/users").permitAll()
-                        .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/v1/users").permitAll()
-                        .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/v1/livros").permitAll()
-                        .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/v1/livros/**").permitAll()
-                        .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/v1/reviews").permitAll()
-                        .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/v1/reviews/**").permitAll()
-                        .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/v1/biblioteca/users/**").permitAll()
-                        .requestMatchers(
-                                org.springframework.http.HttpMethod.GET, "/feed"
-                        ).hasAnyRole("USER", "ADMIN")
-                        .requestMatchers(
-                                org.springframework.http.HttpMethod.POST, "/api/v1/livros"
-                        ).hasRole("ADMIN")
-                        .requestMatchers(
-                                org.springframework.http.HttpMethod.PUT, "/api/v1/livros/**"
-                        ).hasRole("ADMIN")
-                        .requestMatchers(
-                                org.springframework.http.HttpMethod.DELETE, "/api/v1/livros/**"
-                        ).hasRole("ADMIN")
-
-                        .requestMatchers(
-                                org.springframework.http.HttpMethod.POST, "/api/v1/reviews/**"
-                        ).hasAnyRole("USER", "ADMIN")
-                        .requestMatchers(
-                                org.springframework.http.HttpMethod.POST, "/api/v1/biblioteca"
-                        ).hasAnyRole("USER", "ADMIN")
-                        .requestMatchers(
-                                org.springframework.http.HttpMethod.PUT, "/api/v1/reviews/**"
-                        ).hasAnyRole("USER", "ADMIN")
-                        .requestMatchers(
-                                org.springframework.http.HttpMethod.DELETE, "/api/v1/reviews/**"
-                        ).hasAnyRole("USER", "ADMIN")
-                        .requestMatchers(
-                                org.springframework.http.HttpMethod.DELETE, "/api/v1/biblioteca/**"
-                        ).permitAll()
-                        .requestMatchers(
-                                org.springframework.http.HttpMethod.GET, "/api/v1/biblioteca/estante"
-                        ).hasAnyRole("USER", "ADMIN")
-                        .requestMatchers(
-                                org.springframework.http.HttpMethod.POST, "/api/v1/users/seguir/**"
-                        ).hasAnyRole("USER", "ADMIN")
-                        .requestMatchers(
-                                org.springframework.http.HttpMethod.DELETE, "/api/v1/users/deixarDeSeguir/**"
-                        ).hasAnyRole("USER", "ADMIN")
-                        .requestMatchers(
-                                org.springframework.http.HttpMethod.DELETE, "/api/v1/users/**"
-                        ).hasAnyRole("USER", "ADMIN")
-                        .requestMatchers(
-                                org.springframework.http.HttpMethod.GET, "/api/v1/users/seguindo"
-                        ).hasAnyRole("USER", "ADMIN")
-                        .requestMatchers(
-                                org.springframework.http.HttpMethod.GET, "/api/v1/users/seguidores"
-                        ).hasAnyRole("USER", "ADMIN")
-
-                        .requestMatchers(
-                                org.springframework.http.HttpMethod.GET, "/feed/**"
-                        ).hasAnyRole("USER", "ADMIN")
-                        .requestMatchers(
-                                org.springframework.http.HttpMethod.GET, "/api/v1/biblioteca"
-                        ).permitAll()
-
-
-                        .anyRequest().authenticated()
+                        .requestMatchers("/login", "/cadastro", "/css/**", "/js/**").permitAll() // URLs públicas
+                        .anyRequest().authenticated() // Outras URLs precisam de autenticação
                 )
-                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-                .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
+                .formLogin(form -> form
+                        .loginPage("/login") // URL para exibir o formulário GET
+                        .loginProcessingUrl("/login") // URL que recebe o POST do formulário
+                        .defaultSuccessUrl("/dashboard", true) // Redireciona para /dashboard após login de sucesso
+                        .failureUrl("/login?error=true") // Onde ir em caso de falha
+                        .permitAll()
+                )
+                .logout(logout -> logout.permitAll());
+
         return http.build();
     }
 

@@ -28,7 +28,7 @@ public class Livro {
     @Column(name = "url_capa", length = 500) // Assumindo que 500 caracteres é suficiente
     private String urlCapa;
 
-    @Column(name = "ano", nullable = false)
+    @Column(name = "ano", nullable = false, columnDefinition = "integer default 0")
     private int ano;
 
     @Column(name = "data_criacao", updatable = false)
