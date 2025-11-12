@@ -33,10 +33,8 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             "/webjars/**",
             "/api/v1/auth/**",
             "/api/v1/users",
-            "/api/v1/livros",
-            "/api/v1/livros/**",
             "/api/v1/reviews",
-            "/api/v1/reviews/**",
+
             // Garante que o método POST de registro seja ignorado
             // O shouldNotFilter padrão não verifica o método, mas a lista de URLs é suficiente.
     };

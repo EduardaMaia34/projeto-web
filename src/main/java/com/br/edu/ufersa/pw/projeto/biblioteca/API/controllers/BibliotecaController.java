@@ -5,7 +5,7 @@ import com.br.edu.ufersa.pw.projeto.biblioteca.API.dto.ReturnBibliotecaDTO;
 import com.br.edu.ufersa.pw.projeto.biblioteca.Service.BibliotecaService;
 import com.br.edu.ufersa.pw.projeto.user.API.dto.InputUpdateStatusDTO;
 import com.br.edu.ufersa.pw.projeto.user.Service.UserService;
-import com.br.edu.ufersa.pw.projeto.Security.CustomUserDetails; // Importar a classe correta
+import com.br.edu.ufersa.pw.projeto.Security.CustomUserDetails;
 import jakarta.validation.Valid;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -28,13 +28,15 @@ public class BibliotecaController {
     }
 
 
-
     @PostMapping
     public ResponseEntity<ReturnBibliotecaDTO> adicionarLivro(
 
             @AuthenticationPrincipal CustomUserDetails loggedInUser,
             @Valid @RequestBody InputBibliotecaDTO inputDTO) {
 
+        if (loggedInUser == null || loggedInUser.getId() == null) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Usuário não autenticado.");
+        }
 
         try {
 
@@ -56,6 +58,10 @@ public class BibliotecaController {
             @AuthenticationPrincipal CustomUserDetails loggedInUser,
             @PathVariable String livroId) {
 
+        if (loggedInUser == null || loggedInUser.getId() == null) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Usuário não autenticado.");
+        }
+
         boolean removido = bibliotecaService.removerLivro(loggedInUser.getId(), livroId);
 
         if (removido) {
@@ -72,6 +78,10 @@ public class BibliotecaController {
 
             @AuthenticationPrincipal CustomUserDetails loggedInUser,
             Pageable pageable) {
+
+        if (loggedInUser == null || loggedInUser.getId() == null) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Usuário não autenticado.");
+        }
 
         Page<ReturnBibliotecaDTO> watchlist = bibliotecaService.getWatchlistPorUsuario(loggedInUser.getId(), pageable);
         return ResponseEntity.ok(watchlist);

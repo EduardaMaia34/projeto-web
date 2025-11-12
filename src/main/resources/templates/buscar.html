@@ -3,157 +3,172 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Buscar - Bookly</title>
+    <title>Buscar Livros - Bookly</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
-    <style>
-        /* Estilos personalizados para aproximar o visual */
-        body {
-            background-color: #f7f3ed; /* Cor de fundo creme/marrom claro */
-            font-family: Arial, sans-serif;
-        }
-        .header-bg {
-            background-color: #DED2C2;
-            padding: 10px 0;
-            border-bottom: 1px solid #ddd;
-        }
-        .logo-image {
-            height: 50px; /* Ajuste a altura conforme necessário para sua logo */
-            width: auto; /* Mantém a proporção da imagem */
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Unicase:wght@400;700&display=swap" rel="stylesheet">
 
+    <style>
+        /* ESTILO UNIFICADO COM ESTANTE.HTML */
+        body {
+            background-color: #f5f4ed; /* Bege claro */
+            font-family: 'Cormorant Unicase', serif;
+            color: #594A47; /* Marrom escuro */
         }
-        .review-card {
-            background-color: #f7f3ed; /* ALTERADO: Usa a mesma cor do body */
+
+        .header-bar {
+            background-color: #DED2C2; /* Marrom claro/bege da navbar */
+            box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+        }
+
+        .btn-success {
+            background-color: #7AA27D;
+            border-color: #7AA27D;
+            color: white;
+            font-weight: 700;
+        }
+
+        .btn-link.text-dark, .btn-link {
+            color: #594A47 !important;
+        }
+
+        /* Estilo do Card de Livro */
+        .book-card-item {
+            display: flex;
             padding: 15px 0;
-            border-bottom: 1px solid #c9c9c9; /* Linha divisória entre reviews */
+            border-bottom: 1px solid #DED2C2; /* Linha divisória */
+            align-items: flex-start;
         }
-        .book-cover {
-            width: 80px; /* Largura da capa */
-            height: 120px; /* Altura da capa */
+        .book-card-item:last-child {
+            border-bottom: none;
+        }
+
+        .book-cover-search {
+            width: 80px;
+            height: 120px;
             object-fit: cover;
             border-radius: 4px;
-            margin-right: 15px;
-            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            margin-right: 20px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
         }
-        .rating-star {
-            color: #ffc107; /* Cor amarela do Bootstrap para as estrelas */
-        }
-        .review-title {
-            font-size: 1.25rem;
-            font-weight: 500;
-            color: #333;
-        }
-        .review-details {
-            font-size: 0.9rem;
-            color: #6c757d;
+        .book-title {
+            font-size: 1.3rem;
+            font-weight: 700;
+            color: #594A47;
             margin-bottom: 5px;
         }
-        .review-quote {
-            font-style: italic;
-            color: #495057;
-        }
-
-        .review-value {
-            font-size: 1rem;
-            font-weight: bold;
-            color: #333;
-            margin-right: 10px; /* Espaço entre a nota e as estrelas */
-        }
-        .rating-container {
-            display: flex; /* Para alinhar o valor e as estrelas */
-            align-items: center;
-            /* Corrigi o margin-bottom para 10px para dar um pequeno respiro */
-            margin-bottom: 10px;
+        .book-details {
+            font-size: 0.9rem;
+            color: #A0918D; /* Cinza/Marrom claro */
+            margin-bottom: 5px;
         }
         .book-sinopse {
-            font-size: 0.9rem;
+            font-size: 0.95rem;
             color: #495057;
-            margin-top: 5px;
+        }
+        .rating-star {
+            color: gold;
+            font-size: 1.1rem;
+        }
+
+        /* Input de Busca */
+        .input-group-text {
+            background-color: #DED2C2 !important;
+            border: 1px solid #DED2C2;
+            color: #594A47;
+        }
+        .form-control {
+            border-left: none;
+            border: 1px solid #DED2C2;
         }
     </style>
 </head>
 <body>
 
-<header class="header-bg sticky-top">
-    <div class="container">
-        <div class="d-flex justify-content-between align-items-center">
-            <div class="logo-bookly d-flex align-items-center">
-                <img src="/static/bookly-logo.jpeg" alt="Bookly Logo" class="logo-image">
-            </div>
-            <div class="d-flex align-items-center">
-                <img src="https://via.placeholder.com/30" alt="Avatar Mari" class="rounded-circle me-3">
-                <span class="me-3">Mari</span>
-                <i class="fa-solid fa-magnifying-glass me-3"></i>
-                <button class="btn btn-success me-3">
-                    <i class="fa-solid fa-plus me-1"></i> Livro
-                </button>
-                <i class="fa-regular fa-bookmark"></i>
-            </div>
+<nav class="navbar navbar-light header-bar p-3 mb-4">
+    <div class="container-fluid container">
+        <a class="navbar-brand d-flex align-items-center" href="#">
+            <img src="https://imgur.com/HLvpHYn.png" alt="Bookly Logo" height="30" class="d-inline-block align-text-top me-2" style="height: 50px">
+        </a>
+
+        <div class="d-flex align-items-center ms-auto">
+            <a href="perfil.html" class="d-flex align-items-center me-3">
+                <img src="https://imgur.com/pcf2EUA.png" alt="Perfil Mari" class="rounded-circle" style="width: 30px; height: 30px; object-fit: cover;">
+            </a>
+            <span class="fw-bold me-3">Mari</span>
+            <button class="btn btn-link text-dark me-3">
+                <i class="bi bi-search"></i>
+            </button>
+            <button class="btn btn-success me-3 d-flex align-items-center">
+                <i class="bi bi-plus-lg me-1"></i> Livro
+            </button>
+            <button class="btn btn-link text-dark">
+                <i class="bi bi-box-arrow-right"></i>
+            </button>
         </div>
     </div>
-</header>
+</nav>
 
-<main class="container py-4">
+<main class="container py-4" style="max-width: 800px;">
     <div class="mb-4">
         <form class="d-flex">
             <div class="input-group">
-            <span class="input-group-text bg-white border-end-0">
-                <i class="fa-solid fa-magnifying-glass"></i>
-            </span>
+                <span class="input-group-text">
+                    <i class="bi bi-search"></i>
+                </span>
                 <input
                         type="text"
-                        class="form-control border-start-0"
-                        placeholder="Buscar reviews..."
-                        aria-label="Buscar reviews"
+                        class="form-control"
+                        placeholder="Buscar livros por título ou autor..."
+                        aria-label="Buscar livros"
                         value="Evelyn Hugo" >
             </div>
         </form>
     </div>
 
-    <div class="review-card">
-        <div class="d-flex align-items-start">
-            <img src="https://m.media-amazon.com/images/I/91zcUUHja+L._AC_UF1000,1000_QL80_.jpg" alt="Capa Vermelho, Branco e Sangue Azul" class="book-cover">
+    <div class="book-card-item">
+        <img src="https://m.media-amazon.com/images/I/91zcUUHja+L._AC_UF1000,1000_QL80_.jpg" alt="Capa Vermelho, Branco e Sangue Azul" class="book-cover-search">
 
-            <div>
-                <div class="review-title">Vermelho, Branco e Sangue Azul <span class="review-details">2019</span></div>
+        <div>
+            <div class="book-title">Vermelho, Branco e Sangue Azul</div>
+            <div class="book-details">Casey McQuiston | 2019 | Romance</div>
 
-                <div class="rating-container">
-                    <span class="review-value">3.0</span>
-                    <div class="d-flex align-items-center"> <i class="fa-solid fa-star rating-star"></i>
-                        <i class="fa-solid fa-star rating-star"></i>
-                        <i class="fa-solid fa-star rating-star"></i>
-                        <i class="fa-regular fa-star rating-star"></i>
-                        <i class="fa-regular fa-star rating-star"></i>
-                    </div>
+            <div class="d-flex align-items-center mb-2">
+                <span class="fw-bold me-2">4.3</span>
+                <div class="d-flex align-items-center">
+                    <i class="bi bi-star-fill rating-star"></i>
+                    <i class="bi bi-star-fill rating-star"></i>
+                    <i class="bi bi-star-fill rating-star"></i>
+                    <i class="bi bi-star-fill rating-star"></i>
+                    <i class="bi bi-star-half rating-star"></i>
                 </div>
-
-                <div class="book-sinopse">"Vermelho, Branco e Sangue Azul" narra a história de Alex Claremont-Diaz, o filho da presidente dos Estados Unidos, e do Príncipe Henry da Inglaterra, que se detestam após um incidente em um casamento real.</div>
             </div>
+
+            <div class="book-sinopse">Alex Claremont-Diaz, o filho da presidente dos EUA, e o Príncipe Henry da Inglaterra, que se detestam após um incidente em um casamento real, são forçados a forjar uma trégua pública.</div>
         </div>
     </div>
 
-    <div class="review-card">
-        <div class="d-flex align-items-start">
-            <img src="https://m.media-amazon.com/images/I/91zcUUHja+L._AC_UF1000,1000_QL80_.jpg" alt="Capa Os sete maridos de Evelyn Hugo" class="book-cover">
+    <div class="book-card-item">
+        <img src="https://m.media-amazon.com/images/I/91zcUUHja+L._AC_UF1000,1000_QL80_.jpg" alt="Capa Os sete maridos de Evelyn Hugo" class="book-cover-search">
 
-            <div>
-                <div class="review-title">Os sete maridos de Evelyn Hugo <span class="review-details">2017</span></div>
+        <div>
+            <div class="book-title">Os sete maridos de Evelyn Hugo</div>
+            <div class="book-details">Taylor Jenkins Reid | 2017 | Romance, Drama</div>
 
-                <div class="rating-container">
-                    <span class="review-value">4.0</span>
-                    <div class="d-flex align-items-center"> <i class="fa-solid fa-star rating-star"></i>
-                        <i class="fa-solid fa-star rating-star"></i>
-                        <i class="fa-solid fa-star rating-star"></i>
-                        <i class="fa-solid fa-star rating-star"></i>
-                        <i class="fa-regular fa-star rating-star"></i>
-                    </div>
+            <div class="d-flex align-items-center mb-2">
+                <span class="fw-bold me-2">4.7</span>
+                <div class="d-flex align-items-center">
+                    <i class="bi bi-star-fill rating-star"></i>
+                    <i class="bi bi-star-fill rating-star"></i>
+                    <i class="bi bi-star-fill rating-star"></i>
+                    <i class="bi bi-star-fill rating-star"></i>
+                    <i class="bi bi-star-fill rating-star"></i>
                 </div>
-
-                <div class="book-sinopse">"Os Sete Maridos de Evelyn Hugo" conta a história da lendária estrela de Hollywood, Evelyn Hugo, que, aos 79 anos, decide revelar os segredos de sua vida glamorosa e cheia de escândalos para a jornalista desconhecida Monique Grant.</div>
             </div>
+
+            <div class="book-sinopse">A lendária estrela de Hollywood, Evelyn Hugo, aos 79 anos, decide revelar os segredos de sua vida glamorosa e cheia de escândalos para a jornalista desconhecida Monique Grant.</div>
         </div>
     </div>
-
 </main>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>

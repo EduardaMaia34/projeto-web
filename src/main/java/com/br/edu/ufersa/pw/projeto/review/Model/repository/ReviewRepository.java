@@ -21,6 +21,7 @@ public interface ReviewRepository extends JpaRepository<Review,Long> {
     Optional<Review> findByUser_NomeIgnoreCase(String nome);
     List<Review> findByUserIn(List<User> users);
     List<Review> findByData(LocalDateTime data);
+    Optional<Review> findByUserIdAndLivroId(Long userId, Long livroId);
 
     @Query("SELECT r FROM Review r WHERE r.user.id IN :userIds ORDER BY r.data DESC")
     List<Review> findReviewsByUserIds(List<Long> userIds);

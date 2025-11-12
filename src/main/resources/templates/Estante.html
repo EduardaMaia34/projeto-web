@@ -10,7 +10,6 @@
     <link href="https://fonts.googleapis.com/css2?family=Cormorant+Unicase:wght@400;700&display=swap" rel="stylesheet">
 
     <style>
-        /* 2. APLICAÇÃO DA FONTE E COR */
         body {
             background-color: #f5f4ed;
             font-family: 'Cormorant Unicase', serif;
@@ -37,7 +36,6 @@
             display: block;
         }
 
-        /* ESTILOS PARA PESQUISA DINÂMICA (Geral para ambas as barras) */
         .search-bar-hidden {
             width: 0;
             opacity: 0;
@@ -45,25 +43,21 @@
             overflow: hidden;
         }
 
-        /* BARRA DA NAVBAR */
         .search-bar-visible-navbar {
-            width: 300px; /* Largura total da barra na NavBar */
+            width: 300px;
             opacity: 1;
             margin-right: 15px;
             border-radius: 5px;
         }
 
-        /* OCULTA O GRUPO DE PERFIL QUANDO A PESQUISA DA NAVBAR ESTIVER ATIVA */
         .profile-group-hidden {
             display: none !important;
             opacity: 0;
             transition: opacity 0.3s ease-in-out;
         }
 
-
-        /* BARRA DA ESTANTE */
         .search-bar-visible-estante {
-            width: 300px; /* Largura total da barra na Estante */
+            width: 300px;
             opacity: 1;
             margin-left: 15px;
             border-radius: 5px;
@@ -139,15 +133,29 @@
     const API_BASE_URL = 'http://localhost:8081/api/v1';
     const CONTAINER = document.getElementById('bookListContainer');
 
-    const MOCK_JWT_TOKEN = 'eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIyIiwidXNlcm5hbWUiOiJtYXJpM0BnbWFpbC5jb20iLCJyb2xlcyI6IlJPTEVfVVNFUiIsImlhdCI6MTc2Mjc4OTA4NCwiZXhwIjoxNzYyODc1NDg0fQ.F2mDRDRpA1N5zl1XLlj78q9AdJVBGhsohpPaq-r_f94';
+    const MOCK_JWT_TOKEN = 'eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIyIiwidXNlcm5hbWUiOiJtYXJpM0BnbWFpbC5jb20iLCJyb2xlcyI6IlJPTEVfVVNFUiIsImlhdCI6MTc2Mjg3NTc1OCwiZXhwIjoxNzYyOTYyMTU4fQ.WnG7ELmq0ZHUTmJmqlEleIRzc8qctCXqJlB7YfX5fmI';
 
-    function generateStarRating(rating) {
-        const safeRating = (typeof rating === 'number' && rating >= 0 && rating <= 5) ? rating : 0;
-        const roundedRating = Math.round(safeRating);
-        const fullStars = '★'.repeat(roundedRating);
-        const emptyStars = '☆'.repeat(5 - roundedRating);
-        return fullStars + emptyStars;
+    // NOVA FUNÇÃO: Renderiza as estrelas com suporte a 0.5 usando ícones Bootstrap
+    function displayStarRating(rating) {
+        const displayRating = parseFloat(rating) || 0;
+        let html = '';
+
+        for (let i = 1; i <= 5; i++) {
+            if (i <= displayRating) {
+                // Estrela Cheia
+                html += '<i class="bi bi-star-fill"></i>';
+            } else if (i - 0.5 <= displayRating) {
+                // Meia Estrela
+                html += '<i class="bi bi-star-half"></i>';
+            } else {
+                // Estrela Vazia
+                html += '<i class="bi bi-star"></i>';
+            }
+        }
+        return html;
     }
+
+    // A função generateStarRating original é removida/substituída.
 
     function createBookCardHtml(item) {
         const livro = item.livro || {};
@@ -159,10 +167,13 @@
 
         const status = item.status || '';
 
+        // Usa a nova função displayStarRating
+        const starsHtml = displayStarRating(rating);
+
         return `
             <div class="book-card">
                 <img src="${coverUrl}" class="book-cover mb-1" alt="Capa de ${livro.titulo || 'Livro Desconhecido'}">
-                <span class="star-rating">${generateStarRating(rating)}</span>
+                <span class="star-rating">${starsHtml}</span>
                 <small class="d-block text-muted">${status}</small>
             </div>
         `;
@@ -259,11 +270,9 @@
 
         if (searchToggleBtnEstante) {
             searchToggleBtnEstante.addEventListener('click', () => {
-                // Alterna a classe de visibilidade específica para a estante
                 const isVisible = searchBarEstanteContainer.classList.toggle('search-bar-visible-estante');
 
                 if (isVisible) {
-                    // Adiciona o foco com um pequeno delay para a transição do CSS
                     setTimeout(() => {
                         searchInputEstante.focus();
                     }, 300);

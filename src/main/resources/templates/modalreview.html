@@ -1,0 +1,41 @@
+<div th:fragment="reviewModalFragment">
+    <div class="modal fade" id="reviewModal" tabindex="-1" aria-labelledby="reviewModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content" style="background-color: #f5f4ed; color: #594A47; border-radius: 10px;">
+
+                <div class="modal-header border-0 pb-0">
+                    <h5 class="modal-title fw-bold" id="reviewModalLabel" style="font-size: 1.5rem;">eu li...</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+
+                <div class="modal-body pt-2 px-4">
+
+                    <div class="d-flex align-items-center mb-3">
+                        <h4 class="mb-0 fw-bold me-3">Pesquisar Livro</h4>
+                        <i class="bi bi-search"></i>
+                    </div>
+
+                    <p class="text-muted small">Finalizado em: <span id="modalFinishedDate">10/09/2025</span></p>
+
+                    <div class="row">
+                        <div class="col-4">
+                            <div class="d-flex justify-content-center align-items-center" style="width: 100px; height: 150px; background-color: #DED2C2; border-radius: 5px; font-size: 2rem; color: #A0918D;">+</div>
+                            <small class="d-block text-center mt-1 text-muted">Sua nota:</small>
+                            <div id="modalRatingInput" class="d-flex justify-content-center" style="color: gold;">
+                                <i class="bi bi-star"></i><i class="bi bi-star"></i><i class="bi bi-star"></i><i class="bi bi-star"></i><i class="bi bi-star"></i>
+                            </div>
+                        </div>
+
+                        <div class="col-8">
+                            <textarea id="modalReviewText" class="form-control" rows="6" placeholder="Adicionar review..." style="resize: none; background-color: white; border: 1px solid #DED2C2;"></textarea>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="modal-footer border-0" style="background-color: #DED2C2; justify-content: center; padding: 15px;">
+                    <button type="button" class="btn btn-success fw-bold" style="background-color: #7AA27D; border-color: #7AA27D;">Salvar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
