@@ -5,158 +5,206 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Bookly - Daisy Jones & The Six</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Unicase:wght@400;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
 
 
-<style>
-     /* Cores baseadas na imagem (aproximadas) */
- :root {
-     --bookly-dark: #403F3E; /* Cor escura geral */
-     --bookly-brown-light: #F3EBE1; /* Cor de fundo da página */
-     --bookly-brown-mid: rgba(89, 74, 71, 0.5); /* Cor do card de review */
-     --bookly-green: #385d38; /* Cor do botão '+ Livro' */
-     --bookly-star-gold: #ffc107; /* Cor das estrelas */
- }
+    <style>
+        /* Cores baseadas no padrão unificado */
+        :root {
+            --cor-principal: #f5f4ed; /* Fundo principal (unificado) */
+            --cor-secundaria: #DED2C2; /* Fundo da Navbar (unificado) */
+            --cor-texto: #594A47; /* Cor principal do texto (unificado) */
+            --cor-verde-botao: #385d38; /* Verde do botão '+ Livro' (unificado) */
+            --bookly-brown-mid: rgba(89, 74, 71, 0.5); /* Fundo Logar/Review: 594A47 com 50% de transparência */
+            --bookly-star-gold: #ffc107; /* Cor das estrelas */
+        }
 
-body {
-    background-color: var(--bookly-brown-light);
-    color: var(--bookly-dark);
-    font-family: Arial, sans-serif;
-    padding-top: 50px;
-}
+        body {
+            background-color: var(--cor-principal);
+            color: var(--cor-texto);
+            font-family: 'Cormorant Unicase', serif; /* Fonte unificada */
+            padding-top: 80px;
+        }
 
-/* --- 1. Navbar Superior --- */
-.custom-navbar {
-    background-color: #DED2C2;
-    border-bottom: 1px solid #ddd;
-}
+        /* --- 1. Navbar Superior (Ajustado ao padrão) --- */
+        .navbar-custom {
+            background-color: var(--cor-secundaria);
+            box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+            padding: 1rem 0;
+        }
+        .navbar-logo-img {
+            height: 50px;
+            width: auto;
+            /* Corrigido para 0 para alinhar corretamente com a estrutura de pesquisa */
+            margin-left: 0;
+        }
+        .navbar-brand {
+            color: var(--cor-texto) !important;
+        }
 
-.navbar-logo-img {
-    height: 50px;
-    width: auto;
-    margin-left: 90px;
-}
+        /* Botão "+ Livro" (Ajustado ao padrão) */
+        .btn-adicionar-livro {
+            background-color: var(--cor-verde-botao) !important;
+            border-color: var(--cor-verde-botao) !important;
+            color: white !important;
+            padding: 5px 15px;
+            font-weight: normal;
+            line-height: 1;
+        }
+        .btn-link-custom {
+            color: var(--cor-texto) !important;
+        }
 
+        /* --- Estilos da Pesquisa Dinâmica (Importados) --- */
+        .search-bar-hidden {
+            width: 0;
+            opacity: 0;
+            transition: width 0.3s ease-in-out, opacity 0.3s ease-in-out;
+            overflow: hidden;
+        }
 
-.custom-btn-livro {
-    background-color: var(--bookly-green) !important;
-    border-color: var(--bookly-green) !important;
-    color: white !important;
-    font-size: 0.9rem;
-    padding: 0.3rem 0.8rem;
-}
+        .search-bar-visible-navbar {
+            width: 300px;
+            opacity: 1;
+            margin-right: 15px;
+            border-radius: 5px;
+        }
 
-.custom-hr {
-    border-top: 1px solid #ddd;
-    opacity: 1;
-}
-
-/* --- 2. Detalhes do Livro --- */
-.book-cover {
-    width: 180px; /* Largura fixa maior */
-    height: auto; /* Mantém a proporção */
-    border: 1px solid #ddd;
-    box-shadow: 2px 2px 10px rgba(0, 0, 0, 0.1);
-    margin-left: -140px;
-}
-.book-info{
-    padding-left: 1rem;
-    margin-left: -80px;
-}
-
-.book-title {
-    font-weight: bold;
-    font-size: 1.2rem;
-}
-
-.book-bookmark {
-    color: var(--bookly-brown-mid);
-    font-size: 1.5rem;
-}
-.book-author {
-font-size: 1rem; /* Aumentado para 1.3rem (exemplo) */
-font-weight: 500;
-}
-.book-synopsis {
-font-size: 0.9rem; /* Aumentado para 1.3rem (exemplo) */
-font-weight: 500;
-}
+        .profile-group-hidden {
+            display: none !important;
+            opacity: 0;
+            transition: opacity 0.3s ease-in-out;
+        }
+        /* ------------------------------------------------ */
 
 
-/* Estrelas de Avaliação */
-.star-rating i {
-    color: var(--bookly-star-gold);
-    font-size: 1.1rem;
-}
+        .custom-hr {
+            border-top: 1px solid #ddd;
+            opacity: 1;
+        }
 
-/* Tags de Gênero */
-.bg-custom-tag {
-    background-color: #e0e0e0 !important;
-    color: var(--bookly-dark) !important;
-    font-weight: normal;
-    padding: 0.3em 0.7em;
-    border-radius: 15px; /* Pill shape */
-    font-size: 0.8rem;
-}
+        /* --- 2. Detalhes do Livro --- */
+        .book-cover {
+            width: 180px;
+            height: auto;
+            border: 1px solid #ddd;
+            box-shadow: 2px 2px 10px rgba(0, 0, 0, 0.1);
+            margin-left: -140px;
+        }
+        .book-info{
+            padding-left: 1rem;
+            margin-left: -80px;
+        }
+        .book-title {
+            font-weight: bold;
+            font-size: 1.2rem;
+        }
 
-/* Botão 'Locar Livro' */
-.btn-locar-livro {
-    background-color: rgba(89, 74, 71, 0.5);
-    border: none;
-    color: var(--bookly-dark);
-    font-weight: bold;
-    padding: 1rem 3rem;
-    border-radius: 5px;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-    position: relative;
-    font-size: 1.1rem;
-    margin-right: -120px;
-}
+        .book-bookmark {
+            color: var(--bookly-brown-mid);
+            font-size: 1.5rem;
+        }
+        /* ... (Outros estilos de detalhes do livro) ... */
+        .book-author {
+            font-size: 1rem;
+            font-weight: 500;
+        }
+        .book-synopsis {
+            font-size: 0.9rem;
+            font-weight: 500;
+        }
 
-.btn-locar-livro .feather-icon {
-    position: absolute;
-    left: 10px;
-    top: 50%;
-    transform: translateY(-50%) rotate(-15deg);
-    font-size: 1.5rem;
-}
+        /* Estrelas de Avaliação */
+        .star-rating i {
+            color: var(--bookly-star-gold);
+            font-size: 1.1rem;
+        }
+
+        /* Tags de Gênero */
+        .bg-custom-tag {
+            background-color: #e0e0e0 !important;
+            color: var(--cor-texto) !important;
+            font-weight: normal;
+            padding: 0.3em 0.7em;
+            border-radius: 15px;
+            font-size: 0.8rem;
+        }
+
+        /* Botão 'Logar Livro' */
+        .btn-locar-livro {
+            background-color: var(--bookly-brown-mid); /* Fundo 594A47 com 50% */
+            border: none;
+            color: var(--cor-texto); /* Texto 594A47 */
+            font-weight: bold;
+            padding: 1rem 3rem;
+            border-radius: 5px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            position: relative;
+            font-size: 1.1rem;
+            margin-right: -120px;
+        }
+
+        .btn-locar-livro .feather-icon {
+            position: absolute;
+            left: 10px;
+            top: 50%;
+            transform: translateY(-50%) rotate(-15deg);
+            font-size: 1.5rem;
+        }
 
 
-/* --- 3. Comentário/Review --- */
-.review-card {
-    background-color: var(--bookly-brown-mid);
-    color: #403F3E;
-    max-width: 800px;
-    margin: 0 auto;
-}
+        /* --- 3. Comentário/Review --- */
+        .review-card {
+            background-color: var(--bookly-brown-mid); /* Fundo 594A47 com 50% */
+            color: var(--cor-texto); /* Texto 594A47 */
+            max-width: 800px;
+            margin: 0 auto;
+        }
 
-.review-card .star-small i {
-    font-size: 0.8rem;
-    color: var(--bookly-star-gold);
-}
+        .review-card .star-small i {
+            font-size: 0.8rem;
+            color: var(--bookly-star-gold);
+        }
 
-.star-empty {
-    color: #a0a0a0 !important; /* Estrela vazia mais escura */
-}
-</style>
+        .star-empty {
+            color: #a0a0a0 !important;
+        }
+    </style>
 <body>
 
-<nav class="navbar navbar-expand-lg custom-navbar fixed-top">
-    <div class="container-fluid">
+<nav class="navbar navbar-light navbar-custom fixed-top p-3">
+    <div class="container-fluid container">
         <a class="navbar-brand d-flex align-items-center" href="#">
             <img src="/static/bookly-logo.jpeg" alt="Logo Bookly" class="navbar-logo-img">
         </a>
 
-        <div class="ms-auto d-flex align-items-center">
-            <img src="https://via.placeholder.com/30" class="rounded-circle me-3" alt="Usuário Mari" title="Mari">
-            <i class="bi bi-search me-3"></i>
+        <div class="d-flex align-items-center ms-auto">
 
-            <a href="#" class="btn btn-success custom-btn-livro me-3">
-                <i class="bi bi-plus-lg me-1"></i> Livro
-            </a>
+            <div id="searchBarContainerNavbar" class="search-bar-hidden">
+                <input type="text" id="searchInputNavbar" class="form-control" placeholder="Pesquisar livros, autores...">
+            </div>
 
-            <i class="bi bi-box-arrow-right"></i>
+            <button class="btn btn-link btn-link-custom me-3" id="searchToggleBtnNavbar">
+                <i class="bi bi-search"></i>
+            </button>
+
+            <div id="profileGroupNavbar" class="d-flex align-items-center">
+
+                <a href="#" class="d-flex align-items-center me-3">
+                    <img src="https://via.placeholder.com/30" alt="Perfil Mari" class="rounded-circle" style="width: 30px; height: 30px; object-fit: cover;">
+                </a>
+
+                <span class="fw-bold me-3">Mari</span>
+
+                <button class="btn btn-adicionar-livro me-3 d-flex align-items-center">
+                    <span style="font-size: 1.2rem; line-height: 1;">+</span> Livro
+                </button>
+
+                <button class="btn btn-link btn-link-custom">
+                    <i class="bi bi-box-arrow-right"></i>
+                </button>
+            </div>
         </div>
     </div>
 </nav>
@@ -237,6 +285,31 @@ font-weight: 500;
 
 </div>
 
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const searchToggleBtnNavbar = document.getElementById('searchToggleBtnNavbar');
+        const searchBarContainerNavbar = document.getElementById('searchBarContainerNavbar');
+        const profileGroupNavbar = document.getElementById('profileGroupNavbar');
+        const searchInputNavbar = document.getElementById('searchInputNavbar');
+
+        if (searchToggleBtnNavbar) {
+            searchToggleBtnNavbar.addEventListener('click', () => {
+                const isVisible = searchBarContainerNavbar.classList.toggle('search-bar-visible-navbar');
+
+                if (isVisible) {
+                    profileGroupNavbar.classList.add('profile-group-hidden');
+                    // Pequeno delay para permitir a transição do CSS
+                    setTimeout(() => {
+                        searchInputNavbar.focus();
+                    }, 300);
+                } else {
+                    profileGroupNavbar.classList.remove('profile-group-hidden');
+                    searchInputNavbar.value = ''; // Limpa o campo ao esconder
+                }
+            });
+        }
+    });
+</script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
