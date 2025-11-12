@@ -8,8 +8,8 @@ import com.br.edu.ufersa.pw.projeto.livro.Model.repository.LivroRepository;
 import com.br.edu.ufersa.pw.projeto.review.Model.repository.ReviewRepository;
 import com.br.edu.ufersa.pw.projeto.user.Model.entity.Interesse;
 import com.br.edu.ufersa.pw.projeto.user.Model.repository.InteresseRepository;
-import com.br.edu.ufersa.pw.projeto.user.Service.UserService;
 
+import com.br.edu.ufersa.pw.projeto.user.Service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -27,7 +27,7 @@ public class LivroService {
     private final UserService userService;
 
     @Autowired
-    public LivroService(LivroRepository livroRepository, InteresseRepository interesseRepository, ReviewRepository reviewRepository, BibliotecaRepository bibliotecaRepository, UserService userService) {
+    public LivroService(LivroRepository livroRepository, InteresseRepository interesseRepository, ReviewRepository reviewRepository, BibliotecaRepository bibliotecaRepository,  UserService userService) {
         this.livroRepository = livroRepository;
         this.interesseRepository = interesseRepository;
         this.reviewRepository = reviewRepository;
@@ -54,7 +54,8 @@ public class LivroService {
                 livro.getDescricao(),
                 livro.getDataCriacao(),
                 interessesNomes,
-                livro.getUrlCapa() // 💡 Campo essencial para o frontend
+                livro.getUrlCapa(),
+                livro.getAno()
         );
     }
 
@@ -66,7 +67,12 @@ public class LivroService {
 
     @Transactional
     public Livro criarLivroComInteresses(InputLivroDTO dto) {
-        Livro novoLivro = new Livro(dto.getTitulo(), dto.getAutor(), dto.getDescricao());
+
+        Livro novoLivro = new Livro(dto.getTitulo(), dto.getAutor(), dto.getDescricao()); // Construtor com 3 argumentos
+
+        novoLivro.setUrlCapa(dto.getUrlCapa());
+        novoLivro.setAno(dto.getAno());
+
 
         if (dto.getInteressesIds() != null && dto.getInteressesIds().length > 0) {
             List<Long> idsList = Arrays.asList(dto.getInteressesIds());
@@ -86,6 +92,9 @@ public class LivroService {
         livroExistente.setTitulo(dto.getTitulo());
         livroExistente.setAutor(dto.getAutor());
         livroExistente.setDescricao(dto.getDescricao());
+        livroExistente.setAno(dto.getAno()); // Adicionado o mapeamento para ano
+
+        livroExistente.setUrlCapa(dto.getUrlCapa());
 
         livroExistente.getInteresses().clear();
 
@@ -130,17 +139,7 @@ public class LivroService {
     }
 
     @Transactional(readOnly = true)
-    public List<Livro> buscarLivrosPorIds(List<Long> ids) {
-        if (ids == null || ids.isEmpty()) {
-            return List.of(); // Retorna lista vazia se não houver IDs
-        }
-        // Usa o método findAllById do JpaRepository
-        return livroRepository.findAllById(ids);
-    }
-
-    @Transactional(readOnly = true)
     public List<Livro> buscarLivrosDeAmigos(Long userIdLogado) {
-        // 1. Define o ID dos amigos (quem o usuário logado segue)
         List<Long> idsDosAmigos = userService.getIdsDosSeguidos(userIdLogado);
 
         if (idsDosAmigos.isEmpty()) {
@@ -162,3 +161,4 @@ public class LivroService {
     }
 
 }
+

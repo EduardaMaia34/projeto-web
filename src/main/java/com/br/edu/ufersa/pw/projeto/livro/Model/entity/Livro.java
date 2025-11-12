@@ -28,6 +28,8 @@ public class Livro {
     @Column(name = "url_capa", length = 500) // Assumindo que 500 caracteres é suficiente
     private String urlCapa;
 
+    @Column(name = "ano", nullable = false)
+    private int ano;
 
     @Column(name = "data_criacao", updatable = false)
     private LocalDateTime dataCriacao;
@@ -41,17 +43,28 @@ public class Livro {
             inverseJoinColumns = @JoinColumn(name = "interesse_id"))
     private Set<Interesse> interesses = new HashSet<>();
 
-    //construtores
+    // Construtores
     public Livro(){
     }
-    public Livro(String titulo, String autor, String descricao){
+
+    // NOVO CONSTRUTOR: Para mapear Título, Autor e Descrição (campos obrigatórios)
+    public Livro(String titulo, String autor, String descricao) {
+        this.titulo = titulo;
+        this.autor = autor;
+        this.descricao = descricao;
+    }
+
+    // Construtor original (mantido, mas pode ser desnecessário se houver o @PrePersist)
+    public Livro(String titulo, String autor, String descricao,  String urlCapa, int ano, LocalDateTime dataCriacao) {
         this.titulo = titulo;
         this.autor=autor;
         this.descricao=descricao;
         this.urlCapa = urlCapa;
+        this.ano = ano;
+        this.dataCriacao = dataCriacao;
     }
 
-    //getters e setters
+    // getters e setters
     public Long getId() {
         return id;
     }
@@ -92,12 +105,12 @@ public class Livro {
         this.dataCriacao = dataCriacao;
     }
 
-   public Set<Interesse> getInteresses() {
+    public Set<Interesse> getInteresses() {
         return interesses;
-   }
-   public void setInteresses(Set<Interesse> interesses) {
+    }
+    public void setInteresses(Set<Interesse> interesses) {
         this.interesses = interesses;
-   }
+    }
 
     public String getUrlCapa() {
         return urlCapa;
@@ -107,7 +120,12 @@ public class Livro {
         this.urlCapa = urlCapa;
     }
 
-    // --- MÉTODOS DE CICLO DE VIDA ---
+    public int getAno() {
+        return ano;
+    }
+    public void setAno(int ano) {
+        this.ano = ano;
+    }
 
     // Define a data de criação automaticamente antes de persistir
     @PrePersist

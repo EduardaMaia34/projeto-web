@@ -35,7 +35,7 @@ public class DashboardController {
         List<Livro> amigos = List.of();
         if (userLogado != null) {
             // CHAMADA AO NOVO MÉTODO
-            amigos = livroService.buscarLivrosDeAmigos(userLogado.getId());
+            amigos = livroService .buscarLivrosDeAmigos(userLogado.getId());
         }
 
         model.addAttribute("famosos", famosos);
