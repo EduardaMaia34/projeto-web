@@ -227,12 +227,10 @@
     const API_BASE_URL = 'http://localhost:8081/api/v1';
     const CONTAINER = document.getElementById('reviewsListContainer');
 
-    // IMPORTANTE: Use um token real aqui. Assumimos que o 'sub' (subject) do JWT é o ID do usuário.
     const MOCK_JWT_TOKEN = 'eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIyIiwidXNlcm5hbWUiOiJtYXJpM0BnbWFpbC5jb20iLCJyb2xlcyI6IlJPTEVfVVNFUiIsImlhdCI6MTc2Mjg4NDk2MywiZXhwIjoxNzYyOTcxMzYzfQ.WAArRASXrya9pGYjt9HfpZwJHuScmU30v7jsHl6kR5g';
 
     let globalReviewsData = [];
 
-    // FUNÇÃO PARA SIMULAR A OBTENÇÃO DO USER ID DO TOKEN
     function getUserIdFromToken() {
         if (!MOCK_JWT_TOKEN) return null;
         try {
@@ -243,7 +241,7 @@
             }).join(''));
 
             const payload = JSON.parse(jsonPayload);
-            // Retorna o 'sub' (subject), que é o ID do usuário no seu JWT mockado ("2")
+
             return payload.sub;
         } catch (e) {
             console.error("Erro ao decodificar o token:", e);

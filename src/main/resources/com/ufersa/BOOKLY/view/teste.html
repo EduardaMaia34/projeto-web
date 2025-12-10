@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Perfil Bookly - Mari</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header class="navbar">
+    <div class="navbar-brand">
+        <img src="src/main/resources/Images/Bookly (3).png">
+    </div>
+    <div class="navbar-actions">
+        <div class="user-profile">
+            <img src="src/main/resources/Images/jennavasco.png" alt="Foto de perfil" class="profile-icon">
+            <span>Mari</span>
+        </div>
+        <button class="search-button">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+        </button>
+        <button class="add-book-button">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+            Livro
+        </button>
+        <button class="notes-button">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9"></polyline></svg>
+        </button>
+    </div>
+</header>
+
+<div class="container">
+    <section class="profile-header-section">
+        <div class="profile-info">
+            <img src="caminho/para/imagem_mari_grande.png" alt="Foto de perfil de Mari" class="profile-avatar">
+            <div class="profile-details">
+                <p class="profile-name">Mari</p>
+                <p class="profile-status"><span>EDITAR PERFIL</span></p>
+                <p class="profile-bio">EU GOSTO DE <br> ROBÔS E CS.</p>
+                <div class="profile-tags">
+                    <span class="tag tag-romance">Romance</span>
+                    <span class="tag tag-ficcao">Ficção Científica</span>
+                    <span class="tag tag-suspense">Suspense</span>
+                </div>
+            </div>
+        </div>
+        <div class="profile-stats">
+            <div class="stat-item">
+                <span class="stat-number">40</span>
+                <span class="stat-label">Lidos</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-number">10</span>
+                <span class="stat-label">Estante</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-number">90</span>
+                <span class="stat-label">Salvos</span>
+            </div>
+        </div>
+    </section>
+
+    <main class="main-content">
+        <section class="favorites-section">
+            <h2>Favoritos</h2>
+            <div class="book-list">
+                <div class="book-card">
+                    <img src="caminho/para/capa_vermelho.png" alt="Capa do Livro 1" class="book-cover">
+                    <p class="book-title-small">O Livro de <br> Vermelho Branco e <br> Sangue Azul</p>
+                    <p class="book-author-small">CASEY <br> MCQUISTON</p>
+                    <div class="rating">★★★☆☆</div>
+                </div>
+                <div class="book-card">
+                    <img src="caminho/para/capa_verde.png" alt="Capa do Livro 2" class="book-cover">
+                    <p class="book-title-small">O LIVRO DA <br> CAPA VERDE</p>
+                    <p class="book-author-small">Um amigo, amor <br> e solidariedade</p>
+                    <div class="rating">★★★☆☆</div>
+                </div>
+                <div class="book-card">
+                    <img src="caminho/para/capa_hipotese.png" alt="Capa do Livro 3" class="book-cover">
+                    <p class="book-title-small">A HIPÓTESE <br> DO AMOR</p>
+                    <p class="book-author-small">ALI HAZELWOOD</p>
+                    <div class="rating">★★★☆☆</div>
+                </div>
+                <div class="book-card">
+                    <img src="caminho/para/capa_verity.png" alt="Capa do Livro 4" class="book-cover">
+                    <p class="book-title-small">Verity</p>
+                    <p class="book-author-small">COLLEEN <br> HOOVER</p>
+                    <div class="rating">★★☆☆☆</div>
+                </div>
+            </div>
+        </section>
+
+        <section class="reading-section">
+            <h2>Em andamento</h2>
+            <div class="book-list reading-list">
+                <div class="book-card reading-card">
+                    <img src="caminho/para/capa_daisy.png" alt="Capa do Livro em Andamento" class="book-cover">
+                    <p class="book-title-small">Daisy Jones <br> & The Six</p>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <aside class="sidebar">
+        <button class="sidebar-button">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path></svg>
+            Biblioteca
+        </button>
+        <button class="sidebar-button">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg>
+            Lidos
+        </button>
+        <button class="sidebar-button">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg>
+            Reviews
+        </button>
+    </aside>
+</div>
+
+</body>
+</html>
