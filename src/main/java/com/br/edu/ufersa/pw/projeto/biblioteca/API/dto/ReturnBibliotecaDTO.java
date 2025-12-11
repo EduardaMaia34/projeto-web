@@ -24,6 +24,7 @@ public class ReturnBibliotecaDTO {
         this.livroId = biblioteca.getLivroId();
         this.addedAt = biblioteca.getAddedAt();
         this.status = biblioteca.getStatus();
+
     }
 
     public Long getId() { return id; }

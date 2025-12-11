@@ -12,7 +12,7 @@ const IndexPage = () => {
     useEffect(() => {
         if (typeof window !== 'undefined') {
             if (isAuthenticated()) {
-                router.push('/biblioteca');
+                router.push('/reviews');
             } else {
                 router.push('/login');
             }
