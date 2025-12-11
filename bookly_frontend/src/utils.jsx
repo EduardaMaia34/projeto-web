@@ -12,14 +12,19 @@ export const displayStarRating = (rating) => {
 
     for (let i = 1; i <= 5; i++) {
         let iconClass;
+        let starStyle = {};
+
         if (i <= displayRating) {
             iconClass = 'bi-star-fill';
+            starStyle.color = 'gold';
         } else if (i - 0.5 <= displayRating) {
             iconClass = 'bi-star-half';
+            starStyle.color = 'gold';
         } else {
             iconClass = 'bi-star';
+            starStyle.color = 'lightgray';
         }
-        stars.push(<i key={i} className={`bi ${iconClass}`} />);
+        stars.push(<i key={i} className={`bi ${iconClass}`} style={starStyle} />);
     }
     return stars;
 };
@@ -34,7 +39,7 @@ export const getUserIdFromToken = (token) => {
         }).join(''));
 
         const payload = JSON.parse(jsonPayload);
-        return payload.sub; // Assumindo que 'sub' contém o ID do usuário
+        return payload.sub;
     } catch (e) {
         console.error('Erro ao decodificar JWT:', e);
         return null;

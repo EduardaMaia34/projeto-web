@@ -66,8 +66,19 @@ export const fetchEstanteData = async (type, userId = null, page = 0, size = 20)
     return response.json();
 };
 
+
 export const fetchReviews = async (userId) => {
-    const url = `${API_BASE_URL}/reviews/usuario/${userId}`;
+    let url;
+
+    // Se NÃO vier userId na URL → pegar reviews do usuário autenticado
+    if (!userId || userId === 'undefined') {
+        url = `${API_BASE_URL}/reviews/me`;
+    }
+    // Se vier userId → pegar reviews de outro usuário
+    else {
+        url = `${API_BASE_URL}/reviews/usuario/${userId}`;
+    }
+
     const response = await fetch(url, { headers: getHeaders() });
 
     if (!response.ok) {
@@ -77,6 +88,7 @@ export const fetchReviews = async (userId) => {
 
     return response.json();
 };
+
 
 export const saveReviewApi = async (livroId, payload) => {
     const response = await fetch(`${API_BASE_URL}/reviews/${livroId}`, {

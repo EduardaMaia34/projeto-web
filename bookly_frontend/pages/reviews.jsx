@@ -1,33 +1,32 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { useRouter } from 'next/router';
-import Navbar from '../src/components/Navbar.jsx';
-import EstanteSearchBar from '../src/components/EstanteSearchBar.jsx';
-import { fetchReviews, updateReview, deleteReviewApi } from '../src/api/booklyApi.js';
-import { displayStarRating, formatDate } from '../src/utils.jsx';
+import React, { useState, useEffect, useCallback, useMemo } from "react";
+import { useRouter } from "next/router";
+import Navbar from "../src/components/Navbar.jsx";
+import ReviewSearchBar from "../src/components/ReviewSearchBar.jsx";
+import { fetchReviews, updateReview, deleteReviewApi } from "../src/api/booklyApi.js";
+import { displayStarRating, formatDate } from "../src/utils.jsx";
 
-const isAuthenticated = () => typeof window !== 'undefined' && !!localStorage.getItem('jwtToken');
+import { Modal, Button } from "react-bootstrap";
 
 const ReviewListItem = ({ review, onEdit, onDelete }) => {
-    const starsHtml = displayStarRating(review.nota);
-    const dataCriacaoFormatada = formatDate(review.dataCriacao);
+    const starsHtml = displayStarRating(review?.nota || 0);
+    const dataFormatada = review?.data ? formatDate(review.data) : "Data desconhecida";
 
     return (
         <div className="review-card-item list-group-item d-flex justify-content-between align-items-center p-3 mb-3 border rounded">
             <div className="review-content">
-                <h5 className="mb-1">{review.livro.titulo}</h5>
-                <p className="small text-muted mb-1">Por: {review.user.nome} | {dataCriacaoFormatada}</p>
+                <h5 className="mb-1">{review?.livro?.titulo}</h5>
+                <p className="small text-muted mb-1">
+                    Por: {review?.autor} | {dataFormatada}
+                </p>
                 <div className="star-rating mb-2">{starsHtml}</div>
-                <p className="mb-0">{review.review}</p>
+                <p className="mb-0">{review?.review}</p>
             </div>
+
             <div className="review-actions">
-                <button
-                    className="btn btn-sm btn-outline-secondary me-2"
-                    onClick={() => onEdit(review)}>
+                <button className="btn btn-sm btn-outline-secondary me-2" onClick={() => onEdit(review)}>
                     <i className="bi bi-pencil"></i> Editar
                 </button>
-                <button
-                    className="btn btn-sm btn-outline-danger"
-                    onClick={() => onDelete(review.id)}>
+                <button className="btn btn-sm btn-outline-danger" onClick={() => onDelete(review.id)}>
                     <i className="bi bi-trash"></i> Excluir
                 </button>
             </div>
@@ -35,196 +34,197 @@ const ReviewListItem = ({ review, onEdit, onDelete }) => {
     );
 };
 
-const EditReviewModal = ({ review, onSave }) => {
-    const [currentReviewText, setCurrentReviewText] = useState(review.review || '');
-    const [currentNota, setCurrentNota] = useState(review.nota || 0);
+const renderStarsForInput = (rating, setNota) => {
+    const displayRating = parseFloat(rating) || 0;
+    let stars = [];
 
-    useEffect(() => {
-        setCurrentReviewText(review.review || '');
-        setCurrentNota(review.nota || 0);
-    }, [review]);
+    const handleStarClick = (starValue) => {
+        let newRating;
 
-    const handleSave = async () => {
-        if (currentNota === 0) {
-            alert('Por favor, atribua uma nota ao livro.');
-            return;
+        if (displayRating === starValue) {
+            newRating = starValue - 0.5;
+        }
+        else if (displayRating === starValue - 0.5) {
+            newRating = starValue;
+        }
+        else {
+            newRating = starValue;
         }
 
-        const payload = {
-            nota: parseFloat(currentNota),
-            review: currentReviewText
-        };
-        await onSave(review.id, payload);
+        if (newRating < 0) newRating = 0;
+        if (newRating > 5) newRating = 5;
+
+        setNota(newRating);
     };
 
-    const StarRatingInput = ({ rating, setRating }) => {
-        const stars = [];
-        for (let i = 1; i <= 5; i++) {
-            stars.push(
-                <i
-                    key={i}
-                    className={`bi ${i <= rating ? 'bi-star-fill' : 'bi-star'}`}
-                    onClick={() => setRating(i)}
-                    style={{ cursor: 'pointer', color: 'gold', fontSize: '1.5rem' }}
-                />
-            );
+    for (let i = 1; i <= 5; i++) {
+        let iconClass;
+        let starColor = '#e0e0e0';
+
+        if (i <= displayRating) {
+            iconClass = 'bi-star-fill';
+            starColor = 'gold';
+        } else if (i - 0.5 <= displayRating) {
+            iconClass = 'bi-star-half';
+            starColor = 'gold';
+        } else {
+            iconClass = 'bi-star';
         }
-        return <div className="modal-rating-input">{stars}</div>;
-    };
 
-    return (
-        <div className="modal fade" id="editReviewModal" tabIndex="-1" aria-labelledby="editReviewModalLabel" aria-hidden="true">
-            <div className="modal-dialog">
-                <div className="modal-content custom-modal-content">
-                    <div className="modal-header custom-modal-header">
-                        <h5 className="modal-title" id="editReviewModalLabel">Editar Review de {review.livro.titulo}</h5>
-                        <button type="button" className="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                    </div>
-                    <div className="modal-body">
-                        <StarRatingInput rating={currentNota} setRating={setCurrentNota} />
-                        <div className="mb-3 mt-3">
-                            <label htmlFor="reviewText" className="form-label">Sua opinião sobre o livro:</label>
-                            <textarea
-                                className="form-control"
-                                id="reviewText"
-                                rows="3"
-                                value={currentReviewText}
-                                onChange={(e) => setCurrentReviewText(e.target.value)}></textarea>
-                        </div>
-                    </div>
-                    <div className="modal-footer modal-footer-custom">
-                        <button type="button" className="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                        <button type="button" className="btn btn-success" onClick={handleSave}>Salvar Alterações</button>
-                    </div>
-                </div>
-            </div>
-        </div>
-    );
+        stars.push(
+            <i
+                key={i}
+                className={`bi ${iconClass}`}
+                style={{ fontSize: "1.5rem", color: starColor, cursor: "pointer" }}
+                onClick={() => handleStarClick(i)}
+            ></i>
+        );
+    }
+    return stars;
 };
 
 
-const Reviews = () => {
+export default function Reviews() {
     const router = useRouter();
     const [reviews, setReviews] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
+    const [searchTerm, setSearchTerm] = useState('');
+
     const [selectedReview, setSelectedReview] = useState(null);
+    const [nota, setNota] = useState(0);
+    const [texto, setTexto] = useState("");
 
-    // 1. Importa o JS do Bootstrap APENAS no lado do cliente
-    useEffect(() => {
-        if (typeof window !== 'undefined') {
-            import('bootstrap/dist/js/bootstrap.bundle.min.js');
-        }
-    }, []);
-
-    // 2. Lógica de Proteção de Rota
-    useEffect(() => {
-        if (typeof window !== 'undefined' && !isAuthenticated()) {
-            router.push('/login');
-        }
-    }, [router]);
-
+    const { userId } = router.query;
 
     const fetchUserReviews = useCallback(async () => {
-        if (!isAuthenticated()) return;
-
-        setLoading(true);
-        setError(null);
         try {
-            const data = await fetchReviews();
-            setReviews(data);
+            const data = await fetchReviews(userId);
+            console.log("LOG 1 - Dados da API de Reviews recebidos:", data);
+            setReviews(Array.isArray(data) ? data : []);
         } catch (err) {
             setError(err.message);
-            setReviews([]);
         } finally {
             setLoading(false);
         }
-    }, []);
+    }, [userId]);
 
     useEffect(() => {
-        if (isAuthenticated()) {
-            fetchUserReviews();
-        }
-    }, [fetchUserReviews]);
+        if (router.isReady) fetchUserReviews();
+    }, [router.isReady, fetchUserReviews]);
 
-    const handleEdit = (review) => {
+    const filteredReviews = useMemo(() => {
+        console.log("LOG 2 - Aplicando filtro. Termo:", searchTerm, "Total de Reviews:", reviews.length);
+        if (!searchTerm) {
+            return reviews;
+        }
+        const lowerCaseSearch = searchTerm.toLowerCase();
+
+        return reviews.filter(review => {
+            const titulo = review.livro?.titulo?.toLowerCase() || '';
+            const reviewText = review.review?.toLowerCase() || '';
+
+            return titulo.includes(lowerCaseSearch) || reviewText.includes(lowerCaseSearch);
+        });
+    }, [reviews, searchTerm]);
+
+    const openEditModal = (review) => {
         setSelectedReview(review);
-        // Acessa o Modal do Bootstrap através do objeto global 'window'
-        if (typeof window === 'undefined' || !window.bootstrap || !window.bootstrap.Modal) return;
-        const modalElement = document.getElementById('editReviewModal');
-        const editModal = new window.bootstrap.Modal(modalElement);
-        editModal.show();
+        setNota(review.nota);
+        setTexto(review.review);
     };
 
-    const handleDelete = async (reviewId) => {
-        if (window.confirm('Tem certeza de que deseja excluir esta review?')) {
-            try {
-                await deleteReviewApi(reviewId);
-                fetchUserReviews();
-            } catch (err) {
-                alert(`Erro ao excluir review: ${err.message}`);
-            }
-        }
-    };
-
-    const handleSaveReview = async (reviewId, payload) => {
+    const handleSaveReview = async () => {
         try {
-            await updateReview(reviewId, payload);
-            if (typeof window !== 'undefined' && window.bootstrap && window.bootstrap.Modal) {
-                const modalElement = document.getElementById('editReviewModal');
-                // Usa getInstance para obter a instância existente e ocultá-la
-                window.bootstrap.Modal.getInstance(modalElement).hide();
-            }
+            await updateReview(selectedReview.id, { nota, review: texto });
+            setSelectedReview(null);
             fetchUserReviews();
-        } catch (err) {
-            alert(`Erro ao salvar review: ${err.message}`);
+        } catch (error) {
+            console.error('Falha ao salvar a review:', error);
+            alert('Falha ao salvar a review. Consulte o console para detalhes.');
         }
     };
 
-    if (!isAuthenticated()) {
-        return <div className="text-center p-5">Redirecionando...</div>;
-    }
+    const handleDelete = async (id) => {
+        if (!confirm("Excluir esta review?")) return;
+        try {
+            await deleteReviewApi(id);
+            fetchUserReviews();
+        } catch (error) {
+            console.error('Falha ao deletar a review:', error);
+            alert('Falha ao deletar a review. Consulte o console para detalhes.');
+        }
+    };
 
+    const handleSearchChange = (event) => {
+        setSearchTerm(event.target.value);
+        console.log("LOG 4 - Termo de Busca Atualizado para:", value);
+    };
 
     return (
         <>
-            <Navbar />
+            <Navbar onSearchChange={handleSearchChange} currentSearchTerm={searchTerm} />
 
             <div className="container">
                 <div className="d-flex justify-content-between align-items-center mb-4">
-                    <h3 id="pageTitle">Minhas Reviews</h3>
-                    <EstanteSearchBar />
+                    <h3>Minhas Reviews</h3>
+                    <ReviewSearchBar searchTerm={searchTerm} onSearchChange={handleSearchChange} />
                 </div>
 
-                <div id="reviewsListContainer" className="list-group list-group-flush">
-                    {loading && <p className="text-muted">Carregando reviews...</p>}
-                    {error && <p className="text-danger">{error}</p>}
+                {loading && <p className="text-muted">Carregando reviews...</p>}
+                {!loading && error && <p className="text-danger">Erro: {error}</p>}
+                {!loading && filteredReviews.length === 0 && (
+                    <p className="text-muted">
+                        {searchTerm ? `Nenhuma review encontrada para "${searchTerm}".` : "Você ainda não fez nenhuma review."}
+                    </p>
+                )}
 
-                    {!loading && !error && reviews.length === 0 && (
-                        <p className="text-muted">Você ainda não fez nenhuma review.</p>
-                    )}
-
-                    {!loading && !error && reviews.map(review => (
-                        <ReviewListItem
-                            key={review.id}
-                            review={review}
-                            onEdit={handleEdit}
-                            onDelete={handleDelete}
-                        />
-                    ))}
-                </div>
-
-                <div id="pagination-controls" className="d-flex justify-content-center mt-5">
-
-                </div>
+                {!loading && !error && filteredReviews.map((review) => (
+                    <ReviewListItem
+                        key={review.id}
+                        review={review}
+                        onEdit={openEditModal}
+                        onDelete={handleDelete}
+                    />
+                ))}
             </div>
 
-            {selectedReview && (
-                <EditReviewModal review={selectedReview} onSave={handleSaveReview} />
-            )}
+            <Modal show={!!selectedReview} onHide={() => setSelectedReview(null)} centered>
+                <Modal.Header closeButton>
+                    <Modal.Title>Editar Review</Modal.Title>
+                </Modal.Header>
+
+                <Modal.Body>
+                    {selectedReview && (
+                        <>
+                            <p className="text-muted">Livro: {selectedReview.livro.titulo}</p>
+
+                            <div className="mb-3">
+                                <span className="fw-bold">Nota:</span>
+                                <div className="mt-2">
+                                    {renderStarsForInput(nota, setNota)}
+                                </div>
+                            </div>
+
+                            <textarea
+                                className="form-control"
+                                rows="4"
+                                value={texto}
+                                onChange={(e) => setTexto(e.target.value)}
+                            ></textarea>
+                        </>
+                    )}
+                </Modal.Body>
+
+                <Modal.Footer>
+                    <Button variant="secondary" onClick={() => setSelectedReview(null)}>
+                        Cancelar
+                    </Button>
+                    <Button variant="success" onClick={handleSaveReview}>
+                        Salvar
+                    </Button>
+                </Modal.Footer>
+            </Modal>
         </>
     );
-
-};
-
-export default Reviews;
+}

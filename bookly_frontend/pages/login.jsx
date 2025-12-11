@@ -16,7 +16,7 @@ const LoginPage = () => {
 
         try {
             await loginUser(email, password);
-            router.push('/biblioteca');
+            router.push('/reviews' );
         } catch (err) {
             setError(err.message || 'Credenciais inválidas ou erro de conexão.');
         } finally {

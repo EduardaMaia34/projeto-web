@@ -20,7 +20,7 @@ public class ReturnReviewDTO {
         this.nota = review.getNota();
         this.review = review.getReview();
         this.data = review.getData();
-        this.autor = review.getUser().getUsername();
+        this.autor = review.getUser().getNome();
 
         this.livro = new LivroReviewDTO(review.getLivro());
     }
