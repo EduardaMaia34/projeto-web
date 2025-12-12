@@ -16,6 +16,8 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
+import java.util.Optional;
+
 @CrossOrigin(origins = "*")
 @RestController
 @RequestMapping("/api/v1/users")
@@ -46,6 +48,32 @@ public class UserController {
 
         return new ResponseEntity<>(users, HttpStatus.OK);
     }
+
+
+    @GetMapping("/me")
+    public ResponseEntity<ReturnUserDTO> getMe(@AuthenticationPrincipal CustomUserDetails loggedInUser) {
+        if (loggedInUser == null || loggedInUser.getId() == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+
+        // Assumindo que o Service tem um método para buscar o DTO por ID
+        Optional<ReturnUserDTO> userDTO = service.buscarDTOporId(loggedInUser.getId());
+
+        return userDTO.map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
+    }
+
+
+    @GetMapping("/{userId}")
+    public ResponseEntity<ReturnUserDTO> getUserById(@PathVariable Long userId) {
+
+        // Assumindo que o Service tem um método para buscar o DTO por ID
+        Optional<ReturnUserDTO> userDTO = service.buscarDTOporId(userId);
+
+        return userDTO.map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
+    }
+
 
     @PostMapping()
     public ResponseEntity<ReturnUserDTO> create(@Valid @RequestBody InputUserDTO user){
@@ -116,7 +144,6 @@ public class UserController {
     @PatchMapping("/{email}")
     public ResponseEntity<ReturnUserDTO> updatePassword (@PathVariable String email)
     { return ResponseEntity.status(HttpStatus.METHOD_NOT_ALLOWED).build(); }
-
 
 
     @PostMapping("/seguir/{seguidoId}")

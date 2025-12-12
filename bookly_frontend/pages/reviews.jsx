@@ -1,147 +1,138 @@
-import React, { useState, useEffect, useCallback, useMemo } from "react";
-import { useRouter } from "next/router";
-import Navbar from "../src/components/Navbar.jsx";
-import ReviewSearchBar from "../src/components/ReviewSearchBar.jsx";
-import { fetchReviews, updateReview, deleteReviewApi } from "../src/api/booklyApi.js";
-import { displayStarRating, formatDate } from "../src/utils.jsx";
+// "use client";
 
+import React, { useState, useEffect, useCallback, useMemo } from "react";
+import Navbar from "../src/components/Navbar";
+import ReviewModal from "../src/components/ReviewModal";
+import { fetchReviews, updateReview, deleteReviewApi } from "../src/api/booklyApi";
+import { displayStarRating, formatDate } from "../src/utils";
 import { Modal, Button } from "react-bootstrap";
 
-const ReviewListItem = ({ review, onEdit, onDelete }) => {
-    const starsHtml = displayStarRating(review?.nota || 0);
-    const dataFormatada = review?.data ? formatDate(review.data) : "Data desconhecida";
+const StarRatingInput = ({ currentRating, onRate }) => {
+    const stars = [1, 2, 3, 4, 5];
 
-    return (
-        <div className="review-card-item list-group-item d-flex justify-content-between align-items-center p-3 mb-3 border rounded">
-            <div className="review-content">
-                <h5 className="mb-1">{review?.livro?.titulo}</h5>
-                <p className="small text-muted mb-1">
-                    Por: {review?.autor} | {dataFormatada}
-                </p>
-                <div className="star-rating mb-2">{starsHtml}</div>
-                <p className="mb-0">{review?.review}</p>
-            </div>
-
-            <div className="review-actions">
-                <button className="btn btn-sm btn-outline-secondary me-2" onClick={() => onEdit(review)}>
-                    <i className="bi bi-pencil"></i> Editar
-                </button>
-                <button className="btn btn-sm btn-outline-danger" onClick={() => onDelete(review.id)}>
-                    <i className="bi bi-trash"></i> Excluir
-                </button>
-            </div>
-        </div>
-    );
-};
-
-const renderStarsForInput = (rating, setNota) => {
-    const displayRating = parseFloat(rating) || 0;
-    let stars = [];
-
-    const handleStarClick = (starValue) => {
+    const handleClick = (starValue) => {
         let newRating;
-
-        if (displayRating === starValue) {
+        if (currentRating === starValue) {
             newRating = starValue - 0.5;
         }
-        else if (displayRating === starValue - 0.5) {
+        else if (currentRating === starValue - 0.5) {
             newRating = starValue;
         }
         else {
             newRating = starValue;
         }
-
         if (newRating < 0) newRating = 0;
         if (newRating > 5) newRating = 5;
 
-        setNota(newRating);
+        onRate(newRating);
     };
 
-    for (let i = 1; i <= 5; i++) {
-        let iconClass;
-        let starColor = '#e0e0e0';
+    return (
+        <div className="star-rating mt-1">
+            {stars.map((starValue) => {
+                let iconClass = "bi-star";
+                let color = "#e0e0e0";
 
-        if (i <= displayRating) {
-            iconClass = 'bi-star-fill';
-            starColor = 'gold';
-        } else if (i - 0.5 <= displayRating) {
-            iconClass = 'bi-star-half';
-            starColor = 'gold';
-        } else {
-            iconClass = 'bi-star';
-        }
+                if (starValue <= currentRating) {
+                    iconClass = "bi-star-fill";
+                    color = "gold";
+                } else if (starValue - 0.5 <= currentRating) {
+                    iconClass = "bi-star-half";
+                    color = "gold";
+                }
 
-        stars.push(
-            <i
-                key={i}
-                className={`bi ${iconClass}`}
-                style={{ fontSize: "1.5rem", color: starColor, cursor: "pointer" }}
-                onClick={() => handleStarClick(i)}
-            ></i>
-        );
-    }
-    return stars;
+                return (
+                    <i
+                        key={starValue}
+                        className={`bi ${iconClass}`}
+                        style={{ fontSize: "1.5rem", cursor: "pointer", color: color }}
+                        onClick={() => handleClick(starValue)}
+                    ></i>
+                );
+            })}
+        </div>
+    );
 };
+
+function getUserId() {
+    if (typeof window === "undefined") return null;
+
+    const params = new URLSearchParams(window.location.search);
+    const fromUrl = params.get("userId");
+    if (fromUrl) return fromUrl;
+
+    try {
+        const stored = JSON.parse(localStorage.getItem("userData"));
+        return stored?.id || stored?.userId || null;
+    } catch {
+        return null;
+    }
+}
 
 
 export default function Reviews() {
-    const router = useRouter();
+    const [userId, setUserId] = useState(null);
+    const [isClient, setIsClient] = useState(false);
+
     const [reviews, setReviews] = useState([]);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState(null);
-    const [searchTerm, setSearchTerm] = useState('');
+    const [searchTerm, setSearchTerm] = useState("");
 
     const [selectedReview, setSelectedReview] = useState(null);
-    const [nota, setNota] = useState(0);
-    const [texto, setTexto] = useState("");
-
-    const { userId } = router.query;
-
-    const fetchUserReviews = useCallback(async () => {
-        try {
-            const data = await fetchReviews(userId);
-            console.log("LOG 1 - Dados da API de Reviews recebidos:", data);
-            setReviews(Array.isArray(data) ? data : []);
-        } catch (err) {
-            setError(err.message);
-        } finally {
-            setLoading(false);
-        }
-    }, [userId]);
+    const [openAddModal, setOpenAddModal] = useState(false);
 
     useEffect(() => {
-        if (router.isReady) fetchUserReviews();
-    }, [router.isReady, fetchUserReviews]);
+        setIsClient(true);
+        setUserId(getUserId());
+    }, []);
 
-    const filteredReviews = useMemo(() => {
-        console.log("LOG 2 - Aplicando filtro. Termo:", searchTerm, "Total de Reviews:", reviews.length);
-        if (!searchTerm) {
-            return reviews;
+    const fetchUserReviews = useCallback(async () => {
+        if (!isClient) return;
+
+        try {
+            const data = await fetchReviews(userId);
+            setReviews(Array.isArray(data) ? data : []);
+        } catch {
+            setReviews([]);
         }
-        const lowerCaseSearch = searchTerm.toLowerCase();
+    }, [isClient, userId]);
 
-        return reviews.filter(review => {
-            const titulo = review.livro?.titulo?.toLowerCase() || '';
-            const reviewText = review.review?.toLowerCase() || '';
+    useEffect(() => {
+        if (isClient) {
+            fetchUserReviews();
+        }
+    }, [isClient, fetchUserReviews]);
 
-            return titulo.includes(lowerCaseSearch) || reviewText.includes(lowerCaseSearch);
+    /* ----------------------- FILTRAGEM E ORDENAÇÃO ------------------------ */
+    const filteredReviews = useMemo(() => {
+        const term = searchTerm.toLowerCase();
+
+        const filtered = reviews.filter(
+            (r) =>
+                r.livro?.titulo?.toLowerCase().includes(term) ||
+                (r.review || "").toLowerCase().includes(term)
+        );
+
+        // Ordena da MAIS NOVA para a MAIS ANTIGA (Ordem Decrescente)
+        return filtered.slice().sort((a, b) => {
+            const dateA = new Date(a.data);
+            const dateB = new Date(b.data);
+
+            if (isNaN(dateA.getTime())) return 1;
+            if (isNaN(dateB.getTime())) return -1;
+
+            return dateB.getTime() - dateA.getTime();
         });
     }, [reviews, searchTerm]);
 
-    const openEditModal = (review) => {
-        setSelectedReview(review);
-        setNota(review.nota);
-        setTexto(review.review);
-    };
-
-    const handleSaveReview = async () => {
+    /* ----------------------- EDITAR REVIEW ------------------------ */
+    const handleSaveEdit = async (id, payload) => {
         try {
-            await updateReview(selectedReview.id, { nota, review: texto });
+            await updateReview(id, payload);
             setSelectedReview(null);
             fetchUserReviews();
         } catch (error) {
-            console.error('Falha ao salvar a review:', error);
-            alert('Falha ao salvar a review. Consulte o console para detalhes.');
+            console.error('Falha ao salvar edição:', error);
+            alert('Falha ao salvar a edição da review.');
         }
     };
 
@@ -151,44 +142,77 @@ export default function Reviews() {
             await deleteReviewApi(id);
             fetchUserReviews();
         } catch (error) {
-            console.error('Falha ao deletar a review:', error);
-            alert('Falha ao deletar a review. Consulte o console para detalhes.');
+            console.error('Falha ao deletar review:', error);
+            alert('Falha ao deletar a review.');
         }
     };
 
-    const handleSearchChange = (event) => {
-        setSearchTerm(event.target.value);
-        console.log("LOG 4 - Termo de Busca Atualizado para:", value);
+    const handleEditNotaChange = (newRating) => {
+        setSelectedReview(prevReview => ({
+            ...prevReview,
+            nota: newRating,
+        }));
     };
+
+
+    if (!isClient) return null;
 
     return (
         <>
-            <Navbar onSearchChange={handleSearchChange} currentSearchTerm={searchTerm} />
+            <Navbar
+                onAddBookClick={() => setOpenAddModal(true)}
+                onSearchChange={(e) => setSearchTerm(e.target.value)}
+                currentSearchTerm={searchTerm}
+            />
 
             <div className="container">
-                <div className="d-flex justify-content-between align-items-center mb-4">
-                    <h3>Minhas Reviews</h3>
-                    <ReviewSearchBar searchTerm={searchTerm} onSearchChange={handleSearchChange} />
-                </div>
+                <h3 className="mb-4">Minhas Reviews</h3>
 
-                {loading && <p className="text-muted">Carregando reviews...</p>}
-                {!loading && error && <p className="text-danger">Erro: {error}</p>}
-                {!loading && filteredReviews.length === 0 && (
-                    <p className="text-muted">
-                        {searchTerm ? `Nenhuma review encontrada para "${searchTerm}".` : "Você ainda não fez nenhuma review."}
-                    </p>
-                )}
+                {filteredReviews.length === 0 && <p className="text-muted">Nenhuma review encontrada.</p>}
 
-                {!loading && !error && filteredReviews.map((review) => (
-                    <ReviewListItem
-                        key={review.id}
-                        review={review}
-                        onEdit={openEditModal}
-                        onDelete={handleDelete}
-                    />
+                {filteredReviews.map((review) => (
+                    <div key={review.id} className="border rounded p-3 mb-3">
+                        <div className="d-flex justify-content-between">
+                            <div>
+                                <h5>{review.livro?.titulo}</h5>
+                                <div className="small text-muted">
+                                    {review.autor} • {formatDate(review.data)}
+                                </div>
+                                <div className="mt-2">{displayStarRating(review.nota)}</div>
+                                <p className="mt-2">{review.review}</p>
+                            </div>
+
+                            <div className="d-flex flex-column align-items-end">
+                                <button
+                                    className="btn btn-sm btn-outline-secondary me-2"
+                                    onClick={() => setSelectedReview(review)}
+                                >
+                                    Editar
+                                </button>
+
+                                <button
+                                    className="btn btn-sm btn-outline-danger"
+                                    onClick={() => handleDelete(review.id)}
+                                >
+                                    Excluir
+                                </button>
+                            </div>
+                        </div>
+                    </div>
                 ))}
             </div>
 
+            {/* ---------------------- MODAL ADICIONAR REVIEW --------------------- */}
+            <ReviewModal
+                show={openAddModal}
+                onHide={() => {
+                    setOpenAddModal(false);
+                    fetchUserReviews();
+                }}
+                onSaveSuccess={fetchUserReviews}
+            />
+
+            {/* ---------------------- MODAL EDITAR REVIEW --------------------- */}
             <Modal show={!!selectedReview} onHide={() => setSelectedReview(null)} centered>
                 <Modal.Header closeButton>
                     <Modal.Title>Editar Review</Modal.Title>
@@ -200,18 +224,27 @@ export default function Reviews() {
                             <p className="text-muted">Livro: {selectedReview.livro.titulo}</p>
 
                             <div className="mb-3">
-                                <span className="fw-bold">Nota:</span>
+                                <span className="form-label fw-bold">Nota:</span>
+
                                 <div className="mt-2">
-                                    {renderStarsForInput(nota, setNota)}
+                                    <StarRatingInput
+                                        currentRating={parseFloat(selectedReview.nota) || 0}
+                                        onRate={handleEditNotaChange}
+                                    />
                                 </div>
                             </div>
 
                             <textarea
                                 className="form-control"
                                 rows="4"
-                                value={texto}
-                                onChange={(e) => setTexto(e.target.value)}
-                            ></textarea>
+                                value={selectedReview.review || ""}
+                                onChange={(e) =>
+                                    setSelectedReview({
+                                        ...selectedReview,
+                                        review: e.target.value,
+                                    })
+                                }
+                            />
                         </>
                     )}
                 </Modal.Body>
@@ -220,7 +253,17 @@ export default function Reviews() {
                     <Button variant="secondary" onClick={() => setSelectedReview(null)}>
                         Cancelar
                     </Button>
-                    <Button variant="success" onClick={handleSaveReview}>
+                    <Button
+                        variant="success"
+                        onClick={async () => {
+                            if (!selectedReview) return;
+                            await handleSaveEdit(selectedReview.id, {
+                                // A nota já é atualizada no estado pelo StarRatingInput
+                                nota: selectedReview.nota,
+                                review: selectedReview.review,
+                            });
+                        }}
+                    >
                         Salvar
                     </Button>
                 </Modal.Footer>

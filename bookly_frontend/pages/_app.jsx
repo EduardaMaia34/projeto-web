@@ -1,11 +1,16 @@
-// pages/_app.js
+"use client";
+
+import { useEffect } from "react";
 import "bootstrap/dist/css/bootstrap.min.css";
-import '../src/index.css';
+import "../src/index.css";
 import "bootstrap-icons/font/bootstrap-icons.css";
-// Não há necessidade de useEffect para importar o JS do Bootstrap se você usar react-bootstrap
 
 export default function App({ Component, pageProps }) {
-    console.log("APP LOADED");
-    // Remova o useEffect que importa o JS do Bootstrap
+    useEffect(() => {
+        (async () => {
+            await import("bootstrap/dist/js/bootstrap.bundle.min.js");
+        })();
+    }, []);
+
     return <Component {...pageProps} />;
 }

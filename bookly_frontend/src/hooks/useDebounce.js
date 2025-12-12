@@ -1,21 +1,17 @@
-// src/hooks/useDebounce.js
+"use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect } from "react";
 
-// Hook customizado para atrasar a execução de uma função
-export function useDebounce(value, delay) {
-    const [debouncedValue, setDebouncedValue] = useState(value);
+export function useDebounce(value, delay = 500) {
+    const [debounced, setDebounced] = useState(value);
 
     useEffect(() => {
-        const handler = setTimeout(() => {
-            setDebouncedValue(value);
+        const timer = setTimeout(() => {
+            setDebounced(value);
         }, delay);
 
-        // Cleanup: cancela o timeout se o valor mudar ou o componente for desmontado
-        return () => {
-            clearTimeout(handler);
-        };
+        return () => clearTimeout(timer);
     }, [value, delay]);
 
-    return debouncedValue;
+    return debounced;
 }

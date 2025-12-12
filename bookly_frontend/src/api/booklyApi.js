@@ -31,14 +31,25 @@ export const loginUser = async (email, password) => {
             throw new Error(errorData.message || 'Falha na autenticação.');
         }
 
+        // 1. LER O JSON DA RESPOSTA
         const data = await response.json();
 
         if (data.token) {
             localStorage.setItem('jwtToken', data.token);
-            return data.token;
         } else {
             throw new Error('Autenticação bem-sucedida, mas o token não foi encontrado na resposta do servidor.');
         }
+
+        // 🎯 CORREÇÃO CRÍTICA: SALVAR O OBJETO DO USUÁRIO
+        // Verifica se o DTO está em 'data.user' ou se é o próprio 'data'
+        const userToSave = data.user || data;
+
+        if (userToSave && (userToSave.nome || userToSave.fotoPerfil)) {
+            // 2. Salva o objeto do usuário (ReturnUserDTO) no localStorage
+            localStorage.setItem('userData', JSON.stringify(userToSave));
+        }
+
+        return data; // Retorna os dados completos ou o token
 
     } catch (error) {
         console.error('Erro de login:', error);
@@ -70,11 +81,9 @@ export const fetchEstanteData = async (type, userId = null, page = 0, size = 20)
 export const fetchReviews = async (userId) => {
     let url;
 
-    // Se NÃO vier userId na URL → pegar reviews do usuário autenticado
     if (!userId || userId === 'undefined') {
         url = `${API_BASE_URL}/reviews/me`;
     }
-    // Se vier userId → pegar reviews de outro usuário
     else {
         url = `${API_BASE_URL}/reviews/usuario/${userId}`;
     }
@@ -90,7 +99,8 @@ export const fetchReviews = async (userId) => {
 };
 
 
-export const saveReviewApi = async (livroId, payload) => {
+export const saveReviewApi = async (payload) => {
+    const livroId = payload.livroId;
     const response = await fetch(`${API_BASE_URL}/reviews/${livroId}`, {
         method: 'POST',
         headers: getHeaders(),
@@ -129,15 +139,34 @@ export const deleteReviewApi = async (reviewId) => {
     }
 };
 
-export const searchLivrosApi = async (query) => {
-    if (query.length < 3) return [];
+export async function searchLivrosApi(termo) {
+    if (!termo || termo.trim() === "") return [];
 
-    const response = await fetch(`${API_BASE_URL}/livros?titulo=${encodeURIComponent(query)}`);
+    try {
+        const response = await fetch(
+            `${API_BASE_URL}/livros?termo=${encodeURIComponent(termo)}`,
+            {
+                method: "GET",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+            }
+        );
 
-    if (!response.ok) {
-        throw new Error('Erro ao buscar livros.');
+        if (!response.ok) {
+            console.error("Erro na busca:", response.status);
+            return [];
+        }
+
+        const data = await response.json();
+
+        return Array.isArray(data) ? data : [];
+
+    } catch (error) {
+        console.error("Erro ao buscar livros:", error);
+        return [];
     }
-    return response.json();
-};
+}
+
 
 export { MOCK_JWT_TOKEN };

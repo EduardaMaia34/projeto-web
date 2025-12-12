@@ -127,6 +127,10 @@ public class LivroService {
         return livroRepository.findByTituloContainingIgnoreCase(titulo);
     }
 
+    public List<Livro> buscarPorTermo(String termo) {
+        return livroRepository.findByTituloOrAutorContainingIgnoreCase(termo);
+    }
+
     @Transactional
     public void deletarLivro(Long id) {
         if (!livroRepository.existsById(id)) {
