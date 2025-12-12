@@ -35,11 +35,9 @@ public class LivroController {
 
         List<Livro> livros;
 
-        // Se o termo de busca for fornecido, chama a busca genérica no Service
         if (termo != null && !termo.trim().isEmpty()) {
             livros = service.buscarPorTermo(termo);
         } else {
-            // Se nenhum termo for fornecido, retorna todos os livros
             livros = service.buscarTodos();
         }
 

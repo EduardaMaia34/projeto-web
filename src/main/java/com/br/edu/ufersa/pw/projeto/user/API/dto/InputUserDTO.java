@@ -1,17 +1,25 @@
 package com.br.edu.ufersa.pw.projeto.user.API.dto;
 
+import jakarta.validation.constraints.Pattern; // Import necessário
+import jakarta.validation.constraints.Size; // Import útil
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Objects;
 
 public class InputUserDTO {
     private String email;
+
+    @Size(min = 8, message = "A senha deve ter no mínimo 8 caracteres.")
+    @Pattern(regexp = "^(?=.*[A-Za-z])(?=.*\\d).+$",
+            message = "A senha deve conter pelo menos uma letra e um número.")
     private String senha;
+
     private String nome;
     private List<Long> interessesIDs;
     private String bio;
     private LocalDateTime dataCadastro;
-    private String FotoPerfil;
+
+    private String fotoPerfil;
 
     public String getEmail() {
         return email;
@@ -59,11 +67,11 @@ public class InputUserDTO {
     }
 
     public String getFotoPerfil() {
-        return FotoPerfil;
+        return fotoPerfil;
     }
 
     public void setFotoPerfil(String fotoPerfil) {
-        this.FotoPerfil = fotoPerfil;
+        this.fotoPerfil = fotoPerfil;
     }
 
     @Override
@@ -78,4 +86,3 @@ public class InputUserDTO {
         return Objects.hash(getEmail(), getSenha());
     }
 }
-

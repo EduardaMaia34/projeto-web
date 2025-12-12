@@ -3,35 +3,40 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import { Modal, Button } from 'react-bootstrap';
-// Certifique-se de que useDebounce e searchLivrosApi estão acessíveis
 import { useDebounce } from "../hooks/useDebounce";
-import { searchLivrosApi } from "../api/booklyApi";
+import { searchLivrosApi, searchUsersApi } from "../api/booklyApi";
 
 
 export default function SearchModal({ show, onHide }) {
     const router = useRouter();
     const [searchTerm, setSearchTerm] = useState('');
-    const [searchResults, setSearchResults] = useState([]);
+    const [bookResults, setBookResults] = useState([]);
+    const [userResults, setUserResults] = useState([]);
     const [loading, setLoading] = useState(false);
 
-    // Replicando a lógica de debounce do ReviewModal
     const debouncedSearch = useDebounce(searchTerm, 500);
 
-    // Replicando a lógica de busca do ReviewModal
     useEffect(() => {
         if (!debouncedSearch) {
-            setSearchResults([]);
+            setBookResults([]);
+            setUserResults([]);
             return;
         }
 
         setLoading(true);
-        searchLivrosApi(debouncedSearch)
-            .then(results => {
-                setSearchResults(results || []);
+
+        Promise.all([
+            searchLivrosApi(debouncedSearch),
+            searchUsersApi(debouncedSearch)
+        ])
+            .then(([livros, usuarios]) => {
+                setBookResults(livros || []);
+                setUserResults(usuarios || []);
             })
             .catch(error => {
-                console.error("Falha ao buscar livros:", error);
-                setSearchResults([]);
+                console.error("Falha na busca combinada:", error);
+                setBookResults([]);
+                setUserResults([]);
             })
             .finally(() => {
                 setLoading(false);
@@ -39,24 +44,30 @@ export default function SearchModal({ show, onHide }) {
     }, [debouncedSearch]);
 
 
-    const handleSelectAndNavigate = (livroId) => {
-        onHide(); // Fecha o modal
-        // Ação: Ao clicar no livro, deve abrir a página do livro
+    const handleSelectAndNavigateBook = (livroId) => {
+        onHide();
         router.push(`/livro/${livroId}`);
     };
+
+    const handleSelectAndNavigateUser = (userId) => {
+        onHide();
+        router.push(`/perfil?userId=${userId}`); // Navega para a página de perfil
+    };
+
+    const hasResults = bookResults.length > 0 || userResults.length > 0;
 
     return (
         <Modal show={show} onHide={onHide} centered size="lg">
             <Modal.Header closeButton>
-                <Modal.Title>Pesquisar Livros e Autores</Modal.Title>
+                <Modal.Title>Pesquisar Livros, Autores e Usuários</Modal.Title>
             </Modal.Header>
             <Modal.Body>
                 <div className="mb-3">
-                    <label className="form-label fw-bold">Buscar livro</label>
+                    <label className="form-label fw-bold">Buscar</label>
                     <input
                         type="text"
                         className="form-control"
-                        placeholder="Digite título do livro ou nome do autor..."
+                        placeholder="Digite título, autor ou nome do usuário..."
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
                         autoComplete="off"
@@ -65,15 +76,61 @@ export default function SearchModal({ show, onHide }) {
 
                 {loading && searchTerm && <p className="text-info">Buscando...</p>}
 
-                {!loading && searchResults.length > 0 && (
+                {/* -------------------- RESULTADOS DE USUÁRIOS -------------------- */}
+                {!loading && userResults.length > 0 && (
+                    <div className="list-group mb-4">
+                        <h6><i className="bi bi-person-fill me-2"></i> Usuários:</h6>
+                        {userResults.map(user => (
+                            <div
+                                key={user.id}
+                                className="list-group-item list-group-item-action d-flex align-items-center"
+                                role="button"
+                                onClick={() => handleSelectAndNavigateUser(user.id)}
+                            >
+                                {/* Implementação de Imagem com Fallback de Erro */}
+                                {user.fotoPerfil ? (
+                                    <img
+                                        src={user.fotoPerfil}
+                                        style={{ width: '40px', height: '40px', objectFit: 'cover', marginRight: '10px' }}
+                                        className="rounded-circle"
+                                        alt={`Perfil de ${user.nome}`}
+
+                                        onError={(e) => {
+                                            e.target.style.display = 'none';
+                                            e.target.parentNode.querySelector('.fallback-icon-user').style.display = 'inline-block';
+                                        }}
+                                    />
+                                ) : null}
+
+                                <i
+                                    className="bi bi-person-circle text-muted me-2 fallback-icon-user"
+                                    style={{
+                                        fontSize: '1.8rem',
+                                        marginRight: '10px',
+                                        // Esconde o ícone se a fotoPerfil existe (e pode carregar)
+                                        display: user.fotoPerfil ? 'none' : 'inline-block'
+                                    }}
+                                ></i>
+
+                                <div>
+                                    <h6 className="mb-0 text-primary">{user.nome}</h6>
+                                    <small className="text-muted">{user.bio || "Usuário Bookly"}</small>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                )}
+
+                {/* -------------------- RESULTADOS DE LIVROS/AUTORES -------------------- */}
+                {!loading && bookResults.length > 0 && (
                     <div className="list-group">
-                        <h6>Resultados:</h6>
-                        {searchResults.map(livro => (
+                        <h6><i className="bi bi-book me-2"></i> Livros e Autores:</h6>
+                        {bookResults.map(livro => (
                             <div
                                 key={livro.id}
                                 className="list-group-item list-group-item-action d-flex align-items-center"
                                 role="button"
-                                onClick={() => handleSelectAndNavigate(livro.id)}
+                                onClick={() => handleSelectAndNavigateBook(livro.id)}
                             >
                                 <img
                                     src={livro.urlCapa || 'https://placehold.co/40x60'}
@@ -89,12 +146,12 @@ export default function SearchModal({ show, onHide }) {
                     </div>
                 )}
 
-                {!loading && searchTerm && searchResults.length === 0 && (
+                {!loading && searchTerm && !hasResults && (
                     <p className="text-muted">Nenhum resultado encontrado para "{searchTerm}".</p>
                 )}
 
                 {!searchTerm && (
-                    <p className="text-muted">Comece a digitar para pesquisar em todos os livros da plataforma.</p>
+                    <p className="text-muted">Comece a digitar para pesquisar livros, autores e usuários.</p>
                 )}
             </Modal.Body>
             <Modal.Footer>

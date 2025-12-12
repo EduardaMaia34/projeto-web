@@ -56,7 +56,6 @@ public class UserController {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
 
-        // Assumindo que o Service tem um método para buscar o DTO por ID
         Optional<ReturnUserDTO> userDTO = service.buscarDTOporId(loggedInUser.getId());
 
         return userDTO.map(ResponseEntity::ok)
@@ -67,7 +66,6 @@ public class UserController {
     @GetMapping("/{userId}")
     public ResponseEntity<ReturnUserDTO> getUserById(@PathVariable Long userId) {
 
-        // Assumindo que o Service tem um método para buscar o DTO por ID
         Optional<ReturnUserDTO> userDTO = service.buscarDTOporId(userId);
 
         return userDTO.map(ResponseEntity::ok)
@@ -78,7 +76,7 @@ public class UserController {
     @PostMapping()
     public ResponseEntity<ReturnUserDTO> create(@Valid @RequestBody InputUserDTO user){
         ResponseEntity<ReturnUserDTO> response = new
-                ResponseEntity<ReturnUserDTO>(service.save(user), HttpStatus.OK);
+                ResponseEntity<ReturnUserDTO>(service.save(user), HttpStatus.CREATED); // Alterado para CREATED
         return response;
     }
 
@@ -127,7 +125,7 @@ public class UserController {
     @PatchMapping("/me/password")
     public ResponseEntity<ReturnUserDTO> updateMyPassword(
             @AuthenticationPrincipal CustomUserDetails loggedInUser,
-            @RequestBody InputUserDTO dto) { // Usa DTO apenas para extrair a nova senha
+            @RequestBody InputUserDTO dto) {
 
         if (loggedInUser == null || loggedInUser.getId() == null) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();

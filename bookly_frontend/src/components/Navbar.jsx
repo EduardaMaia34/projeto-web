@@ -16,19 +16,15 @@ export default function Navbar({ onAddBookClick }) {
         let user;
         let token;
 
-        // Atrasar um pouco para garantir que o localStorage seja resolvido no cliente
         const timer = setTimeout(() => {
             token = typeof window !== "undefined" && localStorage.getItem("jwtToken");
             setIsLoggedIn(!!token);
 
             if (token) {
                 try {
-                    // Tenta ler userData
                     user = JSON.parse(localStorage.getItem("userData") || "{}");
                     setUserData({
-                        // Procura por 'nome' (DTO) ou 'name' (fallback), com fallback final "Usuário"
                         name: user.nome || user.name || "Usuário",
-                        // Procura por 'fotoPerfil' (DTO) ou 'photo', com fallback para o ícone
                         photo: user.fotoPerfil || user.photo || "",
                     });
                 } catch (e) {
@@ -37,7 +33,7 @@ export default function Navbar({ onAddBookClick }) {
                 }
             }
             setIsLoadingUser(false);
-        }, 50); // Pequeno delay de 50ms
+        }, 50);
 
         return () => clearTimeout(timer);
     }, []);
@@ -54,10 +50,8 @@ export default function Navbar({ onAddBookClick }) {
         }
     };
 
-    // Variável que verifica se devemos usar o ícone de fallback
     const useIconFallback = !userData.photo || userData.photo === "https://imgur.com/pcf2EUA.png";
 
-    // Se ainda estiver carregando, evite renderizar o conteúdo autenticado
     if (isLoadingUser) {
         return (
             <nav className="navbar navbar-light header-bar p-3 mb-4">

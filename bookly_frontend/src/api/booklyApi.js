@@ -168,5 +168,100 @@ export async function searchLivrosApi(termo) {
     }
 }
 
+export const registerUser = async (payload) => {
+    try {
+        const response = await fetch(`${API_BASE_URL}/users`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+            const errorMessage = data.message || "Erro desconhecido no cadastro.";
+            throw new Error(errorMessage);
+        }
+
+        return data;
+
+    } catch (error) {
+        console.error('Erro de registro:', error);
+        throw new Error(error.message || 'Falha ao conectar com o servidor para cadastro.');
+    }
+};
+
+export const registerUserWithFile = async (formData) => {
+    try {
+        const response = await fetch(`${API_BASE_URL}/users`, {
+            method: 'POST',
+            body: formData,
+            // O Content-Type é definido automaticamente pelo navegador como multipart/form-data
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+            const errorMessage = data.message || "Erro desconhecido no cadastro.";
+            throw new Error(errorMessage);
+        }
+
+        return data;
+
+    } catch (error) {
+        console.error('Erro de registro com arquivo:', error);
+        throw new Error(error.message || 'Falha ao conectar com o servidor para cadastro.');
+    }
+};
+
+export const fetchInteresses = async () => {
+    try {
+        const response = await fetch(`${API_BASE_URL}/interesses`, {
+            method: "GET",
+            headers: {
+                "Content-Type": "application/json",
+            },
+        });
+
+        if (!response.ok) {
+            console.error("Erro ao buscar interesses:", response.status);
+            return [];
+        }
+
+        const data = await response.json();
+        return Array.isArray(data) ? data : [];
+
+    } catch (error) {
+        console.error("Erro de conexão ao buscar interesses:", error);
+        return [];
+    }
+};
+
+export async function searchUsersApi(name) {
+    if (!name || name.trim() === "") return [];
+
+    try {
+        const response = await fetch(
+            `${API_BASE_URL}/users?name=${encodeURIComponent(name)}`,
+            {
+                method: "GET",
+                headers: getHeaders(), // Requer autenticação JWT
+            }
+        );
+
+        if (!response.ok) {
+            console.error("Erro na busca de usuários:", response.status);
+            return [];
+        }
+
+        const data = await response.json();
+
+        return Array.isArray(data) ? data : [];
+
+    } catch (error) {
+        console.error("Erro ao buscar usuários:", error);
+        return [];
+    }
+}
 
 export { MOCK_JWT_TOKEN };

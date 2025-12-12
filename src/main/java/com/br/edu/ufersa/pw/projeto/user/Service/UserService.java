@@ -9,12 +9,9 @@ import com.br.edu.ufersa.pw.projeto.user.Model.repository.SeguindoRepository;
 import com.br.edu.ufersa.pw.projeto.user.Model.repository.UserRepository;
 import com.br.edu.ufersa.pw.projeto.user.Model.entity.Interesse;
 import com.br.edu.ufersa.pw.projeto.user.Model.repository.InteresseRepository;
-// IMPORTAÇÕES NECESSÁRIAS PARA DELEÇÃO EM CASCATA
 import com.br.edu.ufersa.pw.projeto.review.Model.repository.ReviewRepository;
 import com.br.edu.ufersa.pw.projeto.biblioteca.Model.repository.BibliotecaRepository;
-import com.br.edu.ufersa.pw.projeto.livro.API.dto.ReturnLivroDTO;
 import com.br.edu.ufersa.pw.projeto.livro.Service.LivroService;
-
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
@@ -47,7 +44,7 @@ public class UserService implements UserDetailsService {
     @Autowired
     public UserService(UserRepository repository, InteresseRepository interesseRepository,
                        PasswordEncoder passwordEncoder, ReviewRepository reviewRepository,
-                       BibliotecaRepository bibliotecaRepository, @Lazy LivroService livroService) { // NOVO CONSTRUTOR
+                       BibliotecaRepository bibliotecaRepository, @Lazy LivroService livroService) {
         this.repository = repository;
         this.interesseRepository = interesseRepository;
         this.passwordEncoder = passwordEncoder;
@@ -66,12 +63,6 @@ public class UserService implements UserDetailsService {
         return repository.findById(userId);
     }
 
-    //metodos get
-
-    /**
-     * NOVO MÉTODO: Busca o usuário por ID e mapeia diretamente para o DTO de Retorno.
-     * Utilizado pelo UserController para GET /me e GET /{userId}
-     */
     public Optional<ReturnUserDTO> buscarDTOporId(Long userId) {
         return repository.findById(userId)
                 .map(ReturnUserDTO::new);
@@ -89,7 +80,30 @@ public class UserService implements UserDetailsService {
         return todosUsuarios.stream().map(ReturnUserDTO::new).toList();
     }
 
-    // crud
+    private String normalizeImgurUrl(String url) {
+        if (url == null || url.isEmpty()) return null;
+
+        String normalizedUrl = url;
+
+        if (normalizedUrl.contains("imgur.com")) {
+            // Extrai o hash da imagem (o último segmento que parece um hash de imagem)
+            String hash = normalizedUrl.replaceAll("^.*[i\\.]?imgur\\.com/+(a/)?", "").replaceAll("(\\..*|\\?.*)$", "");
+
+            if (hash.isEmpty()) {
+                return normalizedUrl;
+            }
+
+            // Constrói a URL usando o formato imgur.com/HASH.png, que provou ser funcional
+            String format = "https://imgur.com/%s.png";
+
+            return String.format(format, hash);
+        }
+
+        // Se não for Imgur, retorna a URL original
+        return normalizedUrl;
+    }
+
+
     @Transactional
     public ReturnUserDTO save(InputUserDTO dto){
         if (repository.findByEmailIgnoreCase(dto.getEmail()).isPresent()) {
@@ -101,6 +115,11 @@ public class UserService implements UserDetailsService {
         user.setRole("admin@seu-dominio.com".equalsIgnoreCase(dto.getEmail()) ? Role.ROLE_ADMIN : Role.ROLE_USER);
 
         user.setSenha(passwordEncoder.encode(dto.getSenha()));
+
+        user.setBio(dto.getBio());
+
+        user.setFotoPerfil(normalizeImgurUrl(dto.getFotoPerfil()));
+
 
         if (dto.getInteressesIds() != null && !dto.getInteressesIds().isEmpty()) {
             if (dto.getInteressesIds().size() > 3) {
@@ -120,10 +139,8 @@ public class UserService implements UserDetailsService {
 
     @Transactional(readOnly = true)
     public List<Long> getIdsDosSeguidos(Long seguidorId) {
-        // 1. Encontra a lista de objetos Seguindo onde o seguidor é o ID fornecido
         List<Seguindo> seguidos = seguindoRepository.findBySeguidor_Id(seguidorId);
 
-        // 2. Mapeia a lista de objetos Seguindo para uma lista de IDs dos usuários Seguidos
         return seguidos.stream()
                 .map(s -> s.getSeguido().getId())
                 .collect(Collectors.toList());
@@ -138,6 +155,13 @@ public class UserService implements UserDetailsService {
             user.setNome(dto.getNome());
         }
 
+        if (dto.getBio() != null) {
+            user.setBio(dto.getBio());
+        }
+
+        if (dto.getFotoPerfil() != null) {
+            user.setFotoPerfil(normalizeImgurUrl(dto.getFotoPerfil()));
+        }
 
 
         if (dto.getInteressesIds() != null) {
