@@ -2,7 +2,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { useRouter } from "next/router";
+import { useRouter, usePathname } from 'next/navigation';
 import SearchModal from "./SearchModal";
 
 export default function Navbar({ onAddBookClick }) {

@@ -1,7 +1,7 @@
 // src/components/SearchModal.jsx
 
 import React, { useState, useEffect } from 'react';
-import { useRouter } from 'next/router';
+import { useRouter } from 'next/navigation';
 import { Modal, Button } from 'react-bootstrap';
 // Certifique-se de que useDebounce e searchLivrosApi estão acessíveis
 import { useDebounce } from "../hooks/useDebounce";

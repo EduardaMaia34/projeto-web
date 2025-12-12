@@ -94,11 +94,9 @@ export default function Reviews() {
 
     /* --------------------- BUSCAR REVIEWS --------------------- */
     const fetchUserReviews = useCallback(async () => {
-        // Se o userId for null (usuário logado), a API usa o token JWT (rota /me)
         if (!isClient) return;
 
         try {
-            // userId pode ser null, mas a função fetchReviews lida com isso.
             const data = await fetchReviews(userId);
             setReviews(Array.isArray(data) ? data : []);
         } catch {
@@ -107,20 +105,32 @@ export default function Reviews() {
     }, [isClient, userId]);
 
     useEffect(() => {
-        // Chama a busca assim que o componente é montado (isClient) e o userId é resolvido.
         if (isClient) {
             fetchUserReviews();
         }
     }, [isClient, fetchUserReviews]);
 
-    /* ----------------------- FILTRAGEM ------------------------ */
+    /* ----------------------- FILTRAGEM E ORDENAÇÃO ------------------------ */
     const filteredReviews = useMemo(() => {
         const term = searchTerm.toLowerCase();
-        return reviews.filter(
+
+        // 1. Filtra pelo termo de busca
+        const filtered = reviews.filter(
             (r) =>
                 r.livro?.titulo?.toLowerCase().includes(term) ||
                 (r.review || "").toLowerCase().includes(term)
         );
+
+        // 2. Ordena da MAIS NOVA para a MAIS ANTIGA (Ordem Decrescente)
+        return filtered.slice().sort((a, b) => {
+            const dateA = new Date(a.data);
+            const dateB = new Date(b.data);
+
+            if (isNaN(dateA.getTime())) return 1;
+            if (isNaN(dateB.getTime())) return -1;
+
+            return dateB.getTime() - dateA.getTime();
+        });
     }, [reviews, searchTerm]);
 
     /* ----------------------- EDITAR REVIEW ------------------------ */
@@ -146,14 +156,13 @@ export default function Reviews() {
         }
     };
 
-    // NOVO HANDLER: Atualiza a nota do review selecionado quando as estrelas são clicadas
+    // Atualiza a nota do review selecionado quando as estrelas são clicadas
     const handleEditNotaChange = (newRating) => {
         setSelectedReview(prevReview => ({
             ...prevReview,
             nota: newRating,
         }));
     };
-
 
     if (!isClient) return null;
 
@@ -226,7 +235,6 @@ export default function Reviews() {
                             <div className="mb-3">
                                 <span className="form-label fw-bold">Nota:</span>
 
-                                {/* ✅ SUBSTITUÍDO O INPUT NUMÉRICO PELO COMPONENTE DE ESTRELAS */}
                                 <div className="mt-2">
                                     <StarRatingInput
                                         currentRating={parseFloat(selectedReview.nota) || 0}
@@ -259,7 +267,6 @@ export default function Reviews() {
                         onClick={async () => {
                             if (!selectedReview) return;
                             await handleSaveEdit(selectedReview.id, {
-                                // A nota já é atualizada no estado pelo StarRatingInput
                                 nota: selectedReview.nota,
                                 review: selectedReview.review,
                             });
