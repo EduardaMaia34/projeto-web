@@ -2,7 +2,7 @@ package com.br.edu.ufersa.pw.projeto.livro.API.dto;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
-
+//commit
 public class InputLivroDTO {
     @NotBlank(message = "O título é obrigatório.")
     @Size(max = 255, message = "O título deve ter no máximo 255 caracteres.")
