@@ -1,6 +1,6 @@
 package com.br.edu.ufersa.pw.projeto.livro.API.dto;
 
-// Usado para listas, favoritos, etc.
+// commit
 public class LivroCapaDTO {
 
     private Long id;
