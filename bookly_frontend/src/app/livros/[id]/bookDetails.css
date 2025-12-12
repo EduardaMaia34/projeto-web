@@ -1,0 +1,108 @@
+/* Variáveis (Se já estiverem no globals.css, pode apagar daqui) */
+:root {
+    --cor-principal: #f5f4ed;
+    --cor-texto: #594A47;
+    --cor-verde-botao: #385d38;
+    --bookly-brown-mid: rgba(89, 74, 71, 0.5);
+    --bookly-star-gold: #ffc107;
+}
+
+.book-page-wrapper {
+    background-color: var(--cor-principal);
+    color: var(--cor-texto);
+    font-family: 'Cormorant Unicase', serif;
+    min-height: 100vh;
+    padding-top: 80px; /* Espaço para a Navbar Fixa não cobrir o conteúdo */
+}
+
+.custom-hr {
+    border-top: 1px solid #ddd;
+    opacity: 1;
+}
+
+/* --- Capa e Info --- */
+.book-cover {
+    width: 180px;
+    height: auto;
+    border: 1px solid #ddd;
+    box-shadow: 2px 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+.book-title {
+    font-weight: bold;
+    font-size: 1.2rem;
+}
+
+.book-bookmark {
+    color: var(--bookly-brown-mid);
+    font-size: 1.5rem;
+    cursor: pointer;
+    transition: color 0.3s;
+}
+
+.book-bookmark:hover {
+    color: var(--cor-verde-botao);
+}
+
+.book-author {
+    font-size: 1rem;
+    font-weight: 500;
+}
+
+.book-synopsis {
+    font-size: 0.9rem;
+    font-weight: 500;
+    text-align: justify;
+}
+
+/* Estrelas */
+.star-rating i {
+    color: var(--bookly-star-gold);
+    font-size: 1.1rem;
+    margin-right: 2px;
+}
+
+.star-empty {
+    color: #a0a0a0 !important;
+}
+
+/* Tags (Badges) */
+.bg-custom-tag {
+    background-color: #e0e0e0 !important;
+    color: var(--cor-texto) !important;
+    font-weight: normal;
+    padding: 0.3em 0.7em;
+    border-radius: 15px;
+    font-size: 0.8rem;
+}
+
+/* Botão Logar */
+.btn-locar-livro {
+    background-color: var(--bookly-brown-mid);
+    border: none;
+    color: var(--cor-texto);
+    font-weight: bold;
+    padding: 1rem 3rem;
+    border-radius: 5px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    font-size: 1.1rem;
+    transition: transform 0.2s;
+}
+
+.btn-locar-livro:hover {
+    transform: scale(1.05); /* Efeitinho de zoom */
+    background-color: rgba(89, 74, 71, 0.7);
+}
+
+/* --- Review Card --- */
+.review-card {
+    background-color: var(--bookly-brown-mid);
+    color: var(--cor-texto);
+    max-width: 800px;
+    margin: 0 auto;
+}
+
+.review-card .star-small i {
+    font-size: 0.8rem;
+    color: var(--bookly-star-gold);
+}

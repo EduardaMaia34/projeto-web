@@ -70,11 +70,9 @@ export const fetchEstanteData = async (type, userId = null, page = 0, size = 20)
 export const fetchReviews = async (userId) => {
     let url;
 
-    // Se NÃO vier userId na URL → pegar reviews do usuário autenticado
     if (!userId || userId === 'undefined') {
         url = `${API_BASE_URL}/reviews/me`;
     }
-    // Se vier userId → pegar reviews de outro usuário
     else {
         url = `${API_BASE_URL}/reviews/usuario/${userId}`;
     }
@@ -90,7 +88,8 @@ export const fetchReviews = async (userId) => {
 };
 
 
-export const saveReviewApi = async (livroId, payload) => {
+export const saveReviewApi = async (payload) => {
+    const livroId = payload.livroId;
     const response = await fetch(`${API_BASE_URL}/reviews/${livroId}`, {
         method: 'POST',
         headers: getHeaders(),
@@ -129,14 +128,48 @@ export const deleteReviewApi = async (reviewId) => {
     }
 };
 
-export const searchLivrosApi = async (query) => {
-    if (query.length < 3) return [];
+export async function searchLivrosApi(titulo) {
+    if (!titulo || titulo.trim() === "") return [];
 
-    const response = await fetch(`${API_BASE_URL}/livros?titulo=${encodeURIComponent(query)}`);
+    try {
+        const response = await fetch(
+            `${API_BASE_URL}/livros?titulo=${encodeURIComponent(titulo)}`,
+            {
+                method: "GET",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+            }
+        );
+
+        if (!response.ok) {
+            console.error("Erro na busca:", response.status);
+            return [];
+        }
+
+        const data = await response.json();
+
+        return Array.isArray(data) ? data : [];
+
+    } catch (error) {
+        console.error("Erro ao buscar livros:", error);
+        return [];
+    }
+}
+
+// Adicione isso ao final do seu arquivo booklyApi.js e exporte
+
+export const getLivroById = async (id) => {
+    // Ajuste a rota se no seu Java for diferente (ex: /livros/{id})
+    const response = await fetch(`${API_BASE_URL}/livros/${id}`, {
+        method: 'GET',
+        headers: getHeaders()
+    });
 
     if (!response.ok) {
-        throw new Error('Erro ao buscar livros.');
+        throw new Error('Livro não encontrado');
     }
+
     return response.json();
 };
 

@@ -1,6 +1,65 @@
 import React from "react";
 
+// Componente StarRatingInput (adaptado do ReviewModal.jsx para usar a prop 'onRate')
+const StarRatingInput = ({ currentRating, onRate }) => {
+    const stars = [1, 2, 3, 4, 5];
+
+    const handleClick = (starValue) => {
+        let newRating;
+
+        // Lógica de alternância entre valor inteiro e meio-ponto
+        if (currentRating === starValue) {
+            newRating = starValue - 0.5;
+        }
+        else if (currentRating === starValue - 0.5) {
+            newRating = starValue;
+        }
+        else {
+            newRating = starValue;
+        }
+
+        if (newRating < 0) newRating = 0;
+        if (newRating > 5) newRating = 5;
+
+        onRate(newRating);
+    };
+
+    return (
+        <div className="modal-rating-input mt-1">
+            {stars.map((starValue) => {
+                let iconClass = "bi-star";
+                let color = "#e0e0e0";
+
+                // Lógica de renderização com meio-ponto
+                if (starValue <= currentRating) {
+                    iconClass = "bi-star-fill";
+                    color = "gold";
+                } else if (starValue - 0.5 <= currentRating) {
+                    iconClass = "bi-star-half";
+                    color = "gold";
+                }
+
+                return (
+                    <i
+                        key={starValue}
+                        className={`bi ${iconClass}`}
+                        style={{ fontSize: "1.5rem", cursor: "pointer", color: color }}
+                        onClick={() => handleClick(starValue)}
+                    ></i>
+                );
+            })}
+        </div>
+    );
+};
+
+
 export default function EditarReviewModal({ review, nota, setNota, texto, setTexto, onSave }) {
+
+    // A função 'onRate' é o próprio setNota
+    const handleSetNota = (newRating) => {
+        setNota(newRating);
+    };
+
     return (
         <div className="modal fade" id="editarReviewModal" tabIndex="-1" aria-hidden="true">
             <div className="modal-dialog modal-dialog-centered">
@@ -30,16 +89,8 @@ export default function EditarReviewModal({ review, nota, setNota, texto, setTex
 
                                         <div className="mb-3">
                                             <span className="fw-bold">Sua nota:</span>
-                                            <div className="modal-rating-input mt-1">
-                                                {[1, 2, 3, 4, 5].map((i) => (
-                                                    <i
-                                                        key={i}
-                                                        className={`bi ${i <= nota ? "bi-star-fill" : "bi-star"}`}
-                                                        style={{ fontSize: "1.5rem", cursor: "pointer", color: "gold" }}
-                                                        onClick={() => setNota(i)}
-                                                    ></i>
-                                                ))}
-                                            </div>
+                                            {/* ✅ USANDO O COMPONENTE STAR RATING COM MEIO-PONTO */}
+                                            <StarRatingInput currentRating={nota} onRate={handleSetNota} />
                                         </div>
                                     </div>
                                 </div>
@@ -56,7 +107,7 @@ export default function EditarReviewModal({ review, nota, setNota, texto, setTex
                     </div>
 
                     <div className="modal-footer custom-modal-footer d-flex justify-content-center">
-                        <button className="btn btn-success fw-bold" onClick={onSave}>
+                        <button className="btn btn-success fw-bold" onClick={onSave} data-bs-dismiss="modal">
                             Salvar
                         </button>
                     </div>
