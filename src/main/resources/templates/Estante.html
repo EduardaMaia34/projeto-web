@@ -133,9 +133,8 @@
     const API_BASE_URL = 'http://localhost:8081/api/v1';
     const CONTAINER = document.getElementById('bookListContainer');
 
-    const MOCK_JWT_TOKEN = 'eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIyIiwidXNlcm5hbWUiOiJtYXJpM0BnbWFpbC5jb20iLCJyb2xlcyI6IlJPTEVfVVNFUiIsImlhdCI6MTc2Mjg3NTc1OCwiZXhwIjoxNzYyOTYyMTU4fQ.WnG7ELmq0ZHUTmJmqlEleIRzc8qctCXqJlB7YfX5fmI';
+    const MOCK_JWT_TOKEN = 'eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIyIiwidXNlcm5hbWUiOiJtYXJpM0BnbWFpbC5jb20iLCJyb2xlcyI6IlJPTEVfVVNFUiIsImlhdCI6MTc2Mjk0NTUyNiwiZXhwIjoxNzYzMDMxOTI2fQ.6oOMHWxH1O3NQ-6m7xkVOvZJhQHXF5p5562mweKyvGo';
 
-    // NOVA FUNÇÃO: Renderiza as estrelas com suporte a 0.5 usando ícones Bootstrap
     function displayStarRating(rating) {
         const displayRating = parseFloat(rating) || 0;
         let html = '';
@@ -155,7 +154,6 @@
         return html;
     }
 
-    // A função generateStarRating original é removida/substituída.
 
     function createBookCardHtml(item) {
         const livro = item.livro || {};
@@ -167,7 +165,6 @@
 
         const status = item.status || '';
 
-        // Usa a nova função displayStarRating
         const starsHtml = displayStarRating(rating);
 
         return `

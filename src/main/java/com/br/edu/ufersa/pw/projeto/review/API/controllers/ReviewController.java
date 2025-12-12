@@ -52,6 +52,16 @@ public class ReviewController {
     public ResponseEntity<List<ReturnReviewDTO>> listarPorUsuario(@PathVariable Long userId) {
         return ResponseEntity.ok(service.listarPorUsuario(userId));
     }
+    @GetMapping("/me")
+    public ResponseEntity<List<ReturnReviewDTO>> listarMinhasReviews(@AuthenticationPrincipal CustomUserDetails loggedInUser) {
+        if (loggedInUser == null) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Usuário não autenticado.");
+        }
+
+        Long userId = loggedInUser.getId();
+
+        return ResponseEntity.ok(service.listarPorUsuario(userId));
+    }
 
     @PutMapping("/{reviewId}")
     public ResponseEntity<ReturnReviewDTO> atualizar(

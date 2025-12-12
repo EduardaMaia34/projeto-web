@@ -33,7 +33,6 @@ public class ViewController {
             ra.addFlashAttribute("successMessage", "Conta criada com sucesso! Faça login abaixo.");
             return "redirect:/login";
         } catch (IllegalStateException e) {
-            // Se o email já estiver em uso ou outra regra de negócio falhar
             ra.addFlashAttribute("errorMessage", e.getMessage());
             return "redirect:/register"; // Volta para a página de cadastro
         }
