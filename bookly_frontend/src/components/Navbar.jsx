@@ -1,8 +1,8 @@
-// src/components/Navbar.jsx
+
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { useRouter } from "next/router";
+import { useRouter } from 'next/navigation';
 import SearchModal from "./SearchModal";
 
 export default function Navbar({ onAddBookClick }) {
@@ -54,7 +54,7 @@ export default function Navbar({ onAddBookClick }) {
 
     if (isLoadingUser) {
         return (
-            <nav className="navbar navbar-light header-bar p-3 mb-4">
+            <nav className="navbar navbar-light header-bar p-3 fixed-top">
                 <a className="navbar-brand d-flex align-items-center" href="/biblioteca">
                     <img src="https://imgur.com/HLvpHYn.png" alt="Bookly Logo" style={{ height: 50, marginRight: 10 }} />
                     Bookly
@@ -65,7 +65,7 @@ export default function Navbar({ onAddBookClick }) {
 
     return (
         <>
-            <nav className="navbar navbar-light header-bar p-3 mb-4">
+            <nav className="navbar navbar-light header-bar p-3 fixed-top">
                 <a className="navbar-brand d-flex align-items-center" href="/biblioteca">
                     <img src="https://imgur.com/HLvpHYn.png" alt="Bookly Logo" style={{ height: 50, marginRight: 10 }} />
                 </a>

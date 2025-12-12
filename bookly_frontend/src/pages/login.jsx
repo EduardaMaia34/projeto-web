@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { useRouter } from 'next/router';
-import { loginUser } from '../src/api/booklyApi.js';
+import { loginUser } from '../api/booklyApi.js';
 
 const LoginPage = () => {
     const [email, setEmail] = useState('');

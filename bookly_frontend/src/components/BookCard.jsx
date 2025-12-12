@@ -1,30 +1,49 @@
+"use client";
+
 import React from 'react';
-import { displayStarRating } from '../utils.jsx';
+import { useRouter } from 'next/navigation';
 
-const BookCard = ({ item, type }) => {
-    const livro = item.livro || {};
-    const rawRating = item.nota || item.review?.nota || 0;
-    const rating = parseFloat(rawRating) || 0;
+export default function BookCard({ item, type }) {
+    // Inicializa o hook useRouter
+    const router = useRouter();
 
-    const placeholderUrl = `https://placehold.co/150x225/A0A0A0/FFFFFF?text=${livro.titulo ? livro.titulo.substring(0, 6) : 'Capa'}`;
-    const coverUrl = livro.urlCapa || placeholderUrl;
-    const status = item.status || '';
-    const starsHtml = displayStarRating(rating);
+    // Lógica para extrair IDs, títulos e URLs
+    const livroId = item.livro?.id || item.livroId;
+    const titulo = item.livro?.titulo || item.titulo || "Título Desconhecido";
+    const autor = item.livro?.autor || item.autor || "Autor Desconhecido";
+    const urlCapa = item.livro?.urlCapa || item.urlCapa || "https://placehold.co/150x225?text=Sem+Capa";
+
+    if (!livroId) {
+        return <div className="book-card text-danger">Erro de ID</div>;
+    }
+
+    // Função de navegação que utiliza o router.push()
+    const handleCardClick = () => {
+        // Redireciona para a página dinâmica do livro, e.g., /livros/123
+        router.push(`/livros/${livroId}`);
+    };
 
     return (
-        <div className="book-card">
+        <div
+            className="book-card"
+            onClick={handleCardClick} // Aciona a navegação
+            style={{ cursor: 'pointer' }}
+        >
             <img
-                src={coverUrl}
-                className="book-cover mb-1"
-                alt={`Capa de ${livro.titulo || 'Livro Desconhecido'}`}
-                onError={(e) => { e.target.onerror = null; e.target.src = placeholderUrl; }}
+                src={urlCapa}
+                className="book-cover"
+                alt={`Capa de ${titulo}`}
+                onError={(e) => { e.target.src = "https://placehold.co/150x225?text=Sem+Capa" }}
             />
-            {type === 'estante' && (
-                <span className="star-rating">{starsHtml}</span>
-            )}
-            <small className="d-block text-muted">{status}</small>
+            <span className="star-rating">
+                <i className="bi bi-star-fill"></i>
+                <i className="bi bi-star-fill"></i>
+                <i className="bi bi-star-fill"></i>
+                <i className="bi bi-star"></i>
+                <i className="bi bi-star"></i>
+            </span>
+            <p className="book-title-small mb-0 mt-1" title={titulo}>{titulo}</p>
+            <small className="book-author-small text-muted">{autor}</small>
         </div>
     );
-};
-
-export default BookCard;
+}

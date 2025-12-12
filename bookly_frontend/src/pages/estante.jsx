@@ -1,10 +1,10 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useRouter } from 'next/router';
-import Navbar from '../src/components/Navbar.jsx';
-import BookCard from '../src/components/BookCard.jsx';
-import EstanteSearchBar from '../src/components/EstanteSearchBar.jsx';
-import ReviewModal from '../src/components/ReviewModal.jsx';
-import { fetchEstanteData } from '../src/api/booklyApi.js';
+import Navbar from '../components/Navbar.jsx';
+import BookCard from '../components/BookCard.jsx';
+import EstanteSearchBar from '../components/EstanteSearchBar.jsx';
+import ReviewModal from '../components/ReviewModal.jsx';
+import { fetchEstanteData } from '../api/booklyApi.js';
 
 const isAuthenticated = () => typeof window !== 'undefined' && !!localStorage.getItem('jwtToken');
 
@@ -107,7 +107,7 @@ const Estante = () => {
         <>
             <Navbar onAddBookClick={handleAddBookClick} onSearchChange={handleSearchChange} currentSearchTerm={searchTerm} />
 
-            <div className="container">
+            <div className="container" style={{ paddingTop: '100px' }}>
                 <div className="d-flex justify-content-between align-items-center mb-4">
                     <h3 id="pageTitle">{title}</h3>
                     <EstanteSearchBar searchTerm={searchTerm} onSearchChange={handleSearchChange} />

@@ -31,7 +31,6 @@ export const loginUser = async (email, password) => {
             throw new Error(errorData.message || 'Falha na autenticação.');
         }
 
-        // 1. LER O JSON DA RESPOSTA
         const data = await response.json();
 
         if (data.token) {
@@ -40,16 +39,13 @@ export const loginUser = async (email, password) => {
             throw new Error('Autenticação bem-sucedida, mas o token não foi encontrado na resposta do servidor.');
         }
 
-        // 🎯 CORREÇÃO CRÍTICA: SALVAR O OBJETO DO USUÁRIO
-        // Verifica se o DTO está em 'data.user' ou se é o próprio 'data'
         const userToSave = data.user || data;
 
         if (userToSave && (userToSave.nome || userToSave.fotoPerfil)) {
-            // 2. Salva o objeto do usuário (ReturnUserDTO) no localStorage
             localStorage.setItem('userData', JSON.stringify(userToSave));
         }
 
-        return data; // Retorna os dados completos ou o token
+        return data;
 
     } catch (error) {
         console.error('Erro de login:', error);
@@ -91,7 +87,7 @@ export const fetchReviews = async (userId) => {
     const response = await fetch(url, { headers: getHeaders() });
 
     if (!response.ok) {
-        const errorData = await response.json().catch(() => ({ message: 'Erro desconhecido.' }));
+        const errorData = await response.json().catch(() => ({ message: 'Falha ao carregar reviews.' }));
         throw new Error(`Falha ao carregar reviews: ${response.status} - ${errorData.message}`);
     }
 
@@ -108,7 +104,7 @@ export const saveReviewApi = async (payload) => {
     });
 
     if (!response.ok) {
-        const errorData = await response.json().catch(() => ({ message: 'Erro desconhecido.' }));
+        const errorData = await response.json().catch(() => ({ message: 'Falha ao criar review.' }));
         throw new Error(`Falha ao criar review: ${response.status} - ${errorData.message}`);
     }
     return response.json();
@@ -122,7 +118,7 @@ export const updateReview = async (reviewId, payload) => {
     });
 
     if (!response.ok) {
-        const errorData = await response.json().catch(() => ({ message: 'Erro desconhecido.' }));
+        const errorData = await response.json().catch(() => ({ message: 'Falha ao salvar review.' }));
         throw new Error(`Falha ao salvar review: ${response.status} - ${errorData.message}`);
     }
 };
@@ -191,29 +187,6 @@ export const registerUser = async (payload) => {
     }
 };
 
-export const registerUserWithFile = async (formData) => {
-    try {
-        const response = await fetch(`${API_BASE_URL}/users`, {
-            method: 'POST',
-            body: formData,
-            // O Content-Type é definido automaticamente pelo navegador como multipart/form-data
-        });
-
-        const data = await response.json();
-
-        if (!response.ok) {
-            const errorMessage = data.message || "Erro desconhecido no cadastro.";
-            throw new Error(errorMessage);
-        }
-
-        return data;
-
-    } catch (error) {
-        console.error('Erro de registro com arquivo:', error);
-        throw new Error(error.message || 'Falha ao conectar com o servidor para cadastro.');
-    }
-};
-
 export const fetchInteresses = async () => {
     try {
         const response = await fetch(`${API_BASE_URL}/interesses`, {
@@ -245,7 +218,7 @@ export async function searchUsersApi(name) {
             `${API_BASE_URL}/users?name=${encodeURIComponent(name)}`,
             {
                 method: "GET",
-                headers: getHeaders(), // Requer autenticação JWT
+                headers: getHeaders(),
             }
         );
 
@@ -263,5 +236,70 @@ export async function searchUsersApi(name) {
         return [];
     }
 }
+
+export const getLivroById = async (id) => {
+    const url = `${API_BASE_URL}/livros/${id}`;
+
+    try {
+        const response = await fetch(url, {
+            method: 'GET',
+            headers: getHeaders()
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({ message: 'Livro não encontrado ou erro desconhecido.' }));
+            throw new Error(`Falha ao buscar livro ${id}: ${response.status} - ${errorData.message}`);
+        }
+
+        return await response.json();
+
+    } catch (error) {
+        console.error("Erro ao buscar livro por ID:", error);
+        throw error;
+    }
+};
+
+export const getUserNameById = async (userId) => {
+    const url = `${API_BASE_URL}/users/${userId}`;
+
+    try {
+        const response = await fetch(url, {
+            method: 'GET',
+            headers: getHeaders()
+        });
+
+        if (!response.ok) {
+            console.error(`Falha ao buscar usuário ${userId}: Status ${response.status}`);
+            throw new Error(`User not found or unknown error.`);
+        }
+
+        const data = await response.json();
+
+        return data.nome || `Usuário ID ${userId}`;
+
+    } catch (error) {
+        console.error(`Erro ao buscar nome do usuário ${userId}:`, error);
+        throw new Error(`Erro ao buscar nome do usuário ${userId}.`);
+    }
+};
+
+export const getReviewsByLivroId = async (livroId) => {
+    try {
+        const response = await fetch(`${API_BASE_URL}/reviews/livro/${livroId}`, {
+            method: 'GET',
+            headers: getHeaders()
+        });
+
+        if (!response.ok) {
+            if (response.status === 404) return [];
+            throw new Error('Erro ao buscar reviews do livro');
+        }
+
+        return await response.json();
+    } catch (error) {
+        console.error("Erro na API de reviews:", error);
+        return [];
+    }
+};
 
 export { MOCK_JWT_TOKEN };

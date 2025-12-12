@@ -1,9 +1,10 @@
+"use client";
 
 import React, { useState, useEffect, useCallback, useMemo } from "react";
-import Navbar from "../src/components/Navbar";
-import ReviewModal from "../src/components/ReviewModal";
-import { fetchReviews, updateReview, deleteReviewApi } from "../src/api/booklyApi";
-import { displayStarRating, formatDate } from "../src/utils";
+import Navbar from "../components/Navbar.jsx";
+import ReviewModal from "../components/ReviewModal.jsx";
+import { fetchReviews, updateReview, deleteReviewApi } from "../api/booklyApi.js";
+import { displayStarRating, formatDate } from "../utils.jsx";
 import { Modal, Button } from "react-bootstrap";
 
 const StarRatingInput = ({ currentRating, onRate }) => {
@@ -13,11 +14,9 @@ const StarRatingInput = ({ currentRating, onRate }) => {
         let newRating;
         if (currentRating === starValue) {
             newRating = starValue - 0.5;
-        }
-        else if (currentRating === starValue - 0.5) {
+        } else if (currentRating === starValue - 0.5) {
             newRating = starValue;
-        }
-        else {
+        } else {
             newRating = starValue;
         }
         if (newRating < 0) newRating = 0;
@@ -101,7 +100,6 @@ export default function Reviews() {
         }
     }, [isClient, fetchUserReviews]);
 
-    /* ----------------------- FILTRAGEM E ORDENAÇÃO ------------------------ */
     const filteredReviews = useMemo(() => {
         const term = searchTerm.toLowerCase();
 
@@ -111,7 +109,6 @@ export default function Reviews() {
                 (r.review || "").toLowerCase().includes(term)
         );
 
-        // Ordena da MAIS NOVA para a MAIS ANTIGA (Ordem Decrescente)
         return filtered.slice().sort((a, b) => {
             const dateA = new Date(a.data);
             const dateB = new Date(b.data);
@@ -123,7 +120,6 @@ export default function Reviews() {
         });
     }, [reviews, searchTerm]);
 
-    /* ----------------------- EDITAR REVIEW ------------------------ */
     const handleSaveEdit = async (id, payload) => {
         try {
             await updateReview(id, payload);
@@ -164,7 +160,7 @@ export default function Reviews() {
                 currentSearchTerm={searchTerm}
             />
 
-            <div className="container">
+            <div className="container" style={{ paddingTop: '100px' }}>
                 <h3 className="mb-4">Minhas Reviews</h3>
 
                 {filteredReviews.length === 0 && <p className="text-muted">Nenhuma review encontrada.</p>}
@@ -172,18 +168,22 @@ export default function Reviews() {
                 {filteredReviews.map((review) => (
                     <div key={review.id} className="border rounded p-3 mb-3">
                         <div className="d-flex justify-content-between">
-                            <div>
-                                <h5>{review.livro?.titulo}</h5>
-                                <div className="small text-muted">
+                            <div className="flex-grow-1 me-3">
+                                <div className="d-flex align-items-center flex-wrap">
+                                    <h5 className="mb-0 me-3">{review.livro?.titulo}</h5>
+                                    <div className="mt-0">{displayStarRating(review.nota)}</div>
+                                </div>
+
+                                <div className="small text-muted mt-1 mb-2">
                                     {review.autor} • {formatDate(review.data)}
                                 </div>
-                                <div className="mt-2">{displayStarRating(review.nota)}</div>
-                                <p className="mt-2">{review.review}</p>
+
+                                <p className="mb-0">{review.review}</p>
                             </div>
 
-                            <div className="d-flex flex-column align-items-end">
+                            <div className="d-flex flex-column align-items-end flex-shrink-0">
                                 <button
-                                    className="btn btn-sm btn-outline-secondary me-2"
+                                    className="btn btn-sm btn-outline-secondary mb-2"
                                     onClick={() => setSelectedReview(review)}
                                 >
                                     Editar
@@ -201,7 +201,6 @@ export default function Reviews() {
                 ))}
             </div>
 
-            {/* ---------------------- MODAL ADICIONAR REVIEW --------------------- */}
             <ReviewModal
                 show={openAddModal}
                 onHide={() => {
@@ -211,7 +210,6 @@ export default function Reviews() {
                 onSaveSuccess={fetchUserReviews}
             />
 
-            {/* ---------------------- MODAL EDITAR REVIEW --------------------- */}
             <Modal show={!!selectedReview} onHide={() => setSelectedReview(null)} centered>
                 <Modal.Header closeButton>
                     <Modal.Title>Editar Review</Modal.Title>
@@ -257,7 +255,6 @@ export default function Reviews() {
                         onClick={async () => {
                             if (!selectedReview) return;
                             await handleSaveEdit(selectedReview.id, {
-                                // A nota já é atualizada no estado pelo StarRatingInput
                                 nota: selectedReview.nota,
                                 review: selectedReview.review,
                             });

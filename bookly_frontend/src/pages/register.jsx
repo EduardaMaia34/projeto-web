@@ -2,8 +2,8 @@
 
 import React, { useState } from 'react';
 import { useRouter } from 'next/router';
-import { registerUser } from '../src/api/booklyApi.js';
-import InteressesSelector from '../src/components/InteressesSelector.jsx';
+import { registerUser } from '../api/booklyApi.js';
+import InteressesSelector from '../components/InteressesSelector.jsx';
 
 const RegisterPage = () => {
     const [email, setEmail] = useState('');
