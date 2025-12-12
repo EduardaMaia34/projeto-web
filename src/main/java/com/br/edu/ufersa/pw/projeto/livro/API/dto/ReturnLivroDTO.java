@@ -3,7 +3,7 @@ package com.br.edu.ufersa.pw.projeto.livro.API.dto;
 import java.time.LocalDateTime;
 import java.util.Set;
 
-// Este DTO representa os dados de um LIVRO que serão enviados ao cliente como resposta.
+// commit
 public class ReturnLivroDTO {
 
     private Long id;
@@ -34,6 +34,7 @@ public class ReturnLivroDTO {
         this.interesses = interesses;
         this.urlCapa = urlCapa;
         this.ano = ano;
+
     }
 
     // --- GETTERS E SETTERS CORRIGIDOS ---

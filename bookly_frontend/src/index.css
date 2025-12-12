@@ -275,3 +275,35 @@ h1, h2, h3, h4, h5, h6, a {
     margin-right: 10px;
     border-radius: 2px;
 }
+
+/* CSS para o Flyout/Toggledown da Review */
+.review-flyout {
+    position: fixed;
+    top: 0;
+    right: 0;
+    width: 100%; /* Largura máxima em telas pequenas */
+    max-width: 700px; /* Largura limitador em telas grandes */
+    height: 100%;
+    background-color: #f5f4ed; /* Mesma cor do corpo */
+    box-shadow: -5px 0 15px rgba(0, 0, 0, 0.2);
+    z-index: 1050; /* Z-index alto para ficar acima de outros elementos */
+    transform: translateX(100%); /* Esconde à direita */
+    transition: transform 0.4s ease-out; /* Adiciona animação de deslizamento */
+    overflow-y: auto;
+    padding: 20px;
+}
+
+.review-flyout.show {
+    transform: translateX(0); /* Mostra na tela */
+}
+
+/* Fundo escuro (overlay) para simular o Modal */
+.review-modal-backdrop {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    z-index: 1040;
+}

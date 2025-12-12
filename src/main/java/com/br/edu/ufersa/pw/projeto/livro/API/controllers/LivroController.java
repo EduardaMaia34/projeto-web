@@ -15,7 +15,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.Set;
-
+//commit
 @RestController
 @RequestMapping("/api/v1/livros")
 public class LivroController {
@@ -30,13 +30,16 @@ public class LivroController {
 
     @GetMapping()
     public ResponseEntity<List<ReturnLivroDTO>> list(
-            @RequestParam(required = false) String titulo) {
+            // Alterado de 'titulo' para o parâmetro genérico 'termo'
+            @RequestParam(required = false) String termo) {
 
         List<Livro> livros;
 
-        if (titulo != null && !titulo.trim().isEmpty()) {
-            livros = service.buscarPorTitulo(titulo);
+        // Se o termo de busca for fornecido, chama a busca genérica no Service
+        if (termo != null && !termo.trim().isEmpty()) {
+            livros = service.buscarPorTermo(termo);
         } else {
+            // Se nenhum termo for fornecido, retorna todos os livros
             livros = service.buscarTodos();
         }
 
@@ -82,17 +85,15 @@ public class LivroController {
     }
 
     // ----------------------------------------------------------------------
-    // PUT: Atualizar livro completo - CORRIGIDO para usar o DTO
+    // PUT: Atualizar livro completo
     // ----------------------------------------------------------------------
     @PutMapping("/{id}")
     public ResponseEntity<ReturnLivroDTO> update (@PathVariable Long id, @Valid @RequestBody InputLivroDTO livroDTO) {
-        // Verifica se o livro a ser atualizado existe
         if (service.buscarPorId(id).isEmpty()) {
             return ResponseEntity.notFound().build();
         }
 
         try {
-            // CORREÇÃO ESSENCIAL: Chama o método que recebe o ID e o DTO para atualização
             Livro resultado = service.atualizarLivroComInteresses(id, livroDTO);
 
             return new ResponseEntity<>(toReturnDTO(resultado), HttpStatus.OK);
@@ -120,8 +121,8 @@ public class LivroController {
         dto.setAutor(livro.getAutor());
         dto.setDescricao(livro.getDescricao());
         dto.setAno(livro.getAno());
-
         dto.setDataCriacao(livro.getDataCriacao());
+        dto.setUrlCapa(livro.getUrlCapa());
 
         Set<Interesse> interesses = livro.getInteresses();
         if (interesses != null && !interesses.isEmpty()) {
@@ -135,4 +136,5 @@ public class LivroController {
 
         return dto;
     }
+
 }

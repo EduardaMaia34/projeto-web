@@ -31,14 +31,25 @@ export const loginUser = async (email, password) => {
             throw new Error(errorData.message || 'Falha na autenticação.');
         }
 
+        // 1. LER O JSON DA RESPOSTA
         const data = await response.json();
 
         if (data.token) {
             localStorage.setItem('jwtToken', data.token);
-            return data.token;
         } else {
             throw new Error('Autenticação bem-sucedida, mas o token não foi encontrado na resposta do servidor.');
         }
+
+        // 🎯 CORREÇÃO CRÍTICA: SALVAR O OBJETO DO USUÁRIO
+        // Verifica se o DTO está em 'data.user' ou se é o próprio 'data'
+        const userToSave = data.user || data;
+
+        if (userToSave && (userToSave.nome || userToSave.fotoPerfil)) {
+            // 2. Salva o objeto do usuário (ReturnUserDTO) no localStorage
+            localStorage.setItem('userData', JSON.stringify(userToSave));
+        }
+
+        return data; // Retorna os dados completos ou o token
 
     } catch (error) {
         console.error('Erro de login:', error);
@@ -128,6 +139,8 @@ export const deleteReviewApi = async (reviewId) => {
     }
 };
 
+export async function searchLivrosApi(termo) {
+    if (!termo || termo.trim() === "") return [];
 export async function searchLivrosApi(titulo) {
     if (!titulo || titulo.trim() === "") return [];
 
@@ -151,6 +164,16 @@ export async function searchLivrosApi(titulo) {
 
         return Array.isArray(data) ? data : [];
 
+    try {
+        const response = await fetch(
+            `${API_BASE_URL}/livros?termo=${encodeURIComponent(termo)}`,
+            {
+                method: "GET",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+            }
+        );
     } catch (error) {
         console.error("Erro ao buscar livros:", error);
         return [];
@@ -166,11 +189,25 @@ export const getLivroById = async (id) => {
         headers: getHeaders()
     });
 
+        if (!response.ok) {
+            console.error("Erro na busca:", response.status);
+            return [];
+        }
+
+        const data = await response.json();
+
+        return Array.isArray(data) ? data : [];
+
+    } catch (error) {
+        console.error("Erro ao buscar livros:", error);
+        return [];
     if (!response.ok) {
         throw new Error('Livro não encontrado');
     }
 
     return response.json();
 };
+}
+
 
 export { MOCK_JWT_TOKEN };

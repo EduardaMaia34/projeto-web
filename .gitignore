@@ -3,7 +3,7 @@ target/
 .mvn/wrapper/maven-wrapper.jar
 !bookly_frontend/src/main/**/target/
 !bookly_frontend/src/test/**/target/
-
+node_modules/
 ### STS ###
 .apt_generated
 .classpath

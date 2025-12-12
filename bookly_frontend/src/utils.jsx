@@ -2,7 +2,23 @@ import React from 'react';
 
 export const formatDate = (dateString) => {
     if (!dateString) return '';
-    const date = new Date(dateString);
+
+    let date;
+
+    if (Array.isArray(dateString) && dateString.length >= 3) {
+        const [year, month, day, hour = 0, minute = 0, second = 0] = dateString;
+
+        date = new Date(Date.UTC(year, month - 1, day, hour, minute, second));
+
+    } else {
+        date = new Date(dateString);
+    }
+
+    if (isNaN(date.getTime())) {
+        console.error("Data inválida após processamento:", dateString);
+        return 'Data Inválida'; // Mensagem de fallback
+    }
+
     return date.toLocaleDateString('pt-BR', { year: 'numeric', month: '2-digit', day: '2-digit' });
 };
 

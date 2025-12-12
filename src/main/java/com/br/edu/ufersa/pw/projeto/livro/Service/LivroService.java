@@ -16,7 +16,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.*;
 import java.util.stream.Collectors;
-
+//commit
 @Service
 public class LivroService {
 
@@ -125,6 +125,10 @@ public class LivroService {
 
     public List<Livro> buscarPorTitulo(String titulo) {
         return livroRepository.findByTituloContainingIgnoreCase(titulo);
+    }
+
+    public List<Livro> buscarPorTermo(String termo) {
+        return livroRepository.findByTituloOrAutorContainingIgnoreCase(termo);
     }
 
     @Transactional

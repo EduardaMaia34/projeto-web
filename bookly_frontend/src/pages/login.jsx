@@ -1,6 +1,8 @@
+// pages/login.jsx
+
 import React, { useState } from 'react';
 import { useRouter } from 'next/router';
-import { loginUser } from '../api/booklyApi.js';
+import { loginUser } from '../src/api/booklyApi.js';
 
 const LoginPage = () => {
     const [email, setEmail] = useState('');
@@ -15,8 +17,9 @@ const LoginPage = () => {
         setError(null);
 
         try {
+            // loginUser agora salva o userData
             await loginUser(email, password);
-            router.push('/reviews' );
+            router.push('/biblioteca' );
         } catch (err) {
             setError(err.message || 'Credenciais inválidas ou erro de conexão.');
         } finally {
@@ -25,8 +28,12 @@ const LoginPage = () => {
     };
 
     return (
-        <div className="login-container">
-            <div className="form-box">
+        // Usando a cor de fundo e flexbox para centralização vertical/horizontal
+        <div style={{ backgroundColor: 'var(--color-background-light)', minHeight: '100vh', display: 'flex', justifyContent: 'center', alignItems: 'center', padding: '20px' }}>
+
+            {/* Aplica a classe login-container que já define o fundo DED2C2 e o box-shadow */}
+            <div className="login-container">
+
                 <img src="https://imgur.com/HLvpHYn.png" alt="Bookly Logo" className="logo-login" />
 
                 <p className="subtitulo-login">Acesse sua conta</p>
