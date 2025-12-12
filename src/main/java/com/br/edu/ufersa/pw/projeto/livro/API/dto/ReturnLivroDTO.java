@@ -34,6 +34,7 @@ public class ReturnLivroDTO {
         this.interesses = interesses;
         this.urlCapa = urlCapa;
         this.ano = ano;
+
     }
 
     // --- GETTERS E SETTERS CORRIGIDOS ---

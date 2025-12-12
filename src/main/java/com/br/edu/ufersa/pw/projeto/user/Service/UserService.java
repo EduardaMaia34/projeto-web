@@ -67,6 +67,16 @@ public class UserService implements UserDetailsService {
     }
 
     //metodos get
+
+    /**
+     * NOVO MÉTODO: Busca o usuário por ID e mapeia diretamente para o DTO de Retorno.
+     * Utilizado pelo UserController para GET /me e GET /{userId}
+     */
+    public Optional<ReturnUserDTO> buscarDTOporId(Long userId) {
+        return repository.findById(userId)
+                .map(ReturnUserDTO::new);
+    }
+
     public List<ReturnUserDTO> buscarPorNome(String name) {
         List<User> users = repository.findByNomeContainingIgnoreCase(name);
         return users.stream()

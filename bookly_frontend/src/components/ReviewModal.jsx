@@ -1,232 +1,205 @@
-//components/ReviewModal.jsx
+// src/components/ReviewModal.jsx
+"use client";
 
-import React, { useState, useEffect } from 'react';
-import dynamic from 'next/dynamic';
-import { useDebounce } from '../hooks/useDebounce.js';
-import { searchLivrosApi, saveReviewApi } from '../api/booklyApi.js';
-
+import React, { useState, useEffect } from "react";
+import { Modal, Button } from "react-bootstrap";
+import { useDebounce } from "../hooks/useDebounce";
+import { searchLivrosApi, saveReviewApi } from "../api/booklyApi";
 
 const StarRatingInput = ({ currentRating, onRate }) => {
     const stars = [1, 2, 3, 4, 5];
 
-    const handleClick = (starValue, event) => {
-        const rect = event.currentTarget.getBoundingClientRect();
-        const x = event.clientX - rect.left;
-        const width = rect.width;
+    const handleClick = (starValue) => {
         let newRating;
 
-        if (x < width / 2) {
+        // Se o rating atual for exatamente o valor inteiro clicado (ex: 3.0),
+        // o próximo clique o reduz para o meio-ponto anterior (2.5).
+        if (currentRating === starValue) {
             newRating = starValue - 0.5;
-        } else {
+        }
+            // Se o rating atual for o meio-ponto da estrela (ex: 2.5),
+        // o próximo clique o eleva para o valor inteiro (3.0).
+        else if (currentRating === starValue - 0.5) {
+            newRating = starValue;
+        }
+            // Se for um clique em uma estrela diferente ou o primeiro clique,
+        // define o valor inteiro da estrela clicada.
+        else {
             newRating = starValue;
         }
 
-        if (currentRating === newRating) {
-            newRating = newRating - 0.5;
-        }
+        // Garante que o rating mínimo seja 0
         if (newRating < 0) newRating = 0;
 
         onRate(newRating);
     };
 
-    const renderStars = () => {
-        return stars.map((starValue, index) => {
-            let iconClass;
-            if (starValue <= currentRating) {
-                iconClass = 'bi-star-fill';
-            } else if (starValue - 0.5 <= currentRating) {
-                iconClass = 'bi-star-half';
-            } else {
-                iconClass = 'bi-star';
-            }
-            return (
-                <i
-                    key={index}
-                    className={`bi ${iconClass}`}
-                    onClick={(e) => handleClick(starValue, e)}
-                    style={{ cursor: 'pointer', color: 'gold', fontSize: '1.5rem', margin: '0 2px' }}
-                />
-            );
-        });
-    };
+    return (
+        <div className="star-rating mt-2">
+            {stars.map((starValue) => {
+                let iconClass = "bi-star";
+                // A cor padrão foi adicionada para melhor consistência visual
+                let color = "#e0e0e0";
 
-    return <div className="star-rating">{renderStars()}</div>;
+                if (starValue <= currentRating) {
+                    iconClass = "bi-star-fill";
+                    color = "gold";
+                } else if (starValue - 0.5 <= currentRating) {
+                    iconClass = "bi-star-half";
+                    color = "gold";
+                }
+
+                return (
+                    <i
+                        key={starValue}
+                        className={`bi ${iconClass}`}
+                        style={{ fontSize: "1.6rem", color: color, cursor: "pointer", margin: "0 4px" }}
+                        onClick={() => handleClick(starValue)}
+                    />
+                );
+            })}
+        </div>
+    );
 };
 
-
-const ReviewModalContent = ({ onSaveSuccess }) => {
-    const [searchTerm, setSearchTerm] = useState('');
+export default function ReviewModal({ show, onHide, onSaveSuccess }) {
+    const [searchTerm, setSearchTerm] = useState("");
     const [searchResults, setSearchResults] = useState([]);
     const [selectedLivro, setSelectedLivro] = useState(null);
     const [nota, setNota] = useState(0);
-    const [reviewText, setReviewText] = useState('');
-    const [finishedDate, setFinishedDate] = useState(new Date().toLocaleDateString('pt-BR'));
+    const [reviewText, setReviewText] = useState("");
 
-    const debouncedSearchTerm = useDebounce(searchTerm, 500);
+    const debouncedSearch = useDebounce(searchTerm, 500);
 
-    const handleSearch = async (query) => {
-        if (!query) {
+    useEffect(() => {
+        if (!debouncedSearch) {
             setSearchResults([]);
             return;
         }
-        try {
-            const results = await searchLivrosApi(query);
-            setSearchResults(results);
-        } catch (error) {
-            console.error('Erro na pesquisa de livros:', error);
-            setSearchResults([]);
-        }
-    };
+
+        searchLivrosApi(debouncedSearch)
+            .then(results => setSearchResults(results || []))
+            .catch(() => setSearchResults([]));
+    }, [debouncedSearch]);
+
 
     useEffect(() => {
-        handleSearch(debouncedSearchTerm);
-    }, [debouncedSearchTerm]);
+        if (!show) {
+            setSearchTerm("");
+            setSearchResults([]);
+            setSelectedLivro(null);
+            setNota(0);
+            setReviewText("");
+        }
+    }, [show]);
 
-    const handleSelectBook = (livro) => {
+    const handleSelect = (livro) => {
         setSelectedLivro(livro);
-        setSearchTerm('');
+        setSearchTerm("");
         setSearchResults([]);
     };
 
-    const handleSaveReview = async () => {
-        if (!selectedLivro || nota === 0) {
-            alert('Por favor, selecione um livro e atribua uma nota.');
+    const handleSave = async () => {
+        if (!selectedLivro) {
+            alert("Selecione um livro.");
+            return;
+        }
+        if (!nota) {
+            alert("Atribua uma nota.");
             return;
         }
 
         const payload = {
             livroId: selectedLivro.id,
-            nota: parseFloat(nota),
+            nota,
             review: reviewText.trim(),
-            status: 'LIDO'
+            status: "LIDO",
         };
 
         try {
             await saveReviewApi(payload);
-            alert('Review salva com sucesso!');
-
-            // Oculta o modal
-            if (typeof window !== 'undefined' && window.bootstrap && window.bootstrap.Modal) {
-                const modalElement = document.getElementById('reviewModal');
-                window.bootstrap.Modal.getInstance(modalElement).hide();
-            }
-
-            // Reseta o estado do modal
-            setSelectedLivro(null);
-            setNota(0);
-            setReviewText('');
-            setFinishedDate(new Date().toLocaleDateString('pt-BR'));
-
-            onSaveSuccess();
-
-        } catch (error) {
-            alert(`Erro ao salvar review: ${error.message}`);
+            onHide();
+            onSaveSuccess?.();
+        } catch (err) {
+            alert("Erro ao salvar review.");
         }
     };
 
-    // Função para fechar o modal e resetar o estado se ele for fechado manualmente
-    useEffect(() => {
-        const modalElement = document.getElementById('reviewModal');
-        if (modalElement && typeof window !== 'undefined' && window.bootstrap && window.bootstrap.Modal) {
-            modalElement.addEventListener('hidden.bs.modal', () => {
-                setSelectedLivro(null);
-                setNota(0);
-                setReviewText('');
-                setSearchTerm('');
-                setSearchResults([]);
-                setFinishedDate(new Date().toLocaleDateString('pt-BR'));
-            });
-        }
-    }, []);
-
-
     return (
-        <div className="modal fade" id="reviewModal" tabIndex="-1" aria-labelledby="reviewModalLabel" aria-hidden="true">
-            <div className="modal-dialog modal-lg">
-                <div className="modal-content custom-modal-content">
-                    <div className="modal-header custom-modal-header">
-                        <h5 className="modal-title" id="reviewModalLabel">Adicionar Livro e Review</h5>
-                        <button type="button" className="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                    </div>
+        <Modal show={show} onHide={onHide} centered size="lg">
+            <Modal.Header closeButton>
+                <Modal.Title>Adicionar Livro + Review</Modal.Title>
+            </Modal.Header>
 
-                    <div className="modal-body">
-                        <div className="row mb-3">
-                            {/* Busca de Livro */}
-                            <div className="col-12">
-                                <label htmlFor="modalSearchInput" className="form-label">Buscar Livro</label>
-                                <input
-                                    type="text"
-                                    id="modalSearchInput"
-                                    className="form-control"
-                                    placeholder="Nome do livro ou autor..."
-                                    value={searchTerm}
-                                    onChange={(e) => setSearchTerm(e.target.value)}
-                                />
-                                {/* Lista de Resultados da Busca */}
-                                {searchResults.length > 0 && (
-                                    <div id="searchResultList" className="list-group mt-2">
-                                        {searchResults.map(livro => (
-                                            <a
-                                                key={livro.id}
-                                                href="#"
-                                                className="list-group-item list-group-item-action d-flex align-items-center"
-                                                onClick={() => handleSelectBook(livro)}
-                                            >
-                                                <img src={livro.urlCapa || 'https://placehold.co/40x60'} alt="Capa" style={{ width: '40px', height: '60px', objectFit: 'cover', marginRight: '10px' }} />
-                                                <div>
-                                                    <h6 className="mb-0">{livro.titulo}</h6>
-                                                    <small className="text-muted">{livro.autor.nome}</small>
-                                                </div>
-                                            </a>
-                                        ))}
+            <Modal.Body>
+                <div className="mb-3">
+                    <label className="form-label fw-bold">Buscar livro</label>
+                    <input
+                        type="text"
+                        className="form-control"
+                        placeholder="Título ou autor..."
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        autoComplete="off"
+                    />
+
+                    {searchResults.length > 0 && (
+                        <div className="list-group mt-2">
+                            {searchResults.map(livro => (
+                                <div
+                                    key={livro.id}
+                                    className="list-group-item list-group-item-action d-flex align-items-center"
+                                    role="button"
+                                    onClick={() => handleSelect(livro)}
+                                >
+                                    <img
+                                        src={livro.urlCapa || 'https://placehold.co/40x60'}
+                                        style={{ width: '40px', height: '60px', objectFit: 'cover', marginRight: '10px' }}
+                                    />
+
+                                    <div>
+                                        <h6 className="mb-0">{livro.titulo}</h6>
+                                        <small className="text-muted">{livro.autor}</small>
                                     </div>
-                                )}
-                            </div>
+                                </div>
+                            ))}
+
                         </div>
-
-                        {/* Detalhes do Livro Selecionado e Review */}
-                        <div className="row">
-                            <div className="col-4 text-center">
-                                <h6 className="mt-2 text-primary">{selectedLivro ? selectedLivro.titulo : 'Nenhum Livro Selecionado'}</h6>
-                                <img
-                                    src={selectedLivro?.urlCapa || 'https://placehold.co/150x225/A0A0A0/FFFFFF?text=Selecione'}
-                                    className="img-fluid rounded shadow-sm mb-3"
-                                    alt="Capa do Livro"
-                                    style={{ width: '150px', height: '225px', objectFit: 'cover' }}
-                                />
-                                <StarRatingInput currentRating={nota} onRate={setNota} />
-                                <input type="hidden" id="modalRatingValue" value={nota} />
-                                <input type="hidden" id="modalLivroId" value={selectedLivro?.id || '0'} />
-                            </div>
-
-                            <div className="col-8">
-                                <p className="text-muted small mb-1">Finalizado em: <span id="modalFinishedDate">{finishedDate}</span></p>
-                                <textarea
-                                    id="modalReviewText"
-                                    className="form-control"
-                                    rows="8"
-                                    placeholder="Adicionar review..."
-                                    style={{ resize: 'none', backgroundColor: 'white', border: '1px solid #DED2C2' }}
-                                    value={reviewText}
-                                    onChange={(e) => setReviewText(e.target.value)}>
-                                </textarea>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div className="modal-footer modal-footer-custom border-0">
-                        <button type="button" className="btn btn-success fw-bold" onClick={handleSaveReview}>Salvar</button>
-                    </div>
-
+                    )}
                 </div>
-            </div>
-        </div>
+
+                <div className="row">
+                    <div className="col-4 text-center">
+                        <h6 className="text-primary">{selectedLivro ? selectedLivro.titulo : "Nenhum livro selecionado"}</h6>
+                        <img
+                            src={selectedLivro?.urlCapa || "https://placehold.co/150x225"}
+                            alt={selectedLivro?.titulo || "placeholder"}
+                            className="img-fluid rounded shadow-sm mb-3"
+                            style={{ width: 150, height: 225, objectFit: "cover" }}
+                        />
+                        <StarRatingInput currentRating={nota} onRate={setNota} />
+                    </div>
+
+                    <div className="col-8">
+            <textarea
+                className="form-control"
+                rows="8"
+                placeholder="Escreva sua review..."
+                value={reviewText}
+                onChange={(e) => setReviewText(e.target.value)}
+            />
+                    </div>
+                </div>
+            </Modal.Body>
+
+            <Modal.Footer>
+                <Button variant="secondary" onClick={onHide}>
+                    Cancelar
+                </Button>
+                <Button variant="success" onClick={handleSave}>
+                    Salvar
+                </Button>
+            </Modal.Footer>
+        </Modal>
     );
-};
-
-// Desabilita o SSR
-const ReviewModal = dynamic(() => Promise.resolve(ReviewModalContent), {
-    ssr: false,
-});
-
-export default ReviewModal;
+}

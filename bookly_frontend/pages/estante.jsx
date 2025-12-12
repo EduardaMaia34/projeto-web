@@ -3,10 +3,10 @@ import { useRouter } from 'next/router';
 import Navbar from '../src/components/Navbar.jsx';
 import BookCard from '../src/components/BookCard.jsx';
 import EstanteSearchBar from '../src/components/EstanteSearchBar.jsx';
+import ReviewModal from '../src/components/ReviewModal.jsx';
 import { fetchEstanteData } from '../src/api/booklyApi.js';
 
 const isAuthenticated = () => typeof window !== 'undefined' && !!localStorage.getItem('jwtToken');
-
 
 const cleanString = (str) => {
     if (!str) return '';
@@ -25,12 +25,17 @@ const Estante = () => {
     const [error, setError] = useState(null);
     const [title, setTitle] = useState('Minha Estante');
     const [searchTerm, setSearchTerm] = useState('');
+    const [isClient, setIsClient] = useState(false);
+    // ADICIONADO: Estado para controlar a visibilidade do ReviewModal
+    const [openAddModal, setOpenAddModal] = useState(false);
 
     const urlParams = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null;
     const userId = urlParams ? urlParams.get('userId') : null;
 
     useEffect(() => {
-        if (typeof window !== 'undefined' && !isAuthenticated()) {
+        setIsClient(true);
+        // REMOVIDO: Import do JS do Bootstrap
+        if (!isAuthenticated()) {
             router.push('/login');
         }
     }, [router]);
@@ -46,18 +51,35 @@ const Estante = () => {
             const userDisplay = userId ? `Estante do Usuário ${userId}` : 'Minha';
             setTitle(`${userDisplay} Estante`);
         } catch (err) {
+            // CORREÇÃO: Tratar erro de autenticação (401/403) removendo o token e redirecionando
+            if (err.message.includes('403') || err.message.includes('401')) {
+                if (typeof window !== 'undefined') {
+                    localStorage.removeItem('jwtToken');
+                }
+                router.push('/login');
+                return;
+            }
             setError(err.message);
             setBooks([]);
         } finally {
             setLoading(false);
         }
-    }, [userId]);
+    }, [userId, router]);
 
     useEffect(() => {
-        if (isAuthenticated()) {
+        if (isClient && isAuthenticated()) {
             fetchBooks();
         }
-    }, [fetchBooks]);
+    }, [isClient, fetchBooks]);
+
+    // CORRIGIDO: Agora apenas muda o estado para abrir o modal
+    const handleAddBookClick = () => {
+        setOpenAddModal(true);
+    };
+
+    const handleSaveSuccess = () => {
+        fetchBooks();
+    };
 
     const handleSearchChange = (event) => {
         setSearchTerm(event.target.value);
@@ -68,24 +90,17 @@ const Estante = () => {
 
         if (!s) return books;
 
-        return books.filter(item => { // Alterado de 'book' para 'item' para clareza
-            // CORREÇÃO: Acessar titulo e autor via item.livro
+        return books.filter(item => {
             const titulo = cleanString(item.livro?.titulo || "");
             const autor = cleanString(item.livro?.autor || "");
-
-            // NOVO: Incluir o livroId na busca, caso titulo/autor estejam vazios ou o ID seja buscado
             const livroId = cleanString(item.livroId || "");
 
-            return titulo.includes(s) || autor.includes(s) || livroId.includes(s); // Incluído livroId
+            return titulo.includes(s) || autor.includes(s) || livroId.includes(s);
         });
     }, [books, searchTerm]);
 
-    const handleAddBookClick = () => {
-        alert('Redirecionaria para o Modal de Review em um app completo.');
-    };
-
-    if (!isAuthenticated()) {
-        return <div className="text-center p-5">Redirecionando...</div>;
+    if (!isClient || !isAuthenticated()) {
+        return <div className="text-center p-5">Carregando / Redirecionando...</div>;
     }
 
     return (
@@ -117,6 +132,13 @@ const Estante = () => {
 
                 </div>
             </div>
+
+            {/* CORRIGIDO: Passando o estado para o ReviewModal */}
+            <ReviewModal
+                show={openAddModal}
+                onHide={() => setOpenAddModal(false)}
+                onSaveSuccess={handleSaveSuccess}
+            />
         </>
     );
 };
