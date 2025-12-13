@@ -68,19 +68,28 @@ export const loginUser = async (email, password) => {
 
         const data = await response.json();
 
-        if (data.token) {
-            localStorage.setItem('jwtToken', data.token);
-        } else {
+        if (!data.token) {
             throw new Error('Autenticação bem-sucedida, mas o token não foi encontrado na resposta do servidor.');
         }
 
-        const userToSave = data.user || data;
+        localStorage.setItem('jwtToken', data.token);
 
-        if (userToSave && (userToSave.nome || userToSave.fotoPerfil)) {
+        const decodedUserId = getLoggedInUserIdFromToken(data.token);
+
+        let userToSave = data.user || data;
+
+        if (decodedUserId && !userToSave.id) {
+            userToSave.id = decodedUserId;
+        }
+
+        if (userToSave && userToSave.id) {
             localStorage.setItem('userData', JSON.stringify(userToSave));
         }
 
-        return data;
+        return {
+            token: data.token,
+            user: userToSave
+        };
 
     } catch (error) {
         console.error('Erro de login:', error);
@@ -117,6 +126,45 @@ export const fetchEstanteData = async (type, userId = null, page = 0, size = 20)
 
     return response.json();
 };
+
+// --- NOVAS FUNÇÕES DE BIBLIOTECA/WATCHLIST ---
+
+/**
+ * Adiciona um livro à biblioteca do usuário logado (geralmente com status QUERO_LER).
+ * @param {object} payload - Deve conter { livroId: string, status: string (Ex: 'QUERO_LER') }
+ */
+export const adicionarLivroApi = async (payload) => {
+    const response = await fetch(`${API_BASE_URL}/biblioteca`, {
+        method: 'POST',
+        headers: getHeaders(),
+        body: JSON.stringify(payload)
+    });
+
+    if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ message: 'Falha ao adicionar livro à biblioteca.' }));
+        throw new Error(errorData.message || 'Erro ao adicionar livro à biblioteca.');
+    }
+    return response.json();
+};
+
+/**
+ * Remove um livro da biblioteca do usuário logado.
+ * @param {string} livroId - O ID do livro a ser removido.
+ */
+export const removerLivroApi = async (livroId) => {
+    const response = await fetch(`${API_BASE_URL}/biblioteca/${livroId}`, {
+        method: 'DELETE',
+        headers: getHeaders()
+    });
+
+    if (response.status !== 204 && !response.ok) {
+        const errorData = await response.json().catch(() => ({ message: 'Resposta do servidor inválida.' }));
+        throw new Error(`Falha ao remover livro da biblioteca: ${response.status} - ${errorData.message}`);
+    }
+    // 204 No Content para sucesso de deleção
+};
+
+// --- FIM NOVAS FUNÇÕES ---
 
 
 export const fetchReviews = async (userId) => {
@@ -385,6 +433,65 @@ export const getUserById = async (userId) => {
         console.error("Erro ao buscar usuário:", error);
         throw error;
     }
+};
+
+// --- FUNÇÕES DE SEGUIR ---
+
+export const getFollowStatus = async (seguidoId) => {
+    const seguidorId = getLoggedInUserId();
+
+    if (!seguidorId) return false;
+
+    try {
+
+        const response = await fetch(`${API_BASE_URL}/seguir/${seguidorId}`, {
+            method: 'GET',
+            headers: getHeaders()
+        });
+
+        if (!response.ok) return false;
+
+        const seguindoList = await response.json();
+
+        return seguindoList.some(user => String(user.id) === String(seguidoId));
+
+    } catch (error) {
+        console.error("Erro ao verificar status de seguir:", error);
+        return false;
+    }
+};
+
+
+export const followUser = async (seguidoId) => {
+    const seguidorId = getLoggedInUserId();
+    if (!seguidorId) throw new Error("Usuário não logado.");
+
+    const response = await fetch(`${API_BASE_URL}/seguir/${seguidorId}/${seguidoId}`, {
+        method: 'POST',
+        headers: getHeaders()
+    });
+
+    if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ message: 'Falha ao seguir.' }));
+        throw new Error(errorData.message || 'Erro ao seguir usuário.');
+    }
+    return response.text();
+};
+
+export const unfollowUser = async (seguidoId) => {
+    const seguidorId = getLoggedInUserId();
+    if (!seguidorId) throw new Error("Usuário não logado.");
+
+    const response = await fetch(`${API_BASE_URL}/seguir/${seguidorId}/${seguidoId}`, {
+        method: 'DELETE',
+        headers: getHeaders()
+    });
+
+    if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ message: 'Falha ao deixar de seguir.' }));
+        throw new Error(errorData.message || 'Erro ao deixar de seguir usuário.');
+    }
+    return response.text();
 };
 
 export { MOCK_JWT_TOKEN };

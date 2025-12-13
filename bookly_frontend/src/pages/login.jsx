@@ -1,8 +1,8 @@
-// src/pages/login.jsx (MANTIDO NA PASTA /pages)
+// src/pages/login.jsx
 
 import React, { useState } from 'react';
 import { useRouter } from 'next/router';
-import { loginUser, getLoggedInUserId } from '../api/booklyApi.js';
+import { loginUser } from '../api/booklyApi.js';
 
 const LoginPage = () => {
     const [email, setEmail] = useState('');
@@ -17,13 +17,22 @@ const LoginPage = () => {
         setError(null);
 
         try {
-            await loginUser(email, password);
+            const response = await loginUser(email, password);
 
-            const userId = getLoggedInUserId();
+            if (response && response.user && response.user.id) {
+                const userId = response.user.id;
 
-            if (userId) {
+
+                if (typeof window !== 'undefined') {
+                    localStorage.setItem('jwtToken', response.token);
+
+                    localStorage.setItem('userData', JSON.stringify(response.user));
+                }
+                // --- FIM PONTO CRÍTICO ---
+
                 router.push(`/biblioteca/${userId}`);
             } else {
+                setError('Login bem-sucedido, mas ID do usuário não encontrado.');
                 router.push('/biblioteca');
             }
 
@@ -43,15 +52,12 @@ const LoginPage = () => {
 
     const handleRegisterClick = (e) => {
         e.preventDefault();
-        // Redireciona usando o router da Pages Router
         router.push("/register");
     }
 
     return (
-        // Usando a cor de fundo e flexbox para centralização vertical/horizontal
         <div style={{ backgroundColor: 'var(--color-background-light)', minHeight: '100vh', display: 'flex', justifyContent: 'center', alignItems: 'center', padding: '20px' }}>
 
-            {/* Aplica a classe login-container que já define o fundo DED2C2 e o box-shadow */}
             <div className="login-container">
 
                 <img src="https://imgur.com/HLvpHYn.png" alt="Bookly Logo" className="logo-login" />
@@ -94,7 +100,6 @@ const LoginPage = () => {
 
                     <a href="#" className="link-esqueci">Esqueci a senha</a>
 
-                    {/* Usamos o evento onClick para garantir que o Pages Router faça a transição */}
                     <a href="/register" className="btn-login-secondary" onClick={handleRegisterClick}>Criar Conta</a>
                 </form>
             </div>

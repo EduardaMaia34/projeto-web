@@ -4,7 +4,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useParams } from 'next/navigation';
 import Navbar from '../../../components/Navbar';
 import ReviewModal from '../../../components/ReviewModal.jsx';
-import { getUserById, getUserStats } from '../../../api/booklyApi';
+import { getUserById, getUserStats, followUser, unfollowUser, getFollowStatus } from '../../../api/booklyApi';
 
 import './perfilDetails.css';
 
@@ -19,6 +19,39 @@ const BookGridItem = ({ src, title, rating }) => (
     </div>
 );
 
+const SuccessToast = ({ show, onClose, message }) => {
+    return (
+        <div
+            className="toast show align-items-center text-white bg-success border-0"
+            role="alert"
+            aria-live="assertive"
+            aria-atomic="true"
+            style={{
+                position: 'fixed',
+                top: '70px',
+                right: '20px',
+                zIndex: 1100,
+                transition: 'opacity 0.3s ease-in-out',
+                opacity: show ? 1 : 0
+            }}
+        >
+            <div className="d-flex">
+                <div className="toast-body">
+                    {message}
+                </div>
+                <button
+                    type="button"
+                    className="btn-close btn-close-white me-2 m-auto"
+                    data-bs-dismiss="toast"
+                    aria-label="Close"
+                    onClick={onClose}
+                ></button>
+            </div>
+        </div>
+    );
+};
+
+
 export default function PerfilDinamicoPage() {
     const params = useParams();
     const { id } = params;
@@ -26,6 +59,7 @@ export default function PerfilDinamicoPage() {
     const [perfil, setPerfil] = useState(null);
     const [isMeuPerfil, setIsMeuPerfil] = useState(false);
     const [loading, setLoading] = useState(true);
+    const [loggedInUserId, setLoggedInUserId] = useState(null);
 
     const [stats, setStats] = useState({
         totalLidos: 0,
@@ -34,38 +68,48 @@ export default function PerfilDinamicoPage() {
     });
 
     const [openAddModal, setOpenAddModal] = useState(false);
-
-
-    const handleSaveSuccess = useCallback(() => {
-        carregarPerfil();
-    }, [id]);
+    const [toast, setToast] = useState({ show: false, message: '' });
+    const [isFollowing, setIsFollowing] = useState(false);
 
 
     useEffect(() => {
-        if (id) {
-            carregarPerfil();
+        const storedUser = typeof window !== 'undefined' ? localStorage.getItem('userData') : null;
+        if (storedUser) {
+            try {
+                const meuUsuario = JSON.parse(storedUser);
+                setLoggedInUserId(meuUsuario.id);
+            } catch (e) {
+                setLoggedInUserId(null);
+            }
         }
-    }, [id]);
+    }, []);
 
-    const carregarPerfil = async () => {
+
+    const carregarPerfil = useCallback(async () => {
+        if (!id) {
+            setLoading(false);
+            return;
+        }
+
         setLoading(true);
         try {
             const dadosUsuario = await getUserById(id);
             setPerfil(dadosUsuario);
 
-            const storedUser = typeof window !== 'undefined' ? localStorage.getItem('userData') : null;
-            let loggedInUserId = null;
+            const loggedUserId = loggedInUserId;
 
-            if (storedUser) {
-                const meuUsuario = JSON.parse(storedUser);
-                loggedInUserId = meuUsuario.id;
-            }
+            const isCurrentUsersProfile = String(id) === String(loggedUserId);
+            setIsMeuPerfil(isCurrentUsersProfile);
 
-            setIsMeuPerfil(String(id) === String(loggedInUserId));
-
-            // 2. BUSCAR ESTATÍSTICAS
             const dadosStats = await getUserStats(id);
             setStats(dadosStats);
+
+            if (!isCurrentUsersProfile && loggedUserId) {
+                const status = await getFollowStatus(id);
+                setIsFollowing(status);
+            } else {
+                setIsFollowing(false);
+            }
 
         } catch (error) {
             console.error("Erro ao carregar perfil:", error);
@@ -73,11 +117,56 @@ export default function PerfilDinamicoPage() {
         } finally {
             setLoading(false);
         }
-    };
+    }, [id, loggedInUserId]);
+
+
+    useEffect(() => {
+        if (id) {
+            carregarPerfil();
+        }
+    }, [id, loggedInUserId, carregarPerfil]);
+
+
+    const handleSaveSuccess = useCallback(() => {
+        carregarPerfil();
+    }, [id, carregarPerfil]);
+
+
+    useEffect(() => {
+        if (toast.show) {
+            const timer = setTimeout(() => {
+                setToast({ show: false, message: '' });
+            }, 4000);
+            return () => clearTimeout(timer);
+        }
+    }, [toast.show]);
+
 
     const handleAddBookClick = useCallback(() => {
         setOpenAddModal(true);
     }, []);
+
+    const handleFollowClick = async () => {
+        if (!perfil || !loggedInUserId) return;
+
+        if (isFollowing) {
+            try {
+                await unfollowUser(id);
+                setIsFollowing(false);
+                setToast({ show: true, message: `Você deixou de seguir ${perfil.nome}.` });
+            } catch (error) {
+                alert(error.message || "Falha ao deixar de seguir.");
+            }
+        } else {
+            try {
+                await followUser(id);
+                setIsFollowing(true);
+                setToast({ show: true, message: `Você agora está seguindo ${perfil.nome}!` });
+            } catch (error) {
+                alert(error.message || "Falha ao seguir usuário.");
+            }
+        }
+    };
 
     if (loading) {
         return (
@@ -97,18 +186,21 @@ export default function PerfilDinamicoPage() {
     }
 
 
+    const followButtonClass = isFollowing ? "btn-success" : "btn-outline-success";
+    const followButtonText = isFollowing ? "Seguindo" : "Seguir";
+    const followButtonStyle = isFollowing ? { backgroundColor: '#387638', borderColor: '#387638', color: 'white' } : {};
+
+
     return (
         <div className="perfil-page-container" style={{ paddingTop: '100px' }}>
-            {/* Passando o handler para a Navbar */}
             <Navbar onAddBookClick={handleAddBookClick} />
 
             <div className="container mt-4">
+
                 <div className="row">
 
-                    {/* === COLUNA DA ESQUERDA === */}
                     <div className="col-lg-8 pe-lg-5">
 
-                        {/* ... (Conteúdo do Perfil) ... */}
                         <div className="d-flex align-items-start mb-5 profile-header-wrapper">
 
                             <img
@@ -129,9 +221,15 @@ export default function PerfilDinamicoPage() {
                                             EDITAR PERFIL
                                         </a>
                                     ) : (
-                                        <button className="btn btn-sm btn-outline-success ms-3 fw-bold rounded-pill px-3">
-                                            Seguir
-                                        </button>
+                                        loggedInUserId && (
+                                            <button
+                                                className={`btn btn-sm ms-3 fw-bold rounded-pill px-3 ${followButtonClass}`}
+                                                style={followButtonStyle}
+                                                onClick={handleFollowClick}
+                                            >
+                                                {followButtonText}
+                                            </button>
+                                        )
                                     )}
                                 </div>
 
@@ -145,7 +243,6 @@ export default function PerfilDinamicoPage() {
                                 </div>
                             </div>
 
-                            {/* [ATUALIZADO] BLOCO DE ESTATÍSTICAS REAIS DA API */}
                             <div className="stats-container ms-auto pt-2">
                                 <div className="stats-item">
                                     <h5 className="mb-0 fw-bold fs-4">{stats.totalLidos}</h5>
@@ -172,21 +269,17 @@ export default function PerfilDinamicoPage() {
 
                     </div>
 
-                    {/* === SIDEBAR === */}
                     <div className="col-lg-4 mt-5 mt-lg-0">
                         <div className="p-3 sidebar-container">
 
                             {isMeuPerfil ? (
                                 <>
-                                    {/* Minha Biblioteca (Watchlist) */}
                                     <a href={`/biblioteca/${id}`} className="sidebar-link">
                                         <span className="sidebar-icon bi bi-bookmarks-fill"></span> Minha Biblioteca
                                     </a>
-                                    {/* Minha Estante (Lidos/Com Review) */}
                                     <a href={`/estante/${id}`} className="sidebar-link">
                                         <span className="sidebar-icon bi bi-book-fill"></span> Meus Lidos
                                     </a>
-                                    {/* Minhas Reviews */}
                                     <a href={`/reviews/${id}`} className="sidebar-link">
                                         <span className="sidebar-icon bi bi-pencil-square"></span> Minhas Reviews
                                     </a>
@@ -196,15 +289,12 @@ export default function PerfilDinamicoPage() {
                                     <div className="alert alert-light border shadow-sm">
                                         <small className="text-dark-custom text-uppercase fw-bold mb-2 d-block">Explorar</small>
 
-                                        {/* Biblioteca (Watchlist) de Outro Usuário */}
                                         <a href={`/biblioteca/${id}`} className="sidebar-link ps-0">
                                             <span className="sidebar-icon bi bi-bookmarks-fill"></span> Biblioteca de {perfil.nome}
                                         </a>
-                                        {/* Estante (Lidos) de Outro Usuário */}
                                         <a href={`/estante/${id}`} className="sidebar-link ps-0">
                                             <span className="sidebar-icon bi bi-book-fill"></span> Estante de {perfil.nome}
                                         </a>
-                                        {/* Reviews de Outro Usuário */}
                                         <a href={`/reviews/${id}`} className="sidebar-link ps-0">
                                             <span className="sidebar-icon bi bi-chat-quote-fill"></span> Reviews de {perfil.nome}
                                         </a>
@@ -218,11 +308,16 @@ export default function PerfilDinamicoPage() {
                 </div>
             </div>
 
-            {/* Renderizar o Modal de Review. Ele deve ser visível se a flag show for true */}
             <ReviewModal
                 show={openAddModal}
                 onHide={() => setOpenAddModal(false)}
                 onSaveSuccess={handleSaveSuccess}
+            />
+
+            <SuccessToast
+                show={toast.show}
+                onClose={() => setToast({ show: false, message: '' })}
+                message={toast.message}
             />
         </div>
     );

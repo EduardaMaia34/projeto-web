@@ -1,14 +1,49 @@
 "use client";
 
 import React, { useState, useEffect, useCallback, useMemo } from "react";
-// Importações do App Router
 import { useRouter, usePathname } from 'next/navigation';
 import Navbar from "../../../components/Navbar.jsx";
 import ReviewModal from "../../../components/ReviewModal.jsx";
-// Assumindo que essas funções foram atualizadas no booklyApi.js
 import { fetchReviews, updateReview, deleteReviewApi, getLoggedInUserId, getUserNameById } from "../../../api/booklyApi.js";
 import { displayStarRating, formatDate } from "../../../utils.jsx";
 import { Modal, Button } from "react-bootstrap";
+
+
+// --- COMPONENTE TOAST DE CONFIRMAÇÃO ---
+const SuccessToast = ({ show, onClose, message, type = 'success' }) => {
+    const bgColor = type === 'success' ? 'bg-success' : 'bg-danger';
+
+    return (
+        <div
+            className={`toast show align-items-center text-white ${bgColor} border-0`}
+            role="alert"
+            aria-live="assertive"
+            aria-atomic="true"
+            style={{
+                position: 'fixed',
+                top: '70px',
+                right: '20px',
+                zIndex: 1100,
+                transition: 'opacity 0.3s ease-in-out',
+                opacity: show ? 1 : 0
+            }}
+        >
+            <div className="d-flex">
+                <div className="toast-body">
+                    {message}
+                </div>
+                <button
+                    type="button"
+                    className="btn-close btn-close-white me-2 m-auto"
+                    data-bs-dismiss="toast"
+                    aria-label="Close"
+                    onClick={onClose}
+                ></button>
+            </div>
+        </div>
+    );
+};
+// ----------------------------------------
 
 
 const StarRatingInput = ({ currentRating, onRate }) => {
@@ -60,9 +95,7 @@ const StarRatingInput = ({ currentRating, onRate }) => {
 const isAuthenticated = () => typeof window !== 'undefined' && !!localStorage.getItem('jwtToken');
 
 const getUserIdFromPathname = (pathname) => {
-    // Exemplo: pathname = /reviews/123 -> retorna 123
     const segments = pathname.split('/').filter(Boolean);
-    // O ID é o último segmento
     return segments.length > 0 ? segments[segments.length - 1] : null;
 };
 
@@ -73,7 +106,6 @@ export default function ReviewsPage() {
     const router = useRouter();
     const pathname = usePathname();
 
-    // [NOVO] Obtém o ID do pathname ou usa o ID logado como fallback.
     const urlUserId = getUserIdFromPathname(pathname);
     const loggedInUserId = useMemo(() => getLoggedInUserId(), []);
     const userIdToFetch = urlUserId && urlUserId !== 'reviews' ? urlUserId : loggedInUserId;
@@ -86,9 +118,10 @@ export default function ReviewsPage() {
     const [selectedReview, setSelectedReview] = useState(null);
     const [pageTitle, setPageTitle] = useState("Reviews");
 
-    // [NOVO] Verifica se a página pertence ao usuário logado
-    const isOwner = userIdToFetch === loggedInUserId;
+    // [NOVO] Estado para o Toast
+    const [toast, setToast] = useState({ show: false, message: '', type: 'success' });
 
+    const isOwner = userIdToFetch === loggedInUserId;
 
     useEffect(() => {
         setIsClient(true);
@@ -97,6 +130,17 @@ export default function ReviewsPage() {
         }
     }, [router]);
 
+    // Efeito para esconder o Toast automaticamente
+    useEffect(() => {
+        if (toast.show) {
+            const timer = setTimeout(() => {
+                setToast({ show: false, message: '', type: 'success' });
+            }, 4000);
+            return () => clearTimeout(timer);
+        }
+    }, [toast.show]);
+
+
     const fetchUserReviews = useCallback(async () => {
         if (!isAuthenticated() || !userIdToFetch) return;
 
@@ -104,11 +148,9 @@ export default function ReviewsPage() {
         setError(null);
 
         try {
-            // Usa userIdToFetch para buscar os dados
             const data = await fetchReviews(userIdToFetch);
             setReviews(Array.isArray(data) ? data : []);
 
-            // Define o título da página
             if (isOwner) {
                 setPageTitle('Minhas Reviews');
             } else {
@@ -162,33 +204,44 @@ export default function ReviewsPage() {
         });
     }, [reviews, searchTerm]);
 
+    // [ATUALIZADO] Handler para Salvar Edição
     const handleSaveEdit = async (id, payload) => {
         setLoading(true);
         try {
             await updateReview(id, payload);
             setSelectedReview(null);
-            fetchUserReviews();
+            await fetchUserReviews(); // Aguarda o recarregamento dos dados
+            setToast({ show: true, message: 'Review editada com sucesso!', type: 'success' });
         } catch (error) {
             console.error('Falha ao salvar edição:', error);
-            alert('Falha ao salvar a edição da review.');
+            setToast({ show: true, message: error.message || 'Falha ao salvar a edição da review.', type: 'danger' });
         } finally {
             setLoading(false);
         }
     };
 
+    // [ATUALIZADO] Handler para Deletar
     const handleDelete = async (id) => {
         if (!confirm("Excluir esta review?")) return;
         setLoading(true);
         try {
             await deleteReviewApi(id);
-            fetchUserReviews();
+            await fetchUserReviews(); // Aguarda o recarregamento dos dados
+            setToast({ show: true, message: 'Review deletada com sucesso!', type: 'success' });
         } catch (error) {
             console.error('Falha ao deletar review:', error);
-            alert('Falha ao deletar a review.');
+            setToast({ show: true, message: error.message || 'Falha ao deletar a review.', type: 'danger' });
         } finally {
             setLoading(false);
         }
     };
+
+    // [NOVO] Handler de Sucesso de Criação (para ser passado ao ReviewModal)
+    const handleReviewCreationSuccess = () => {
+        fetchUserReviews();
+        setToast({ show: true, message: 'Review criada com sucesso!', type: 'success' });
+    }
+
 
     const handleEditNotaChange = (newRating) => {
         setSelectedReview(prevReview => ({
@@ -230,7 +283,6 @@ export default function ReviewsPage() {
                                 <p className="mb-0">{review.review}</p>
                             </div>
 
-                            {/* Ações de Edição/Exclusão só para o proprietário da página */}
                             {isOwner && (
                                 <div className="d-flex flex-column align-items-end flex-shrink-0">
                                     <button
@@ -253,13 +305,12 @@ export default function ReviewsPage() {
                 ))}
             </div>
 
-            {/* Mantive o ReviewModal aqui, mas ele geralmente é usado para ADICIONAR uma review,
-                o que só faria sentido na página do dono */}
+            {/* O ReviewModal para ADICIONAR Review (se estiver no contexto do dono) */}
             {isOwner && (
                 <ReviewModal
-                    show={false} // Não é usado para adicionar aqui, mas para editar (usando o Modal abaixo)
+                    show={false}
                     onHide={() => {}}
-                    onSaveSuccess={fetchUserReviews}
+                    onSaveSuccess={handleReviewCreationSuccess} // <-- USANDO NOVO HANDLER
                 />
             )}
 
@@ -317,6 +368,14 @@ export default function ReviewsPage() {
                     </Button>
                 </Modal.Footer>
             </Modal>
+
+            {/* RENDERIZAÇÃO DO TOAST */}
+            <SuccessToast
+                show={toast.show}
+                onClose={() => setToast({ show: false, message: '', type: 'success' })}
+                message={toast.message}
+                type={toast.type}
+            />
         </>
     );
 }
