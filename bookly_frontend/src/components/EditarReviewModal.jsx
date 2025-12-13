@@ -1,3 +1,4 @@
+"use client";
 import React from "react";
 
 // Componente StarRatingInput (adaptado do ReviewModal.jsx para usar a prop 'onRate')

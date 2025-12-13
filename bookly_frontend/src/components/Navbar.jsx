@@ -1,16 +1,20 @@
-
 "use client";
 
 import React, { useState, useEffect } from "react";
 import { useRouter } from 'next/navigation';
 import SearchModal from "./SearchModal";
+import { getLoggedInUserId } from "../api/booklyApi";
 
 export default function Navbar({ onAddBookClick }) {
     const router = useRouter();
     const [isLoggedIn, setIsLoggedIn] = useState(false);
     const [userData, setUserData] = useState({ name: "", photo: "" });
     const [openSearchModal, setOpenSearchModal] = useState(false);
-    const [isLoadingUser, setIsLoadingUser] = useState(true); // NOVO: Controla o estado de carregamento do usuário
+    const [isLoadingUser, setIsLoadingUser] = useState(true);
+
+    const loggedInUserId = React.useMemo(() => getLoggedInUserId(), []);
+    const profileLink = loggedInUserId ? `/perfil/${loggedInUserId}` : '/perfil';
+
 
     useEffect(() => {
         let user;
@@ -76,7 +80,7 @@ export default function Navbar({ onAddBookClick }) {
                     <button
                         className="btn btn-link text-dark me-3"
                         onClick={() => setOpenSearchModal(true)}
-                        title="Pesquisar Livros e Autores"
+                        title="Pesquisar Livros, Autores e Usuários"
                     >
                         <i className="bi bi-search" style={{ fontSize: '1.2rem' }}></i>
                     </button>
@@ -84,11 +88,11 @@ export default function Navbar({ onAddBookClick }) {
                     <div id="profileGroupNavbar" className="d-flex align-items-center">
                         {isLoggedIn ? (
                             <>
-                                {/* Link do Perfil: Apenas ícone/foto */}
+                                {/* Link do Perfil: AGORA USA O ID DO USUÁRIO LOGADO */}
                                 <a
-                                    href="/perfil"
+                                    href={profileLink} // <-- Rota dinâmica
                                     className="d-flex align-items-center me-3 text-decoration-none text-dark"
-                                    title={userData.name} // Nome no tooltip
+                                    title={userData.name}
                                 >
 
                                     {/* LÓGICA DE FALLBACK */}

@@ -1,8 +1,8 @@
-// pages/login.jsx
+// src/pages/login.jsx (MANTIDO NA PASTA /pages)
 
 import React, { useState } from 'react';
 import { useRouter } from 'next/router';
-import { loginUser } from '../api/booklyApi.js';
+import { loginUser, getLoggedInUserId } from '../api/booklyApi.js';
 
 const LoginPage = () => {
     const [email, setEmail] = useState('');
@@ -17,15 +17,35 @@ const LoginPage = () => {
         setError(null);
 
         try {
-            // loginUser agora salva o userData
             await loginUser(email, password);
-            router.push('/biblioteca' );
+
+            const userId = getLoggedInUserId();
+
+            if (userId) {
+                router.push(`/biblioteca/${userId}`);
+            } else {
+                router.push('/biblioteca');
+            }
+
         } catch (err) {
+            // Se o erro for 401/403 (Token Expirado/Inválido)
+            if (String(err.message).includes('403') || String(err.message).includes('401')) {
+                if (typeof window !== 'undefined') {
+                    localStorage.removeItem('jwtToken');
+                    localStorage.removeItem('userData');
+                }
+            }
             setError(err.message || 'Credenciais inválidas ou erro de conexão.');
         } finally {
             setLoading(false);
         }
     };
+
+    const handleRegisterClick = (e) => {
+        e.preventDefault();
+        // Redireciona usando o router da Pages Router
+        router.push("/register");
+    }
 
     return (
         // Usando a cor de fundo e flexbox para centralização vertical/horizontal
@@ -74,7 +94,8 @@ const LoginPage = () => {
 
                     <a href="#" className="link-esqueci">Esqueci a senha</a>
 
-                    <a href="/register" className="btn-login-secondary">Criar Conta</a>
+                    {/* Usamos o evento onClick para garantir que o Pages Router faça a transição */}
+                    <a href="/register" className="btn-login-secondary" onClick={handleRegisterClick}>Criar Conta</a>
                 </form>
             </div>
         </div>

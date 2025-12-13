@@ -6,7 +6,7 @@ const MOCK_JWT_TOKEN = 'eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIyIiwidXNlcm5hbWUiOiJtYXJ
 
 
 const getHeaders = () => {
-    const token = localStorage.getItem('jwtToken') || MOCK_JWT_TOKEN;
+    const token = typeof window !== 'undefined' ? localStorage.getItem('jwtToken') : MOCK_JWT_TOKEN; // Usando MOCK_JWT_TOKEN no lado do servidor (se necessário)
 
     if (!token) {
         console.error("Tentativa de requisição autenticada sem token.");
@@ -17,6 +17,41 @@ const getHeaders = () => {
         'Authorization': `Bearer ${token}`
     };
 };
+
+
+const getLoggedInUserIdFromToken = (token) => {
+    try {
+        if (!token) return null;
+
+        const payloadBase64 = token.split('.')[1];
+
+        let base64 = payloadBase64.replace(/-/g, '+').replace(/_/g, '/');
+        while (base64.length % 4) {
+            base64 += '=';
+        }
+
+        const payloadJson = atob(base64);
+        const payload = JSON.parse(payloadJson);
+
+        return payload.sub; // 'sub' é geralmente o ID do usuário
+    } catch (e) {
+        console.error("Falha ao decodificar token para obter ID do usuário:", e);
+        return null;
+    }
+}
+
+export const getLoggedInUserId = () => {
+    if (typeof window === 'undefined') {
+        return getLoggedInUserIdFromToken(MOCK_JWT_TOKEN);
+    }
+
+    const token = localStorage.getItem('jwtToken');
+
+    if (!token) return getLoggedInUserIdFromToken(MOCK_JWT_TOKEN); // Fallback para mock se não houver token no localStorage
+
+    return getLoggedInUserIdFromToken(token);
+};
+
 
 export const loginUser = async (email, password) => {
     try {
@@ -299,6 +334,24 @@ export const getReviewsByLivroId = async (livroId) => {
     } catch (error) {
         console.error("Erro na API de reviews:", error);
         return [];
+    }
+};
+
+export const getUserById = async (userId) => {
+    try {
+        const response = await fetch(`${API_BASE_URL}/users/${userId}`, {
+            method: 'GET',
+            headers: getHeaders()
+        });
+
+        if (!response.ok) {
+            throw new Error('Usuário não encontrado');
+        }
+
+        return await response.json();
+    } catch (error) {
+        console.error("Erro ao buscar usuário:", error);
+        throw error;
     }
 };
 
