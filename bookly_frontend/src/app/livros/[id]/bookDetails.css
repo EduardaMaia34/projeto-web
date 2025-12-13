@@ -1,0 +1,118 @@
+/* src/app/livros/[id]/bookDetails.css */
+
+/* Removido o bloco :root, pois as variáveis principais já estão em index.css */
+
+.book-page-wrapper {
+    /* Usando a cor de fundo global */
+    background-color: var(--color-background-light);
+    /* Usando a cor de texto global */
+    color: var(--color-text-primary);
+    font-family: 'Cormorant Unicase', serif;
+    min-height: 100vh;
+    /* Ajuste de padding para Navbar (80px é um bom chute) */
+    padding-top: 80px;
+}
+
+.custom-hr {
+    border-top: 1px solid #ddd;
+    opacity: 1;
+}
+
+/* --- Capa e Info --- */
+.book-cover {
+    width: 180px;
+    height: auto;
+    border: 1px solid #ddd;
+    box-shadow: 2px 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+.book-title {
+    font-weight: bold;
+    font-size: 1.2rem;
+}
+
+.book-bookmark {
+    /* Usando o marrom com opacidade */
+    color: rgba(89, 74, 71, 0.5);
+    font-size: 1.5rem;
+    cursor: pointer;
+    transition: color 0.3s;
+}
+
+.book-bookmark:hover {
+    /* Usando a cor verde global */
+    color: var(--color-button-success);
+}
+
+.book-author {
+    font-size: 1rem;
+    font-weight: 500;
+}
+
+.book-synopsis {
+    font-size: 0.9rem;
+    font-weight: 500;
+    text-align: justify;
+}
+
+/* Estrelas */
+.star-rating i {
+    /* Usando a cor ouro global */
+    color: var(--color-rating-gold);
+    font-size: 1.1rem;
+    margin-right: 2px;
+}
+
+.star-empty {
+    color: #a0a0a0 !important;
+}
+
+/* Tags (Badges) */
+.bg-custom-tag {
+    background-color: #e0e0e0 !important;
+    /* Usando a cor de texto global */
+    color: var(--color-text-primary) !important;
+    font-weight: normal;
+    padding: 0.3em 0.7em;
+    border-radius: 15px;
+    font-size: 0.8rem;
+}
+
+
+/* --- Botão Criar Review --- */
+.btn-review-primary {
+    background-color: var(--color-text-primary);
+    border: 1px solid var(--color-text-primary);
+    color: var(--color-background-light); /* Texto bege/creme */
+
+    font-weight: bold;
+    padding: 1rem 3rem;
+    border-radius: 5px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    font-size: 1.1rem;
+    transition: all 0.2s ease-in-out;
+}
+
+.btn-review-primary:hover,
+.btn-review-primary:focus {
+    background-color: var(--color-background-light); /* Fundo bege/creme */
+    border: 1px solid var(--color-text-primary);
+    color: var(--color-text-primary); /* Texto marrom escuro */
+    transform: scale(1.05);
+}
+
+/* --- Review Card --- */
+.review-card {
+    /* Usando o marrom com opacidade */
+    background-color: rgba(89, 74, 71, 0.5);
+    /* Usando a cor de texto global */
+    color: var(--color-text-primary);
+    max-width: 800px;
+    margin: 0 auto;
+}
+
+.review-card .star-small i {
+    font-size: 0.8rem;
+    /* Usando a cor ouro global */
+    color: var(--color-rating-gold);
+}

@@ -40,9 +40,8 @@ export default function SearchModal({ show, onHide }) {
 
 
     const handleSelectAndNavigate = (livroId) => {
-        onHide(); // Fecha o modal
-        // Ação: Ao clicar no livro, deve abrir a página do livro
-        router.push(`/livro/${livroId}`);
+        onHide();
+        router.push(`/livros/${livroId}`);
     };
 
     return (
