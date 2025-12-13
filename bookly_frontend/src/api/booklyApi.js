@@ -137,8 +137,6 @@ export const deleteReviewApi = async (reviewId) => {
     }
 };
 
-// --- CORREÇÃO DAS FUNÇÕES ABAIXO ---
-
 export async function searchLivrosApi(titulo) {
     if (!titulo || titulo.trim() === "") return [];
 
@@ -186,4 +184,43 @@ export const getLivroById = async (id) => {
     }
 };
 
+export const getReviewsByLivroId = async (livroId) => {
+    try {
+        // Ajuste a URL conforme a rota do seu Backend Spring Boot
+        // Geralmente é algo como /reviews/livro/{id} ou /livros/{id}/reviews
+        const response = await fetch(`${API_BASE_URL}/reviews/livro/${livroId}`, {
+            method: 'GET',
+            headers: getHeaders()
+        });
+
+        if (!response.ok) {
+            // Se der 404 (sem reviews), retorna array vazio para não quebrar a tela
+            if (response.status === 404) return [];
+            throw new Error('Erro ao buscar reviews do livro');
+        }
+
+        return await response.json();
+    } catch (error) {
+        console.error("Erro na API de reviews:", error);
+        return []; // Retorna lista vazia em caso de erro
+    }
+};
+
+export const getUserById = async (userId) => {
+    try {
+        const response = await fetch(`${API_BASE_URL}/users/${userId}`, {
+            method: 'GET',
+            headers: getHeaders()
+        });
+
+        if (!response.ok) {
+            throw new Error('Usuário não encontrado');
+        }
+
+        return await response.json();
+    } catch (error) {
+        console.error("Erro ao buscar usuário:", error);
+        throw error;
+    }
+};
 export { MOCK_JWT_TOKEN };

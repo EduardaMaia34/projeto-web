@@ -2,15 +2,17 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { useRouter, usePathname } from 'next/navigation';
+import { useRouter } from 'next/navigation';
+import Link from 'next/link'; // Importante para navegação dinâmica
 import SearchModal from "./SearchModal";
 
 export default function Navbar({ onAddBookClick }) {
     const router = useRouter();
     const [isLoggedIn, setIsLoggedIn] = useState(false);
     const [userData, setUserData] = useState({ name: "", photo: "" });
+    const [userId, setUserId] = useState(null); // NOVO: Estado para guardar o ID
     const [openSearchModal, setOpenSearchModal] = useState(false);
-    const [isLoadingUser, setIsLoadingUser] = useState(true); // NOVO: Controla o estado de carregamento do usuário
+    const [isLoadingUser, setIsLoadingUser] = useState(true);
 
     useEffect(() => {
         let user;
@@ -31,9 +33,16 @@ export default function Navbar({ onAddBookClick }) {
                         // Procura por 'fotoPerfil' (DTO) ou 'photo', com fallback para o ícone
                         photo: user.fotoPerfil || user.photo || "",
                     });
+
+                    // NOVO: Salva o ID do usuário para usar no link
+                    if (user.id) {
+                        setUserId(user.id);
+                    }
+
                 } catch (e) {
                     console.error("Erro ao parsear userData:", e);
                     setUserData({ name: "Usuário", photo: "" });
+                    setUserId(null);
                 }
             }
             setIsLoadingUser(false);
@@ -90,13 +99,12 @@ export default function Navbar({ onAddBookClick }) {
                     <div id="profileGroupNavbar" className="d-flex align-items-center">
                         {isLoggedIn ? (
                             <>
-                                {/* Link do Perfil: Apenas ícone/foto */}
-                                <a
-                                    href="/perfil"
+                                {/* Link do Perfil: AGORA DINÂMICO */}
+                                <Link
+                                    href={userId ? `/perfil/${userId}` : '/perfil'}
                                     className="d-flex align-items-center me-3 text-decoration-none text-dark"
-                                    title={userData.name} // Nome no tooltip
+                                    title={userData.name}
                                 >
-
                                     {/* LÓGICA DE FALLBACK */}
                                     {useIconFallback ? (
                                         <i
@@ -111,7 +119,7 @@ export default function Navbar({ onAddBookClick }) {
                                             style={{ width: 30, height: 30, objectFit: "cover" }}
                                         />
                                     )}
-                                </a>
+                                </Link>
 
                                 <button
                                     className="btn btn-success me-3 d-flex align-items-center"

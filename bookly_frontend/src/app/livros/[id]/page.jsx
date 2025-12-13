@@ -1,81 +1,96 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useParams } from 'next/navigation';
-import { getLivroById } from '../../../api/booklyApi';
+import { getLivroById, getReviewsByLivroId } from '../../../api/booklyApi';
 import Navbar from '../../../components/Navbar';
-
-// NOVO: Importando o Modal que criamos
 import ReviewModal from '../../../components/ReviewModal';
 
 import 'bootstrap/dist/css/bootstrap.min.css';
 import 'bootstrap-icons/font/bootstrap-icons.css';
 import './bookDetails.css';
 
+const StaticStars = ({ nota }) => {
+    const stars = [1, 2, 3, 4, 5];
+    return (
+        <span className="text-warning">
+            {stars.map(star => {
+                if (star <= nota) return <i key={star} className="bi bi-star-fill"></i>;
+                if (star - 0.5 <= nota) return <i key={star} className="bi bi-star-half"></i>;
+                return <i key={star} className="bi bi-star" style={{ color: '#ddd' }}></i>;
+            })}
+        </span>
+    );
+};
+
 export default function BookPage() {
     const params = useParams();
     const { id } = params;
 
     const [livro, setLivro] = useState(null);
+    const [reviews, setReviews] = useState([]);
     const [loading, setLoading] = useState(true);
     const [erro, setErro] = useState(null);
-
-    // NOVO: Estado para controlar a abertura do modal
     const [showModal, setShowModal] = useState(false);
 
-    useEffect(() => {
-        if (id) {
-            getLivroById(id)
-                .then(data => {
-                    setLivro(data);
-                    setLoading(false);
-                })
-                .catch(error => {
-                    console.error("Erro ao buscar livro:", error);
-                    setErro("Não foi possível carregar o livro.");
-                    setLoading(false);
-                });
-        }
+    const carregarDados = useCallback(() => {
+        if (!id) return;
+
+        setLoading(true);
+
+        const promiseLivro = getLivroById(id);
+        const promiseReviews = getReviewsByLivroId(id);
+
+        Promise.all([promiseLivro, promiseReviews])
+            .then(([dadosLivro, dadosReviews]) => {
+                setLivro(dadosLivro);
+                setReviews(dadosReviews || []);
+                setLoading(false);
+            })
+            .catch(error => {
+                console.error("Erro ao carregar página:", error);
+                setErro("Erro ao carregar informações.");
+                setLoading(false);
+            });
     }, [id]);
 
-    // NOVO: Funções para abrir e fechar o modal
+    useEffect(() => {
+        carregarDados();
+    }, [carregarDados]);
+
     const handleOpenModal = () => setShowModal(true);
     const handleCloseModal = () => setShowModal(false);
 
-    // NOVO: O que fazer quando salvar com sucesso (ex: recarregar a página ou avisar)
     const handleSaveSuccess = () => {
-        alert("Livro logado com sucesso!");
-        // Aqui você poderia chamar uma função para recarregar as reviews, por exemplo
+        carregarDados();
     };
 
-    if (loading) {
+    if (loading && !livro) {
         return (
-            <div className="book-page-wrapper d-flex justify-content-center align-items-center">
-                <div className="spinner-border text-primary" role="status">
-                    <span className="visually-hidden">Carregando...</span>
-                </div>
+            <div className="d-flex justify-content-center align-items-center vh-100">
+                <div className="spinner-border text-primary" role="status"></div>
             </div>
         );
     }
 
     if (erro || !livro) {
         return (
-            <div className="book-page-wrapper container mt-5 pt-5 text-center">
+            <div className="container mt-5 pt-5 text-center">
                 <Navbar />
-                <h3>Opa! {erro || "Livro não encontrado."}</h3>
+                <h3>{erro || "Livro não encontrado."}</h3>
             </div>
         );
     }
 
     return (
-        <div className="book-page-wrapper">
+        <div className="book-page-wrapper" style={{ backgroundColor: '#fdfbf7', minHeight: '100vh' }}>
             <Navbar />
 
             <ReviewModal
                 show={showModal}
                 onHide={handleCloseModal}
                 onSaveSuccess={handleSaveSuccess}
-                initialLivro={livro}  // <--- VOCÊ PRECISA ADICIONAR ESTA LINHA
+                initialLivro={livro}
             />
 
             <div className="container mt-4">
@@ -84,62 +99,91 @@ export default function BookPage() {
                 <div className="row book-details-section py-4">
                     <div className="col-md-3 text-center">
                         <img
-                            // OBS: Corrigi o link placeholder, pois link da wikipedia não é imagem e quebraria o layout
-                            src={livro.capa || "https://via.placeholder.com/180x270?text=Sem+Capa"}
-                            className="img-fluid book-cover"
+                            src={livro.urlCapa || livro.capa || "https://via.placeholder.com/180x270?text=Sem+Capa"}
+                            className="img-fluid rounded shadow"
+                            style={{ maxHeight: '300px', objectFit: 'cover' }}
                             alt={`Capa de ${livro.titulo}`}
                         />
                     </div>
 
                     <div className="col-md-6 book-info ps-md-4">
                         <div className="d-flex justify-content-between align-items-start">
-                            <h2 className="book-title">
-                                {livro.titulo} <span className="text-muted fs-5">{livro.anoPublicacao}</span>
+                            <h2 className="fw-bold text-dark">
+                                {livro.titulo} <small className="text-muted fs-6">({livro.anoPublicacao})</small>
                             </h2>
-                            <i className="bi bi-bookmark-fill book-bookmark"></i>
                         </div>
 
-                        <p className="rating-text">
-                            <span className="fs-4 fw-bold">{livro.mediaAvaliacao || "N/A"}</span>
-                            <span className="star-rating ms-2">
-                                <i className="bi bi-star-fill"></i>
-                                <i className="bi bi-star-fill"></i>
-                                <i className="bi bi-star-fill"></i>
-                                <i className="bi bi-star-fill"></i>
-                                <i className="bi bi-star-fill"></i>
+                        <div className="mb-3">
+                            <StaticStars nota={livro.mediaAvaliacao || 0} />
+                            <span className="ms-2 text-muted fw-bold">
+                                {livro.mediaAvaliacao ? livro.mediaAvaliacao.toFixed(1) : "N/A"}
                             </span>
-                        </p>
-
-                        <div className="mt-2 mb-3">
-                            <span className="badge bg-custom-tag me-2">{livro.genero}</span>
                         </div>
 
-                        <p className="book-author">Autor: <strong>{livro.autor}</strong></p>
+                        <div className="mb-3">
+                            <span className="badge bg-secondary me-2">{livro.genero}</span>
+                        </div>
 
-                        <p className="book-synopsis">
-                            {livro.sinopse || "Sinopse não disponível."}
+                        <p className="fs-5">Autor: <strong>{livro.autor}</strong></p>
+
+                        <p className="text-muted mt-3" style={{ lineHeight: '1.6' }}>
+                            {livro.descricao || "Sinopse não disponível."}
                         </p>
                     </div>
 
-                    <div className="col-md-3 d-flex justify-content-center align-items-center">
-                        {/* ALTERADO: Adicionado o evento onClick */}
+                    <div className="col-md-3 d-flex flex-column justify-content-center align-items-center">
                         <button
-                            className="btn btn-locar-livro"
+                            className="btn btn-review-primary btn-lg w-100 shadow-sm"
                             onClick={handleOpenModal}
                         >
-                            <span className="feather-icon me-2">
-                                <i className="bi bi-feather"></i>
-                            </span>
-                            Logar Livro
+                            <i className="bi bi-feather me-2"></i>
+                            Criar Review
                         </button>
                     </div>
                 </div>
 
                 <hr className="custom-hr" />
 
-                <div className="row justify-content-center my-4">
-                    <div className="col-md-9 text-center text-muted">
-                        <p>As avaliações aparecerão aqui...</p>
+                {/* --- SEÇÃO DE REVIEWS --- */}
+                <div className="row justify-content-center my-5">
+                    <div className="col-md-10">
+                        <h4 className="mb-4 fw-bold" style={{ color: '#594A47' }}>Avaliações dos Leitores</h4>
+
+                        {reviews.length === 0 ? (
+                            <div className="text-center text-muted p-5 bg-white rounded shadow-sm">
+                                <i className="bi bi-chat-square-text fs-1 d-block mb-3"></i>
+                                <p>Este livro ainda não tem avaliações. Seja o primeiro a opinar!</p>
+                            </div>
+                        ) : (
+                            <div className="d-flex flex-column gap-3">
+                                {reviews.map((review) => (
+                                    <div key={review.id} className="card border-0 shadow-sm p-3">
+                                        <div className="d-flex justify-content-between align-items-center mb-2">
+                                            <div className="d-flex align-items-center gap-2">
+                                                <div
+                                                    className="rounded-circle bg-secondary d-flex justify-content-center align-items-center text-white fw-bold"
+                                                    style={{ width: '40px', height: '40px', flexShrink: 0 }}
+                                                >
+                                                    {review.usuarioNome ? review.usuarioNome.charAt(0).toUpperCase() : 'U'}
+                                                </div>
+                                                <div>
+                                                    <h6 className="mb-0 fw-bold">{review.usuarioNome || "Usuário Anônimo"}</h6>
+                                                    <small className="text-muted" style={{ fontSize: '0.8rem' }}>
+                                                        {review.dataAvaliacao ? new Date(review.dataAvaliacao).toLocaleDateString('pt-BR') : ""}
+                                                    </small>
+                                                </div>
+                                            </div>
+                                            <div>
+                                                <StaticStars nota={review.nota} />
+                                            </div>
+                                        </div>
+                                        <p className="card-text text-secondary mb-0 ps-5">
+                                            "{review.review || review.comentario}"
+                                        </p>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
                     </div>
                 </div>
 
