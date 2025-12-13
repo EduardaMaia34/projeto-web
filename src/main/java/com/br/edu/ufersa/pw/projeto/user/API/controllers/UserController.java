@@ -110,7 +110,7 @@ public class UserController {
     public ResponseEntity<InputUserDTO> removeByEmail(@RequestBody InputUserDTO user)
     { return ResponseEntity.status(HttpStatus.METHOD_NOT_ALLOWED).build(); }
 
-    @PutMapping("/me")
+    @PutMapping("/{id}")
     public ResponseEntity<ReturnUserDTO> updateMe(
             @AuthenticationPrincipal CustomUserDetails loggedInUser,
             @RequestBody InputUserDTO dto) {

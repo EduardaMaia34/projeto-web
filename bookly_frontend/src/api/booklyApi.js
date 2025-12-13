@@ -1,15 +1,38 @@
 // src/api/booklyApi.js
 
-const API_BASE_URL = 'http://localhost:8081/api/v1';
+// ------------------------------------------------------------------
+// CONFIGURAÇÕES GERAIS
+// ------------------------------------------------------------------
+const PORTA = 8081; // Mude para 8080 se necessário
+const API_BASE_URL = `http://localhost:${PORTA}/api/v1`;
 
 const MOCK_JWT_TOKEN = 'eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIyIiwidXNlcm5hbWUiOiJtYXJpM0BnbWFpbC5jb20iLCJyb2xlcyI6IlJPTEVfVVNFUiIsImlhdCI6MTc2Mjk0NTUyNiwiZXhwIjoxNzYzMDMxOTI2fQ.6oOMHWxH1O3NQ-6m7xkVOvZJhQHXF5p5562mweKyvGo';
 
+// ------------------------------------------------------------------
+// HELPERS (Funções Auxiliares)
+// ------------------------------------------------------------------
 
+// Decodifica o JWT para extrair ID e expiração sem bibliotecas externas
+function parseJwt(token) {
+    try {
+        const base64Url = token.split('.')[1];
+        const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+        const jsonPayload = decodeURIComponent(window.atob(base64).split('').map(c =>
+            '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)
+        ).join(''));
+        return JSON.parse(jsonPayload);
+    } catch (e) {
+        console.error("Erro ao decodificar token:", e);
+        return null;
+    }
+}
+
+// Gera os headers com o Token de Autenticação
 const getHeaders = () => {
     const token = localStorage.getItem('jwtToken') || MOCK_JWT_TOKEN;
 
     if (!token) {
-        console.error("Tentativa de requisição autenticada sem token.");
+        console.warn("Aviso: Requisição feita sem token de autenticação.");
     }
 
     return {
@@ -18,6 +41,119 @@ const getHeaders = () => {
     };
 };
 
+// ------------------------------------------------------------------
+// AUTENTICAÇÃO E USUÁRIO
+// ------------------------------------------------------------------
+
+export const loginUser = async (email, password) => {
+    console.log(`🔵 Conectando em: ${API_BASE_URL}/auth/login`);
+
+    try {
+        const response = await fetch(`${API_BASE_URL}/auth/login`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email, password })
+        });
+
+        if (!response.ok) throw new Error(`Erro Login: ${response.status}`);
+
+        const data = await response.json();
+        if (!data.token) throw new Error('Token não veio do Backend.');
+
+        // 1. Salva Token
+        localStorage.setItem('jwtToken', data.token);
+
+        // 2. Extrai ID do Token
+        const decoded = parseJwt(data.token);
+        // Tenta achar o ID em 'sub', 'id' ou 'userId'
+        const userId = decoded?.sub || decoded?.id || decoded?.userId;
+
+        if (!userId) throw new Error("ID não encontrado dentro do token.");
+
+        console.log("✅ ID Recuperado do Token:", userId);
+
+        // 3. Tenta buscar dados completos (Agora com tratamento de erro robusto)
+        try {
+            const userResp = await fetch(`${API_BASE_URL}/users/${userId}`, {
+                headers: { 'Authorization': `Bearer ${data.token}` }
+            });
+
+            if (userResp.ok) {
+                const fullUser = await userResp.json();
+                if (!fullUser.id) fullUser.id = userId; // Garante o ID
+                localStorage.setItem('userData', JSON.stringify(fullUser));
+                console.log("✅ Dados completos salvos com sucesso!");
+                return data;
+            }
+        } catch (e) {
+            console.warn("⚠️ Falha ao buscar detalhes, salvando usuário básico.");
+        }
+
+        // Fallback: Se falhar buscar detalhes, salva o básico para não travar o app
+        const basicUser = { id: userId, email, nome: decoded.username || "Usuário" };
+        localStorage.setItem('userData', JSON.stringify(basicUser));
+
+        return data;
+
+    } catch (error) {
+        console.error('❌ Erro Fatal no Login:', error);
+        throw error;
+    }
+};
+
+export const getUserById = async (id) => {
+    if (!id) throw new Error("ID inválido para busca");
+
+    // ADICIONADO getHeaders() AQUI - CRUCIAL PARA EVITAR ERRO 403
+    const response = await fetch(`${API_BASE_URL}/users/${id}`, {
+        method: 'GET',
+        headers: getHeaders()
+    });
+
+    if (!response.ok) {
+        // Log para ajudar no debug
+        console.error(`Erro ao buscar usuário ${id}: ${response.status}`);
+        throw new Error('Erro ao buscar usuário');
+    }
+    return await response.json();
+};
+
+export const updateUser = async (userId, userData) => {
+    console.log(`🔵 Tentando atualizar usuário ${userId}`);
+    console.log(`📤 Enviando estes dados:`, userData); // Vamos ver se os dados estão certos
+
+    // Tente 'PUT'. Se o seu Java usar 'PATCH', troque aqui.
+    const response = await fetch(`${API_BASE_URL}/users/${userId}`, {
+        method: 'PUT',
+        headers: getHeaders(),
+        body: JSON.stringify(userData)
+    });
+
+    console.log(`ws Status do Servidor: ${response.status}`); // <--- O NÚMERO IMPORTANTE
+
+    if (!response.ok) {
+        const txt = await response.text();
+        // Se o texto for vazio, mostramos o status
+        const msgErro = txt ? txt : `Erro sem mensagem (Status ${response.status})`;
+
+        console.error(`❌ Falha no Update:`, msgErro);
+
+        if (response.status === 405) {
+            throw new Error("Erro 405: O Backend não aceita PUT nessa rota. Tente usar PATCH ou verifique a URL.");
+        }
+        if (response.status === 403) {
+            throw new Error("Erro 403: Você não tem permissão para alterar este usuário.");
+        }
+
+        throw new Error(`Erro ${response.status}: ${msgErro}`);
+    }
+
+    return await response.json();
+};
+
+// ------------------------------------------------------------------
+// LIVROS E ESTANTE
+// ------------------------------------------------------------------
 
 export const fetchEstanteData = async (type, userId = null, page = 0, size = 20) => {
     let url;
@@ -39,6 +175,53 @@ export const fetchEstanteData = async (type, userId = null, page = 0, size = 20)
     return response.json();
 };
 
+export async function searchLivrosApi(titulo) {
+    if (!titulo || titulo.trim() === "") return [];
+
+    try {
+        const response = await fetch(
+            `${API_BASE_URL}/livros?titulo=${encodeURIComponent(titulo)}`,
+            {
+                method: "GET",
+                headers: getHeaders() // Token pode ser necessário dependendo do backend
+            }
+        );
+
+        if (!response.ok) {
+            console.error("Erro na busca:", response.status);
+            return [];
+        }
+
+        const data = await response.json();
+        return Array.isArray(data) ? data : [];
+
+    } catch (error) {
+        console.error("Erro ao buscar livros:", error);
+        return [];
+    }
+}
+
+export const getLivroById = async (id) => {
+    try {
+        const response = await fetch(`${API_BASE_URL}/livros/${id}`, {
+            method: 'GET',
+            headers: getHeaders()
+        });
+
+        if (!response.ok) {
+            throw new Error('Livro não encontrado');
+        }
+
+        return await response.json();
+    } catch (error) {
+        console.error("Erro ao buscar livro por ID:", error);
+        throw error;
+    }
+};
+
+// ------------------------------------------------------------------
+// REVIEWS
+// ------------------------------------------------------------------
 
 export const fetchReviews = async (userId) => {
     let url;
@@ -60,6 +243,24 @@ export const fetchReviews = async (userId) => {
     return response.json();
 };
 
+export const getReviewsByLivroId = async (livroId) => {
+    try {
+        const response = await fetch(`${API_BASE_URL}/reviews/livro/${livroId}`, {
+            method: 'GET',
+            headers: getHeaders()
+        });
+
+        if (!response.ok) {
+            if (response.status === 404) return [];
+            throw new Error('Erro ao buscar reviews do livro');
+        }
+
+        return await response.json();
+    } catch (error) {
+        console.error("Erro na API de reviews:", error);
+        return [];
+    }
+};
 
 export const saveReviewApi = async (payload) => {
     const livroId = payload.livroId;
@@ -101,172 +302,4 @@ export const deleteReviewApi = async (reviewId) => {
     }
 };
 
-export async function searchLivrosApi(titulo) {
-    if (!titulo || titulo.trim() === "") return [];
-
-    try {
-        const response = await fetch(
-            `${API_BASE_URL}/livros?titulo=${encodeURIComponent(titulo)}`,
-            {
-                method: "GET",
-                headers: {
-                    "Content-Type": "application/json",
-                    // Se a busca precisar de token, troque as headers acima por: getHeaders()
-                },
-            }
-        );
-
-        if (!response.ok) {
-            console.error("Erro na busca:", response.status);
-            return [];
-        }
-
-        const data = await response.json();
-        return Array.isArray(data) ? data : [];
-
-    } catch (error) {
-        console.error("Erro ao buscar livros:", error);
-        return [];
-    }
-}
-
-export const getLivroById = async (id) => {
-    try {
-        const response = await fetch(`${API_BASE_URL}/livros/${id}`, {
-            method: 'GET',
-            headers: getHeaders()
-        });
-
-        if (!response.ok) {
-            throw new Error('Livro não encontrado');
-        }
-
-        return await response.json();
-    } catch (error) {
-        console.error("Erro ao buscar livro por ID:", error);
-        throw error;
-    }
-};
-
-export const getReviewsByLivroId = async (livroId) => {
-    try {
-        // Ajuste a URL conforme a rota do seu Backend Spring Boot
-        // Geralmente é algo como /reviews/livro/{id} ou /livros/{id}/reviews
-        const response = await fetch(`${API_BASE_URL}/reviews/livro/${livroId}`, {
-            method: 'GET',
-            headers: getHeaders()
-        });
-
-        if (!response.ok) {
-            // Se der 404 (sem reviews), retorna array vazio para não quebrar a tela
-            if (response.status === 404) return [];
-            throw new Error('Erro ao buscar reviews do livro');
-        }
-
-        return await response.json();
-    } catch (error) {
-        console.error("Erro na API de reviews:", error);
-        return []; // Retorna lista vazia em caso de erro
-    }
-};
-
-function parseJwt(token) {
-    try {
-        const base64Url = token.split('.')[1];
-        const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-        const jsonPayload = decodeURIComponent(window.atob(base64).split('').map(function(c) {
-            return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
-        }).join(''));
-        return JSON.parse(jsonPayload);
-    } catch (e) {
-        return null;
-    }
-}
-
-export const loginUser = async (email, password) => {
-    console.log("🔵 1. Iniciando login...");
-
-    try {
-        // 1. Faz o Login para pegar o Token
-        const response = await fetch(`${API_BASE_URL}/auth/login`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ email, password })
-        });
-
-        if (!response.ok) throw new Error('Falha na autenticação');
-
-        const data = await response.json();
-
-        if (!data.token) throw new Error('O Backend não retornou um token.');
-
-        // 2. Salva o Token
-        localStorage.setItem('jwtToken', data.token);
-        console.log("✅ Token salvo.");
-
-        // 3. EXTRAI O ID DE DENTRO DO TOKEN
-        const decodedToken = parseJwt(data.token);
-        console.log("🔓 Token decodificado:", decodedToken);
-
-        // O ID geralmente está no campo 'sub' ou 'id' dentro do token
-        const userId = decodedToken.sub || decodedToken.id || decodedToken.userId;
-
-        if (!userId) {
-            throw new Error("Não foi possível encontrar o ID do usuário dentro do token.");
-        }
-
-        console.log("🆔 ID encontrado no Token:", userId);
-
-        // 4. AGORA BUSCAMOS OS DADOS COMPLETOS DO USUÁRIO USANDO O ID
-        // (Reutilizando a função getUserById que já criamos ou fazendo fetch direto)
-        const userResponse = await fetch(`${API_BASE_URL}/users/${userId}`, {
-            method: 'GET',
-            headers: {
-                'Authorization': `Bearer ${data.token}`, // Envia o token
-                'Content-Type': 'application/json'
-            }
-        });
-
-        if (!userResponse.ok) {
-            console.warn("⚠️ Não foi possível baixar detalhes do usuário. Salvando apenas o ID.");
-            // Se falhar, salva pelo menos o ID para o redirecionamento funcionar
-            const basicUser = { id: userId, email: email, nome: decodedToken.username || "Usuário" };
-            localStorage.setItem('userData', JSON.stringify(basicUser));
-            return data;
-        }
-
-        const fullUserData = await userResponse.json();
-
-        // Garante que o ID esteja no objeto (caso o backend não mande no corpo do user)
-        if (!fullUserData.id) fullUserData.id = userId;
-
-        // 5. Salva os dados completos no LocalStorage
-        localStorage.setItem('userData', JSON.stringify(fullUserData));
-        console.log("✅ Dados completos do usuário salvos:", fullUserData);
-
-        return data;
-
-    } catch (error) {
-        console.error('❌ Erro no fluxo de login:', error);
-        throw error;
-    }
-};
-
-export const getUserById = async (userId) => {
-    try {
-        const response = await fetch(`${API_BASE_URL}/users/${userId}`, {
-            method: 'GET',
-            headers: getHeaders()
-        });
-
-        if (!response.ok) {
-            throw new Error('Usuário não encontrado');
-        }
-
-        return await response.json();
-    } catch (error) {
-        console.error("Erro ao buscar usuário:", error);
-        throw error;
-    }
-};
 export { MOCK_JWT_TOKEN };

@@ -43,6 +43,10 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/api/v1/livros").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/livros/**").permitAll()
 
+                        //update user
+                        .requestMatchers(HttpMethod.PUT, "/api/v1/users/**").authenticated() // <--- 2. Permitir PUT se tiver token
+                        .requestMatchers(HttpMethod.GET, "/api/v1/users/**").authenticated()
+
                         // Reviews - Leitura pública
                         .requestMatchers(HttpMethod.GET, "/api/v1/reviews").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/reviews/**").permitAll()

@@ -89,7 +89,43 @@ public class UserService implements UserDetailsService {
         return todosUsuarios.stream().map(ReturnUserDTO::new).toList();
     }
 
-    // crud
+    @Transactional
+    public ReturnUserDTO update(Long userId, InputUserDTO dto) {
+        User user = repository.findById(userId)
+                .orElseThrow(() -> new NoSuchElementException("Usuário com ID " + userId + " não encontrado."));
+
+        // 1. Atualizar Nome
+        if (dto.getNome() != null) {
+            user.setNome(dto.getNome());
+        }
+
+        // 2. Atualizar Bio (AGORA VAI FUNCIONAR)
+        if (dto.getBio() != null) {
+            user.setBio(dto.getBio());
+        }
+
+        // 3. Atualizar Foto (AGORA VAI FUNCIONAR)
+        // Lembre-se: O DTO deve ter "fotoPerfil" (minúsculo) no Frontend e JSON
+        if (dto.getFotoPerfil() != null) {
+            user.setFotoPerfil(dto.getFotoPerfil());
+        }
+
+        // 4. Atualizar Interesses
+        if (dto.getInteressesIds() != null) {
+            if (dto.getInteressesIds().size() > 3) {
+                throw new IllegalStateException("O usuário só pode escolher até 3 interesses.");
+            }
+            List<Interesse> interesses = interesseRepository.findAllById(dto.getInteressesIds());
+            if (interesses.size() != dto.getInteressesIds().size()) {
+                throw new NoSuchElementException("Um ou mais IDs de interesse não são válidos.");
+            }
+            user.setInteresses(interesses);
+        }
+
+        User updatedUser = repository.save(user);
+        return new ReturnUserDTO(updatedUser);
+    }
+
     @Transactional
     public ReturnUserDTO save(InputUserDTO dto){
         if (repository.findByEmailIgnoreCase(dto.getEmail()).isPresent()) {
@@ -98,7 +134,8 @@ public class UserService implements UserDetailsService {
 
         User user = new User(dto);
 
-        user.setRole("admin@seu-dominio.com".equalsIgnoreCase(dto.getEmail()) ? Role.ROLE_ADMIN : Role.ROLE_USER);
+        // Lógica simples de Admin (opcional)
+        user.setRole("admin@bookly.com".equalsIgnoreCase(dto.getEmail()) ? Role.ROLE_ADMIN : Role.ROLE_USER);
 
         user.setSenha(passwordEncoder.encode(dto.getSenha()));
 
@@ -129,31 +166,6 @@ public class UserService implements UserDetailsService {
                 .collect(Collectors.toList());
     }
 
-    @Transactional
-    public ReturnUserDTO update(Long userId, InputUserDTO dto) {
-        User user = repository.findById(userId)
-                .orElseThrow(() -> new NoSuchElementException("Usuário com ID " + userId + " não encontrado."));
-
-        if (dto.getNome() != null) {
-            user.setNome(dto.getNome());
-        }
-
-
-
-        if (dto.getInteressesIds() != null) {
-            if (dto.getInteressesIds().size() > 3) {
-                throw new IllegalStateException("O usuário só pode escolher até 3 interesses.");
-            }
-            List<Interesse> interesses = interesseRepository.findAllById(dto.getInteressesIds());
-            if (interesses.size() != dto.getInteressesIds().size()) {
-                throw new NoSuchElementException("Um ou mais IDs de interesse não são válidos.");
-            }
-            user.setInteresses(interesses);
-        }
-
-        User updatedUser = repository.save(user);
-        return new ReturnUserDTO(updatedUser);
-    }
 
     @Transactional
     public ReturnUserDTO updatePassword(String email, String newPassword) {
