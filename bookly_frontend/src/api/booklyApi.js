@@ -18,42 +18,6 @@ const getHeaders = () => {
     };
 };
 
-export const loginUser = async (email, password) => {
-    try {
-        const response = await fetch(`${API_BASE_URL}/auth/login`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ email, password })
-        });
-
-        if (!response.ok) {
-            const errorData = await response.json().catch(() => ({ message: 'Credenciais inválidas ou erro no servidor.' }));
-            throw new Error(errorData.message || 'Falha na autenticação.');
-        }
-
-        // 1. LER O JSON DA RESPOSTA
-        const data = await response.json();
-
-        if (data.token) {
-            localStorage.setItem('jwtToken', data.token);
-        } else {
-            throw new Error('Autenticação bem-sucedida, mas o token não foi encontrado na resposta do servidor.');
-        }
-
-        // 🎯 CORREÇÃO CRÍTICA: SALVAR O OBJETO DO USUÁRIO
-        const userToSave = data.user || data;
-
-        if (userToSave && (userToSave.nome || userToSave.fotoPerfil)) {
-            localStorage.setItem('userData', JSON.stringify(userToSave));
-        }
-
-        return data;
-
-    } catch (error) {
-        console.error('Erro de login:', error);
-        throw error;
-    }
-};
 
 export const fetchEstanteData = async (type, userId = null, page = 0, size = 20) => {
     let url;
@@ -203,6 +167,88 @@ export const getReviewsByLivroId = async (livroId) => {
     } catch (error) {
         console.error("Erro na API de reviews:", error);
         return []; // Retorna lista vazia em caso de erro
+    }
+};
+
+function parseJwt(token) {
+    try {
+        const base64Url = token.split('.')[1];
+        const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+        const jsonPayload = decodeURIComponent(window.atob(base64).split('').map(function(c) {
+            return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+        }).join(''));
+        return JSON.parse(jsonPayload);
+    } catch (e) {
+        return null;
+    }
+}
+
+export const loginUser = async (email, password) => {
+    console.log("🔵 1. Iniciando login...");
+
+    try {
+        // 1. Faz o Login para pegar o Token
+        const response = await fetch(`${API_BASE_URL}/auth/login`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email, password })
+        });
+
+        if (!response.ok) throw new Error('Falha na autenticação');
+
+        const data = await response.json();
+
+        if (!data.token) throw new Error('O Backend não retornou um token.');
+
+        // 2. Salva o Token
+        localStorage.setItem('jwtToken', data.token);
+        console.log("✅ Token salvo.");
+
+        // 3. EXTRAI O ID DE DENTRO DO TOKEN
+        const decodedToken = parseJwt(data.token);
+        console.log("🔓 Token decodificado:", decodedToken);
+
+        // O ID geralmente está no campo 'sub' ou 'id' dentro do token
+        const userId = decodedToken.sub || decodedToken.id || decodedToken.userId;
+
+        if (!userId) {
+            throw new Error("Não foi possível encontrar o ID do usuário dentro do token.");
+        }
+
+        console.log("🆔 ID encontrado no Token:", userId);
+
+        // 4. AGORA BUSCAMOS OS DADOS COMPLETOS DO USUÁRIO USANDO O ID
+        // (Reutilizando a função getUserById que já criamos ou fazendo fetch direto)
+        const userResponse = await fetch(`${API_BASE_URL}/users/${userId}`, {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${data.token}`, // Envia o token
+                'Content-Type': 'application/json'
+            }
+        });
+
+        if (!userResponse.ok) {
+            console.warn("⚠️ Não foi possível baixar detalhes do usuário. Salvando apenas o ID.");
+            // Se falhar, salva pelo menos o ID para o redirecionamento funcionar
+            const basicUser = { id: userId, email: email, nome: decodedToken.username || "Usuário" };
+            localStorage.setItem('userData', JSON.stringify(basicUser));
+            return data;
+        }
+
+        const fullUserData = await userResponse.json();
+
+        // Garante que o ID esteja no objeto (caso o backend não mande no corpo do user)
+        if (!fullUserData.id) fullUserData.id = userId;
+
+        // 5. Salva os dados completos no LocalStorage
+        localStorage.setItem('userData', JSON.stringify(fullUserData));
+        console.log("✅ Dados completos do usuário salvos:", fullUserData);
+
+        return data;
+
+    } catch (error) {
+        console.error('❌ Erro no fluxo de login:', error);
+        throw error;
     }
 };
 
