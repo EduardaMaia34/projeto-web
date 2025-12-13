@@ -52,7 +52,6 @@ export default function InteressesSelector({ selectedIds, onSelect }) {
                     className={`btn btn-sm ${selectedIds.includes(interesse.id) ? 'btn-selected-interesse' : 'btn-outline-secondary'}`}
                     onClick={() => handleToggle(interesse.id)}
                     style={{
-                        // ESTILOS INVERTIDOS: Marrom Fundo, Texto Bege Claro
                         backgroundColor: selectedIds.includes(interesse.id) ? 'var(--color-text-primary)' : 'transparent',
                         color: selectedIds.includes(interesse.id) ? 'var(--color-background-light)' : 'var(--color-text-primary)',
                         borderColor: 'var(--color-text-primary)',

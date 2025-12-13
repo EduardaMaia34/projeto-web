@@ -11,7 +11,9 @@ import com.br.edu.ufersa.pw.projeto.user.Service.UserService;
 import com.br.edu.ufersa.pw.projeto.livro.Service.LivroService;
 import com.br.edu.ufersa.pw.projeto.livro.API.dto.ReturnLivroDTO;
 import com.br.edu.ufersa.pw.projeto.livro.Model.entity.Livro;
-import com.br.edu.ufersa.pw.projeto.review.Model.entity.Review; // ⬅️ NOVO IMPORT
+import com.br.edu.ufersa.pw.projeto.review.Model.entity.Review;
+import com.br.edu.ufersa.pw.projeto.user.API.dto.ReturnUserStatsDTO;
+import java.time.Year;
 
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.annotation.Propagation;
@@ -56,7 +58,7 @@ public class BibliotecaService {
             Optional<Review> review = reviewRepository.findByUserIdAndLivroId(biblioteca.getUser().getId(), livroId);
 
             review.ifPresent(r -> {
-                dto.setNota(r.getNota()); // ⬅️ DEFINE O VALOR DA NOTA NO DTO
+                dto.setNota(r.getNota());
             });
 
         } catch (NoSuchElementException e) {
@@ -106,11 +108,9 @@ public class BibliotecaService {
                         return null;
                     }
 
-                    // A checagem de hasReview pode ser simplificada usando o repository
                     boolean hasReview = reviewRepository.existsByUserIdAndLivroId(userId, livroIdLong);
 
                     if (hasReview) {
-                        // Usa o mapeador que inclui o livro e a nota
                         return mapToReturnDTO(biblioteca);
                     }
                     return null;
@@ -162,5 +162,21 @@ public class BibliotecaService {
         Biblioteca updatedEntrada = bibliotecaRepository.save(biblioteca);
 
         return mapToReturnDTO(updatedEntrada);
+    }
+
+    public ReturnUserStatsDTO calculateUserStatistics(Long userId) {
+
+        long totalSalvos = bibliotecaRepository.countByUserIdAndStatus(userId, Estado.QUERO_LER);
+
+        long totalLidos = bibliotecaRepository.countByUserIdAndStatus(userId, Estado.LIDO);
+
+        List<Review> reviewsDoUsuario = reviewRepository.findByUserId(userId);
+        int anoAtual = Year.now().getValue();
+
+        long lidosEsteAno = reviewsDoUsuario.stream()
+                .filter(review -> review.getData() != null && review.getData().getYear() == anoAtual)
+                .count();
+
+        return new ReturnUserStatsDTO(totalLidos, lidosEsteAno, totalSalvos);
     }
 }

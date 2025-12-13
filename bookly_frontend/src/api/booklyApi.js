@@ -90,13 +90,23 @@ export const loginUser = async (email, password) => {
 
 export const fetchEstanteData = async (type, userId = null, page = 0, size = 20) => {
     let url;
-    let endpoint = type === 'estante' ? '/biblioteca/estante' : '/biblioteca';
 
-    if (userId) {
-        url = `${API_BASE_URL}/biblioteca/users/${userId}?page=${page}&size=${size}`;
+    let baseUrl = `${API_BASE_URL}/biblioteca`;
+
+    if (type === 'estante') {
+        if (userId) {
+            url = `${baseUrl}/estante/users/${userId}?page=${page}&size=${size}`;
+        } else {
+            url = `${baseUrl}/estante?page=${page}&size=${size}`;
+        }
     } else {
-        url = `${API_BASE_URL}${endpoint}?page=${page}&size=${size}`;
+        if (userId) {
+            url = `${baseUrl}/users/${userId}?page=${page}&size=${size}`;
+        } else {
+            url = `${baseUrl}?page=${page}&size=${size}`;
+        }
     }
+
 
     const response = await fetch(url, { headers: getHeaders() });
 
@@ -334,6 +344,28 @@ export const getReviewsByLivroId = async (livroId) => {
     } catch (error) {
         console.error("Erro na API de reviews:", error);
         return [];
+    }
+};
+
+export const getUserStats = async (userId) => {
+    const url = `${API_BASE_URL}/reviews/usuario/${userId}/stats`;
+
+    try {
+        const response = await fetch(url, {
+            method: 'GET',
+            headers: getHeaders()
+        });
+
+        if (!response.ok) {
+            console.error(`Falha ao buscar estatísticas do usuário ${userId}. Status: ${response.status}`);
+            return { totalLidos: 0, lidosEsteAno: 0, totalNaBiblioteca: 0 };
+        }
+
+        return await response.json();
+
+    } catch (error) {
+        console.error(`Erro ao buscar estatísticas do usuário ${userId}:`, error);
+        return { totalLidos: 0, lidosEsteAno: 0, totalNaBiblioteca: 0 };
     }
 };
 

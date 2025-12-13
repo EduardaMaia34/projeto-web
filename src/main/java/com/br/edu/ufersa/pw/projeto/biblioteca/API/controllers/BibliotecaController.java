@@ -102,6 +102,18 @@ public class BibliotecaController {
         return ResponseEntity.ok(watchlist);
     }
 
+    @GetMapping("/estante/users/{userId}")
+    public ResponseEntity<Page<ReturnBibliotecaDTO>> getEstanteComReviewDeOutroUsuario(
+            @PathVariable Long userId,
+            Pageable pageable) {
+
+        if (userService.findById(userId).isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Usuário não encontrado.");
+        }
+
+        Page<ReturnBibliotecaDTO> estante = bibliotecaService.getEstanteComReview(userId, pageable);
+        return ResponseEntity.ok(estante);
+    }
 
     @GetMapping("/estante")
     public ResponseEntity<Page<ReturnBibliotecaDTO>> getEstanteComReview(

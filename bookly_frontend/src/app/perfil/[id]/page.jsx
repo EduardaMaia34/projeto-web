@@ -3,8 +3,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useParams } from 'next/navigation';
 import Navbar from '../../../components/Navbar';
-import ReviewModal from '../../../components/ReviewModal.jsx'; // Importar o Modal de Review
-import { getUserById } from '../../../api/booklyApi';
+import ReviewModal from '../../../components/ReviewModal.jsx';
+import { getUserById, getUserStats } from '../../../api/booklyApi';
 
 import './perfilDetails.css';
 
@@ -27,8 +27,18 @@ export default function PerfilDinamicoPage() {
     const [isMeuPerfil, setIsMeuPerfil] = useState(false);
     const [loading, setLoading] = useState(true);
 
-    // Estado para controlar a visibilidade do modal de review
+    const [stats, setStats] = useState({
+        totalLidos: 0,
+        lidosEsteAno: 0,
+        totalNaBiblioteca: 0
+    });
+
     const [openAddModal, setOpenAddModal] = useState(false);
+
+
+    const handleSaveSuccess = useCallback(() => {
+        carregarPerfil();
+    }, [id]);
 
 
     useEffect(() => {
@@ -43,34 +53,31 @@ export default function PerfilDinamicoPage() {
             const dadosUsuario = await getUserById(id);
             setPerfil(dadosUsuario);
 
-            // Verifica se é o perfil do usuário logado
-            const storedUser = localStorage.getItem('userData');
+            const storedUser = typeof window !== 'undefined' ? localStorage.getItem('userData') : null;
+            let loggedInUserId = null;
+
             if (storedUser) {
                 const meuUsuario = JSON.parse(storedUser);
-                // Verifica se o ID do perfil na URL é igual ao ID do usuário logado
-                if (String(meuUsuario.id) === String(id)) {
-                    setIsMeuPerfil(true);
-                } else {
-                    setIsMeuPerfil(false);
-                }
+                loggedInUserId = meuUsuario.id;
             }
+
+            setIsMeuPerfil(String(id) === String(loggedInUserId));
+
+            // 2. BUSCAR ESTATÍSTICAS
+            const dadosStats = await getUserStats(id);
+            setStats(dadosStats);
+
         } catch (error) {
             console.error("Erro ao carregar perfil:", error);
+            setPerfil(null);
         } finally {
             setLoading(false);
         }
     };
 
-    // [ATUALIZADO] Handler para abrir o modal SEM VERIFICAR isMeuPerfil
     const handleAddBookClick = useCallback(() => {
-        // O modal deve abrir se o usuário estiver logado (o que é implícito pela Navbar)
         setOpenAddModal(true);
     }, []);
-
-    // Handler para o sucesso da review (pode recarregar a lista de favoritos se necessário)
-    const handleSaveSuccess = () => {
-        carregarPerfil();
-    };
 
     if (loading) {
         return (
@@ -89,11 +96,6 @@ export default function PerfilDinamicoPage() {
         );
     }
 
-    const stats = {
-        lidos: perfil.totalLidos || 40,
-        esteAno: perfil.lidosEsteAno || 10,
-        salvos: perfil.totalSalvos || 90
-    };
 
     return (
         <div className="perfil-page-container" style={{ paddingTop: '100px' }}>
@@ -143,17 +145,18 @@ export default function PerfilDinamicoPage() {
                                 </div>
                             </div>
 
+                            {/* [ATUALIZADO] BLOCO DE ESTATÍSTICAS REAIS DA API */}
                             <div className="stats-container ms-auto pt-2">
                                 <div className="stats-item">
-                                    <h5 className="mb-0 fw-bold fs-4">{stats.lidos}</h5>
+                                    <h5 className="mb-0 fw-bold fs-4">{stats.totalLidos}</h5>
                                     <small className="text-muted text-uppercase fw-bold">Lidos</small>
                                 </div>
                                 <div className="stats-item">
-                                    <h5 className="mb-0 fw-bold fs-4">{stats.esteAno}</h5>
+                                    <h5 className="mb-0 fw-bold fs-4">{stats.lidosEsteAno}</h5>
                                     <small className="text-muted text-uppercase fw-bold">Ano</small>
                                 </div>
                                 <div className="stats-item me-0">
-                                    <h5 className="mb-0 fw-bold fs-4">{stats.salvos}</h5>
+                                    <h5 className="mb-0 fw-bold fs-4">{stats.totalNaBiblioteca}</h5>
                                     <small className="text-muted text-uppercase fw-bold">Salvos</small>
                                 </div>
                             </div>

@@ -1,10 +1,12 @@
 package com.br.edu.ufersa.pw.projeto.review.API.controllers;
 
+import com.br.edu.ufersa.pw.projeto.biblioteca.Service.BibliotecaService;
 import com.br.edu.ufersa.pw.projeto.review.API.dto.InputReviewDTO;
 import com.br.edu.ufersa.pw.projeto.review.API.dto.ReturnReviewDTO;
 import com.br.edu.ufersa.pw.projeto.review.Model.entity.Review;
 import com.br.edu.ufersa.pw.projeto.review.Service.ReviewService;
 import com.br.edu.ufersa.pw.projeto.Security.CustomUserDetails;
+import com.br.edu.ufersa.pw.projeto.user.API.dto.ReturnUserStatsDTO;
 import com.br.edu.ufersa.pw.projeto.user.Model.entity.Seguindo;
 import com.br.edu.ufersa.pw.projeto.user.Service.UserService;
 import jakarta.servlet.http.HttpServletRequest;
@@ -26,6 +28,9 @@ public class ReviewController {
 
     @Autowired
     private UserService userService;
+
+    @Autowired
+    private BibliotecaService bibliotecaService;
 
     @PostMapping("/{livroId}")
     public ResponseEntity<ReturnReviewDTO> criarReview(
@@ -51,6 +56,17 @@ public class ReviewController {
     @GetMapping("/usuario/{userId}")
     public ResponseEntity<List<ReturnReviewDTO>> listarPorUsuario(@PathVariable Long userId) {
         return ResponseEntity.ok(service.listarPorUsuario(userId));
+    }
+
+    @GetMapping("/usuario/{userId}/stats")
+    public ResponseEntity<ReturnUserStatsDTO> getEstatisticasUsuario(@PathVariable Long userId) {
+
+        if (userService.findById(userId).isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Usuário não encontrado.");
+        }
+
+        ReturnUserStatsDTO stats = bibliotecaService.calculateUserStatistics(userId);
+        return ResponseEntity.ok(stats);
     }
     @GetMapping("/me")
     public ResponseEntity<List<ReturnReviewDTO>> listarMinhasReviews(@AuthenticationPrincipal CustomUserDetails loggedInUser) {

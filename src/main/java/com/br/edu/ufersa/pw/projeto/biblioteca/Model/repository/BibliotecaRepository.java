@@ -26,4 +26,9 @@ public interface BibliotecaRepository extends JpaRepository<Biblioteca, Long> {
 
     @Transactional
     void deleteByLivroId(String livroId);
+
+    long countByUserId(Long userId);
+
+    long countByUserIdAndStatus(Long userId, Estado status);
+
 }
