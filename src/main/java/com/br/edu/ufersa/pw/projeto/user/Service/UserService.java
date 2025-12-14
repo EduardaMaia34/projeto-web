@@ -9,12 +9,9 @@ import com.br.edu.ufersa.pw.projeto.user.Model.repository.SeguindoRepository;
 import com.br.edu.ufersa.pw.projeto.user.Model.repository.UserRepository;
 import com.br.edu.ufersa.pw.projeto.user.Model.entity.Interesse;
 import com.br.edu.ufersa.pw.projeto.user.Model.repository.InteresseRepository;
-// IMPORTAÇÕES NECESSÁRIAS PARA DELEÇÃO EM CASCATA
 import com.br.edu.ufersa.pw.projeto.review.Model.repository.ReviewRepository;
 import com.br.edu.ufersa.pw.projeto.biblioteca.Model.repository.BibliotecaRepository;
-import com.br.edu.ufersa.pw.projeto.livro.API.dto.ReturnLivroDTO;
 import com.br.edu.ufersa.pw.projeto.livro.Service.LivroService;
-
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
@@ -38,21 +35,23 @@ public class UserService implements UserDetailsService {
     private final PasswordEncoder passwordEncoder;
     private final ReviewRepository reviewRepository;
     private final BibliotecaRepository bibliotecaRepository;
-
-    @Autowired
-    private SeguindoRepository seguindoRepository;
-
+    private final SeguindoRepository seguindoRepository; // Removi o @Autowired do campo e coloquei no construtor para consistência
     private final LivroService livroService;
 
     @Autowired
-    public UserService(UserRepository repository, InteresseRepository interesseRepository,
-                       PasswordEncoder passwordEncoder, ReviewRepository reviewRepository,
-                       BibliotecaRepository bibliotecaRepository, @Lazy LivroService livroService) { // NOVO CONSTRUTOR
+    public UserService(UserRepository repository,
+                       InteresseRepository interesseRepository,
+                       PasswordEncoder passwordEncoder,
+                       ReviewRepository reviewRepository,
+                       BibliotecaRepository bibliotecaRepository,
+                       SeguindoRepository seguindoRepository,
+                       @Lazy LivroService livroService) {
         this.repository = repository;
         this.interesseRepository = interesseRepository;
         this.passwordEncoder = passwordEncoder;
         this.reviewRepository = reviewRepository;
         this.bibliotecaRepository = bibliotecaRepository;
+        this.seguindoRepository = seguindoRepository;
         this.livroService = livroService;
     }
 
@@ -66,10 +65,8 @@ public class UserService implements UserDetailsService {
         return repository.findById(userId);
     }
 
-    //metodos get
-
     /**
-     * NOVO MÉTODO: Busca o usuário por ID e mapeia diretamente para o DTO de Retorno.
+     * Busca o usuário por ID e mapeia diretamente para o DTO de Retorno.
      * Utilizado pelo UserController para GET /me e GET /{userId}
      */
     public Optional<ReturnUserDTO> buscarDTOporId(Long userId) {
@@ -89,6 +86,55 @@ public class UserService implements UserDetailsService {
         return todosUsuarios.stream().map(ReturnUserDTO::new).toList();
     }
 
+    private String normalizeImgurUrl(String url) {
+        if (url == null || url.isEmpty()) return null;
+
+        String normalizedUrl = url;
+
+        if (normalizedUrl.contains("imgur.com")) {
+            // Extrai o hash da imagem
+            String hash = normalizedUrl.replaceAll("^.*[i\\.]?imgur\\.com/+(a/)?", "").replaceAll("(\\..*|\\?.*)$", "");
+
+            if (hash.isEmpty()) {
+                return normalizedUrl;
+            }
+            // Constrói a URL usando o formato imgur.com/HASH.png
+            String format = "https://imgur.com/%s.png";
+            return String.format(format, hash);
+        }
+        return normalizedUrl;
+    }
+
+    @Transactional
+    public ReturnUserDTO save(InputUserDTO dto){
+        if (repository.findByEmailIgnoreCase(dto.getEmail()).isPresent()) {
+            throw new IllegalStateException("O email já está em uso.");
+        }
+
+        User user = new User(dto);
+
+        // Lógica simples de Admin
+        user.setRole("admin@bookly.com".equalsIgnoreCase(dto.getEmail()) ? Role.ROLE_ADMIN : Role.ROLE_USER);
+        user.setSenha(passwordEncoder.encode(dto.getSenha()));
+        user.setBio(dto.getBio());
+        user.setFotoPerfil(normalizeImgurUrl(dto.getFotoPerfil()));
+
+        if (dto.getInteressesIds() != null && !dto.getInteressesIds().isEmpty()) {
+            if (dto.getInteressesIds().size() > 3) {
+                throw new IllegalStateException("O usuário só pode escolher até 3 interesses.");
+            }
+
+            List<Interesse> interesses = interesseRepository.findAllById(dto.getInteressesIds());
+            if (interesses.size() != dto.getInteressesIds().size()) {
+                throw new NoSuchElementException("Um ou mais IDs de interesse não são válidos.");
+            }
+            user.setInteresses(interesses);
+        }
+
+        User savedUser = repository.save(user);
+        return new ReturnUserDTO(savedUser);
+    }
+
     @Transactional
     public ReturnUserDTO update(Long userId, InputUserDTO dto) {
         User user = repository.findById(userId)
@@ -99,15 +145,14 @@ public class UserService implements UserDetailsService {
             user.setNome(dto.getNome());
         }
 
-        // 2. Atualizar Bio (AGORA VAI FUNCIONAR)
+        // 2. Atualizar Bio
         if (dto.getBio() != null) {
             user.setBio(dto.getBio());
         }
 
-        // 3. Atualizar Foto (AGORA VAI FUNCIONAR)
-        // Lembre-se: O DTO deve ter "fotoPerfil" (minúsculo) no Frontend e JSON
+        // 3. Atualizar Foto (com normalização)
         if (dto.getFotoPerfil() != null) {
-            user.setFotoPerfil(dto.getFotoPerfil());
+            user.setFotoPerfil(normalizeImgurUrl(dto.getFotoPerfil()));
         }
 
         // 4. Atualizar Interesses
@@ -126,46 +171,14 @@ public class UserService implements UserDetailsService {
         return new ReturnUserDTO(updatedUser);
     }
 
-    @Transactional
-    public ReturnUserDTO save(InputUserDTO dto){
-        if (repository.findByEmailIgnoreCase(dto.getEmail()).isPresent()) {
-            throw new IllegalStateException("O email já está em uso.");
-        }
-
-        User user = new User(dto);
-
-        // Lógica simples de Admin (opcional)
-        user.setRole("admin@bookly.com".equalsIgnoreCase(dto.getEmail()) ? Role.ROLE_ADMIN : Role.ROLE_USER);
-
-        user.setSenha(passwordEncoder.encode(dto.getSenha()));
-
-        if (dto.getInteressesIds() != null && !dto.getInteressesIds().isEmpty()) {
-            if (dto.getInteressesIds().size() > 3) {
-                throw new IllegalStateException("O usuário só pode escolher até 3 interesses.");
-            }
-
-            List<Interesse> interesses = interesseRepository.findAllById(dto.getInteressesIds());
-            if (interesses.size() != dto.getInteressesIds().size()) {
-                throw new NoSuchElementException("Um ou mais IDs de interesse não são válidos.");
-            }
-            user.setInteresses(interesses);
-        }
-
-        User savedUser = repository.save(user);
-        return new ReturnUserDTO(savedUser);
-    }
-
     @Transactional(readOnly = true)
     public List<Long> getIdsDosSeguidos(Long seguidorId) {
-        // 1. Encontra a lista de objetos Seguindo onde o seguidor é o ID fornecido
         List<Seguindo> seguidos = seguindoRepository.findBySeguidor_Id(seguidorId);
 
-        // 2. Mapeia a lista de objetos Seguindo para uma lista de IDs dos usuários Seguidos
         return seguidos.stream()
                 .map(s -> s.getSeguido().getId())
                 .collect(Collectors.toList());
     }
-
 
     @Transactional
     public ReturnUserDTO updatePassword(String email, String newPassword) {
@@ -202,7 +215,6 @@ public class UserService implements UserDetailsService {
         User user = repository.findById(userId)
                 .orElseThrow(() -> new NoSuchElementException("Usuário com ID " + userId + " não encontrado."));
 
-
         reviewRepository.deleteByUserId(userId);
         bibliotecaRepository.deleteByUserId(userId);
         seguindoRepository.deleteBySeguidor(user);
@@ -211,8 +223,7 @@ public class UserService implements UserDetailsService {
         if (user.getInteresses() != null) {
             user.getInteresses().clear();
         }
-        repository.save(user);
-
+        repository.save(user); // Salva para remover relacionamentos de interesses antes de deletar
         repository.deleteById(userId);
     }
 
@@ -223,7 +234,6 @@ public class UserService implements UserDetailsService {
 
         deleteById(user.getId());
     }
-
 
     public void seguirUsuario(Long seguidorId, Long seguidoId) {
         if (seguidorId.equals(seguidoId)) {
@@ -241,7 +251,6 @@ public class UserService implements UserDetailsService {
             Seguindo seguindo = new Seguindo();
             seguindo.setSeguidor(seguidor);
             seguindo.setSeguido(seguido);
-
             seguindoRepository.save(seguindo);
         }
     }
@@ -253,9 +262,7 @@ public class UserService implements UserDetailsService {
         User seguido = repository.findById(seguidoId)
                 .orElseThrow(() -> new NoSuchElementException("Seguido não encontrado."));
 
-
         if (seguindoRepository.existsBySeguidorAndSeguido(seguidor, seguido)) {
-
             seguindoRepository.deleteBySeguidorAndSeguido(seguidor, seguido);
         }
     }

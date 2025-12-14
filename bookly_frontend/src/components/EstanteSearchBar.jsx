@@ -1,4 +1,4 @@
-// src/components/EstanteSearchBar.jsx
+"use client";
 import React, { useState } from 'react';
 
 // O componente agora aceita as props searchTerm e onSearchChange

@@ -1,12 +1,12 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useParams } from 'next/navigation';
-import Navbar from '../../../components/Navbar'; // Ajuste se necessário, dependendo de onde está components
+import Navbar from '../../../components/Navbar';
+import ReviewModal from '../../../components/ReviewModal.jsx';
 import { getUserById } from '../../../api/booklyApi';
 
 import './perfilDetails.css';
-
 import 'bootstrap/dist/css/bootstrap.min.css';
 
 // Componente para os livros (Estilo Grid)
@@ -23,11 +23,15 @@ const BookGridItem = ({ src, title, rating }) => (
 
 export default function PerfilDinamicoPage() {
     const params = useParams();
-    const { id } = params;
+    // Garante que pegamos o ID corretamente (em alguns casos pode vir como params.userId dependendo da rota)
+    const id = params?.id || params?.userId;
 
     const [perfil, setPerfil] = useState(null);
     const [isMeuPerfil, setIsMeuPerfil] = useState(false);
     const [loading, setLoading] = useState(true);
+
+    // Estado para controlar a visibilidade do modal de review
+    const [openAddModal, setOpenAddModal] = useState(false);
 
     useEffect(() => {
         if (id) {
@@ -41,9 +45,11 @@ export default function PerfilDinamicoPage() {
             const dadosUsuario = await getUserById(id);
             setPerfil(dadosUsuario);
 
+            // Verifica se é o perfil do usuário logado
             const storedUser = localStorage.getItem('userData');
             if (storedUser) {
                 const meuUsuario = JSON.parse(storedUser);
+                // Verifica se o ID do perfil na URL é igual ao ID do usuário logado
                 if (String(meuUsuario.id) === String(id)) {
                     setIsMeuPerfil(true);
                 } else {
@@ -57,9 +63,19 @@ export default function PerfilDinamicoPage() {
         }
     };
 
+    // Handler para abrir o modal
+    const handleAddBookClick = useCallback(() => {
+        setOpenAddModal(true);
+    }, []);
+
+    // Handler para o sucesso da review
+    const handleSaveSuccess = () => {
+        carregarPerfil(); // Recarrega para atualizar contadores ou listas
+    };
+
     if (loading) {
         return (
-            <div className="perfil-page-container d-flex justify-content-center align-items-center">
+            <div className="perfil-page-container d-flex justify-content-center align-items-center" style={{ minHeight: '100vh' }}>
                 <div className="spinner-border text-primary"></div>
             </div>
         );
@@ -67,27 +83,28 @@ export default function PerfilDinamicoPage() {
 
     if (!perfil) {
         return (
-            <div className="perfil-page-container text-center pt-5">
+            <div className="perfil-page-container text-center pt-5" style={{ minHeight: '100vh' }}>
                 <Navbar />
-                <h3>Usuário não encontrado.</h3>
+                <h3 className="mt-5">Usuário não encontrado.</h3>
             </div>
         );
     }
 
     const stats = {
-        lidos: perfil.totalLidos || 40,
-        esteAno: perfil.lidosEsteAno || 10,
-        salvos: perfil.totalSalvos || 90
+        lidos: perfil.totalLidos || 0,
+        esteAno: perfil.lidosEsteAno || 0,
+        salvos: perfil.totalSalvos || 0
     };
 
     return (
-        <div className="perfil-page-container pb-5">
-            <Navbar />
+        <div className="perfil-page-container pb-5" style={{ paddingTop: '100px', minHeight: '100vh' }}>
+            {/* IMPORTANTE: Passando o handler para a Navbar funcionar */}
+            <Navbar onAddBookClick={handleAddBookClick} />
 
             <div className="container mt-4">
                 <div className="row">
 
-                    {/* === COLUNA DA ESQUERDA === */}
+                    {/* === COLUNA DA ESQUERDA (Info Principal) === */}
                     <div className="col-lg-8 pe-lg-5">
 
                         <div className="d-flex align-items-start mb-5 profile-header-wrapper">
@@ -96,6 +113,7 @@ export default function PerfilDinamicoPage() {
                                 src={perfil.fotoPerfil || "https://i.imgur.com/i4m4D7y.png"}
                                 alt={`Foto de ${perfil.nome}`}
                                 className="profile-img-large me-4"
+                                style={{ width: '150px', height: '150px', objectFit: 'cover', borderRadius: '50%' }}
                             />
 
                             <div className="d-flex flex-column pt-2 w-100">
@@ -121,8 +139,10 @@ export default function PerfilDinamicoPage() {
                                 </p>
 
                                 <div className="d-flex mt-2 mb-4 flex-wrap gap-2">
-                                    <span className="interest-tag">Romance</span>
-                                    <span className="interest-tag">Ficção</span>
+                                    {perfil.interesses && perfil.interesses.map((interesse, index) => (
+                                        <span key={index} className="interest-tag">{interesse.nome || interesse}</span>
+                                    ))}
+                                    {!perfil.interesses && <span className="interest-tag">Leitor</span>}
                                 </div>
                             </div>
 
@@ -144,6 +164,7 @@ export default function PerfilDinamicoPage() {
 
                         <h5 className="mb-4 fw-bold text-uppercase ls-1">Favoritos</h5>
                         <div className="row mb-5 gx-3 gy-4">
+                            {/* Aqui futuramente você pode mapear perfil.favoritos */}
                             <BookGridItem src="https://i.imgur.com/k9b8f2G.png" title="Livro 1" rating="★★★★☆" />
                             <BookGridItem src="https://i.imgur.com/eBv6d1P.png" title="Livro 2" rating="★★★★☆" />
                             <BookGridItem src="https://i.imgur.com/pY40i0A.png" title="Livro 3" rating="★★★☆☆" />
@@ -152,30 +173,40 @@ export default function PerfilDinamicoPage() {
 
                     </div>
 
-                    {/* === SIDEBAR === */}
+                    {/* === SIDEBAR (Direita) === */}
                     <div className="col-lg-4 mt-5 mt-lg-0">
                         <div className="p-3 sidebar-container">
 
                             {isMeuPerfil ? (
                                 <>
-                                    <a href="/biblioteca" className="sidebar-link">
+                                    {/* Minha Biblioteca (Watchlist) */}
+                                    <a href={`/biblioteca/${id}`} className="sidebar-link">
                                         <span className="sidebar-icon bi bi-bookmarks-fill"></span> Minha Biblioteca
                                     </a>
-                                    <a href="/estante" className="sidebar-link">
+                                    {/* Minha Estante (Lidos/Com Review) */}
+                                    <a href={`/estante/${id}`} className="sidebar-link">
                                         <span className="sidebar-icon bi bi-book-fill"></span> Meus Lidos
                                     </a>
-                                    <a href="/minhas-reviews" className="sidebar-link">
+                                    {/* Minhas Reviews */}
+                                    <a href={`/reviews/${id}`} className="sidebar-link">
                                         <span className="sidebar-icon bi bi-pencil-square"></span> Minhas Reviews
                                     </a>
                                 </>
                             ) : (
                                 <>
                                     <div className="alert alert-light border shadow-sm">
-                                        <small className="text-muted text-uppercase fw-bold mb-2 d-block">Explorar</small>
-                                        <a href={`/biblioteca/usuario/${id}`} className="sidebar-link ps-0">
+                                        <small className="text-dark-custom text-uppercase fw-bold mb-2 d-block">Explorar</small>
+
+                                        {/* Biblioteca (Watchlist) de Outro Usuário */}
+                                        <a href={`/biblioteca/${id}`} className="sidebar-link ps-0">
                                             <span className="sidebar-icon bi bi-bookmarks-fill"></span> Biblioteca de {perfil.nome}
                                         </a>
-                                        <a href={`/reviews/usuario/${id}`} className="sidebar-link ps-0">
+                                        {/* Estante (Lidos) de Outro Usuário */}
+                                        <a href={`/estante/${id}`} className="sidebar-link ps-0">
+                                            <span className="sidebar-icon bi bi-book-fill"></span> Estante de {perfil.nome}
+                                        </a>
+                                        {/* Reviews de Outro Usuário */}
+                                        <a href={`/reviews/${id}`} className="sidebar-link ps-0">
                                             <span className="sidebar-icon bi bi-chat-quote-fill"></span> Reviews de {perfil.nome}
                                         </a>
                                     </div>
@@ -187,6 +218,13 @@ export default function PerfilDinamicoPage() {
 
                 </div>
             </div>
+
+            {/* Modal de Review */}
+            <ReviewModal
+                show={openAddModal}
+                onHide={() => setOpenAddModal(false)}
+                onSaveSuccess={handleSaveSuccess}
+            />
         </div>
     );
 }

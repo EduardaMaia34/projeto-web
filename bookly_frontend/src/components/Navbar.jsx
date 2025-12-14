@@ -3,14 +3,14 @@
 
 import React, { useState, useEffect } from "react";
 import { useRouter } from 'next/navigation';
-import Link from 'next/link'; // Importante para navegação dinâmica
+import Link from 'next/link';
 import SearchModal from "./SearchModal";
 
 export default function Navbar({ onAddBookClick }) {
     const router = useRouter();
     const [isLoggedIn, setIsLoggedIn] = useState(false);
     const [userData, setUserData] = useState({ name: "", photo: "" });
-    const [userId, setUserId] = useState(null); // NOVO: Estado para guardar o ID
+    const [userId, setUserId] = useState(null);
     const [openSearchModal, setOpenSearchModal] = useState(false);
     const [isLoadingUser, setIsLoadingUser] = useState(true);
 
@@ -34,7 +34,7 @@ export default function Navbar({ onAddBookClick }) {
                         photo: user.fotoPerfil || user.photo || "",
                     });
 
-                    // NOVO: Salva o ID do usuário para usar no link
+                    // Salva o ID do usuário para usar no link
                     if (user.id) {
                         setUserId(user.id);
                     }
@@ -66,32 +66,32 @@ export default function Navbar({ onAddBookClick }) {
     // Variável que verifica se devemos usar o ícone de fallback
     const useIconFallback = !userData.photo || userData.photo === "https://imgur.com/pcf2EUA.png";
 
-    // Se ainda estiver carregando, evite renderizar o conteúdo autenticado
+    // Se ainda estiver carregando, mostra apenas a barra simples
     if (isLoadingUser) {
         return (
-            <nav className="navbar navbar-light header-bar p-3 mb-4">
-                <a className="navbar-brand d-flex align-items-center" href="/biblioteca">
+            <nav className="navbar navbar-light header-bar p-3 fixed-top">
+                <div className="navbar-brand d-flex align-items-center">
                     <img src="https://imgur.com/HLvpHYn.png" alt="Bookly Logo" style={{ height: 50, marginRight: 10 }} />
                     Bookly
-                </a>
+                </div>
             </nav>
         );
     }
 
     return (
         <>
-            <nav className="navbar navbar-light header-bar p-3 mb-4">
-                <a className="navbar-brand d-flex align-items-center" href="/biblioteca">
+            <nav className="navbar navbar-light header-bar p-3 fixed-top">
+                <Link href="/biblioteca" className="navbar-brand d-flex align-items-center">
                     <img src="https://imgur.com/HLvpHYn.png" alt="Bookly Logo" style={{ height: 50, marginRight: 10 }} />
-                </a>
+                </Link>
 
                 <div className="d-flex align-items-center ms-auto">
 
-                    {/* Botão de lupa para abrir o novo modal de busca */}
+                    {/* Botão de lupa para abrir o modal de busca */}
                     <button
                         className="btn btn-link text-dark me-3"
                         onClick={() => setOpenSearchModal(true)}
-                        title="Pesquisar Livros e Autores"
+                        title="Pesquisar Livros, Autores e Usuários"
                     >
                         <i className="bi bi-search" style={{ fontSize: '1.2rem' }}></i>
                     </button>
@@ -99,7 +99,7 @@ export default function Navbar({ onAddBookClick }) {
                     <div id="profileGroupNavbar" className="d-flex align-items-center">
                         {isLoggedIn ? (
                             <>
-                                {/* Link do Perfil: AGORA DINÂMICO */}
+                                {/* Link do Perfil: Dinâmico usando o componente Link */}
                                 <Link
                                     href={userId ? `/perfil/${userId}` : '/perfil'}
                                     className="d-flex align-items-center me-3 text-decoration-none text-dark"
@@ -128,7 +128,7 @@ export default function Navbar({ onAddBookClick }) {
                                     <span style={{ fontSize: '1.2rem', lineHeight: 1, marginRight: 4 }}>+</span> Livro
                                 </button>
 
-                                <button className="btn btn-link text-dark" onClick={handleLogout}>
+                                <button className="btn btn-link text-dark" onClick={handleLogout} title="Sair">
                                     <i className="bi bi-box-arrow-right"></i>
                                 </button>
                             </>

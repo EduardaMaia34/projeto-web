@@ -1,10 +1,11 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useRouter } from 'next/router';
-import Navbar from '../src/components/Navbar.jsx';
-import BookCard from '../src/components/BookCard.jsx';
-import EstanteSearchBar from '../src/components/EstanteSearchBar.jsx';
-import ReviewModal from '../src/components/ReviewModal.jsx';
-import { fetchEstanteData } from '../src/api/booklyApi.js';
+
+import Navbar from '@/components/Navbar.jsx';
+import BookCard from '@/components/BookCard.jsx';
+import EstanteSearchBar from '@/components/EstanteSearchBar.jsx';
+import ReviewModal from '@/components/ReviewModal.jsx';
+import { fetchEstanteData } from '@/api/booklyApi.js';
 
 const isAuthenticated = () => typeof window !== 'undefined' && !!localStorage.getItem('jwtToken');
 
@@ -26,15 +27,15 @@ const Estante = () => {
     const [title, setTitle] = useState('Minha Estante');
     const [searchTerm, setSearchTerm] = useState('');
     const [isClient, setIsClient] = useState(false);
-    // ADICIONADO: Estado para controlar a visibilidade do ReviewModal
     const [openAddModal, setOpenAddModal] = useState(false);
 
+    // Lógica para pegar o userId da URL
+    // Nota: No Next.js Pages Router, você também poderia usar: const { userId } = router.query;
     const urlParams = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null;
     const userId = urlParams ? urlParams.get('userId') : null;
 
     useEffect(() => {
         setIsClient(true);
-        // REMOVIDO: Import do JS do Bootstrap
         if (!isAuthenticated()) {
             router.push('/login');
         }
@@ -47,19 +48,22 @@ const Estante = () => {
         setError(null);
         try {
             const pageData = await fetchEstanteData('estante', userId);
-            setBooks(pageData.content);
+            setBooks(pageData.content || []); // Garante que seja um array
+
             const userDisplay = userId ? `Estante do Usuário ${userId}` : 'Minha';
             setTitle(`${userDisplay} Estante`);
+
         } catch (err) {
-            // CORREÇÃO: Tratar erro de autenticação (401/403) removendo o token e redirecionando
-            if (err.message.includes('403') || err.message.includes('401')) {
+            // Trata erro de token expirado
+            if (String(err.message).includes('403') || String(err.message).includes('401')) {
                 if (typeof window !== 'undefined') {
                     localStorage.removeItem('jwtToken');
+                    localStorage.removeItem('userData');
                 }
                 router.push('/login');
                 return;
             }
-            setError(err.message);
+            setError(err.message || "Erro ao carregar livros.");
             setBooks([]);
         } finally {
             setLoading(false);
@@ -72,7 +76,6 @@ const Estante = () => {
         }
     }, [isClient, fetchBooks]);
 
-    // CORRIGIDO: Agora apenas muda o estado para abrir o modal
     const handleAddBookClick = () => {
         setOpenAddModal(true);
     };
@@ -93,47 +96,58 @@ const Estante = () => {
         return books.filter(item => {
             const titulo = cleanString(item.livro?.titulo || "");
             const autor = cleanString(item.livro?.autor || "");
-            const livroId = cleanString(item.livroId || "");
+            // Verifica se livroId existe antes de limpar
+            const livroId = item.livroId ? cleanString(item.livroId) : "";
 
             return titulo.includes(s) || autor.includes(s) || livroId.includes(s);
         });
     }, [books, searchTerm]);
 
     if (!isClient || !isAuthenticated()) {
-        return <div className="text-center p-5">Carregando / Redirecionando...</div>;
+        return (
+            <div className="d-flex justify-content-center align-items-center" style={{ minHeight: '100vh' }}>
+                <div className="spinner-border text-primary" role="status">
+                    <span className="visually-hidden">Carregando...</span>
+                </div>
+            </div>
+        );
     }
 
     return (
         <>
-            <Navbar onAddBookClick={handleAddBookClick} onSearchChange={handleSearchChange} currentSearchTerm={searchTerm} />
+            <Navbar
+                onAddBookClick={handleAddBookClick}
+                // Removemos onSearchChange daqui pois a Navbar geralmente não controla a busca da estante diretamente,
+                // mas se sua Navbar tiver barra de busca global, mantenha.
+            />
 
-            <div className="container">
+            <div className="container" style={{ paddingTop: '100px' }}>
                 <div className="d-flex justify-content-between align-items-center mb-4">
-                    <h3 id="pageTitle">{title}</h3>
+                    <h3 id="pageTitle" style={{ color: '#594A47' }}>{title}</h3>
                     <EstanteSearchBar searchTerm={searchTerm} onSearchChange={handleSearchChange} />
                 </div>
 
-                <div id="bookListContainer" className="book-grid">
+                <div id="bookListContainer" className="row">
                     {loading && <p className="text-muted">Carregando livros...</p>}
                     {error && <p className="text-danger">{error}</p>}
 
                     {!loading && !error && filteredBooks.length === 0 && (
-                        <p className="text-muted">
-                            {searchTerm ? `Nenhum livro encontrado para "${searchTerm}".` : "Esta estante está vazia."}
-                        </p>
+                        <div className="col-12 text-center">
+                            <p className="text-muted">
+                                {searchTerm ? `Nenhum livro encontrado para "${searchTerm}".` : "Esta estante está vazia."}
+                            </p>
+                        </div>
                     )}
 
                     {!loading && !error && filteredBooks.map(book => (
-                        <BookCard key={book.id} item={book} type="estante" />
+                        <div className="col-6 col-md-4 col-lg-3 mb-4 d-flex justify-content-center" key={book.id}>
+                            {/* Adicionei as classes de grid do Bootstrap acima para ficar responsivo */}
+                            <BookCard item={book} type="estante" />
+                        </div>
                     ))}
-                </div>
-
-                <div id="pagination-controls" className="d-flex justify-content-center mt-5">
-
                 </div>
             </div>
 
-            {/* CORRIGIDO: Passando o estado para o ReviewModal */}
             <ReviewModal
                 show={openAddModal}
                 onHide={() => setOpenAddModal(false)}

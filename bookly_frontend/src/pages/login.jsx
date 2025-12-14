@@ -1,7 +1,6 @@
-"use client";
-
+// src/pages/login.jsx
 import React, { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter } from 'next/router';
 import { loginUser } from '../api/booklyApi';
 
 const LoginPage = () => {
@@ -13,49 +12,51 @@ const LoginPage = () => {
     const router = useRouter();
 
     const handleSubmit = async (e) => {
-        e.preventDefault(); // Impede recarregar a página
+        e.preventDefault();
         setLoading(true);
         setError(null);
 
-
         try {
-            // Chama a API
-            const respostaLogin = await loginUser(email, password);
+            // 1. Tenta fazer o login
+            // A função loginUser (do booklyApi.js) já salva o token e o userData no localStorage
+            await loginUser(email, password);
 
-            // --- DEBUG CRÍTICO ---
-            console.log("📦 RESPOSTA COMPLETA DA API:", respostaLogin);
-
-            // Verifica o que foi salvo
-            const userDataString = localStorage.getItem('userData');
-            const userObj = JSON.parse(userDataString || "{}");
-
-            console.log("👤 USUÁRIO SALVO NO LOCALSTORAGE:", userObj);
-
-            if (!userObj.id) {
-                // Se não tem ID, vamos tentar achar com outros nomes comuns
-                alert(`ATENÇÃO: O usuário foi salvo sem ID!\n\nVerifique o Console (F12) para ver os campos disponíveis.\n\nCampos encontrados: ${Object.keys(userObj).join(", ")}`);
-
-                // Não redireciona se não tiver ID, para você poder ver o erro
-                setLoading(false);
-                return;
-            }
-
-            // Se chegou aqui, tem ID!
-            console.log("✅ ID encontrado:", userObj.id);
+            // 2. Redireciona para a biblioteca após sucesso
+            console.log("✅ Login bem-sucedido! Redirecionando...");
             router.push('/biblioteca');
 
         } catch (err) {
             console.error("Erro no submit:", err);
+
+            // Limpa dados se houver erro de autenticação
+            if (String(err.message).includes('403') || String(err.message).includes('401')) {
+                if (typeof window !== 'undefined') {
+                    localStorage.removeItem('jwtToken');
+                    localStorage.removeItem('userData');
+                }
+            }
+
             setError(err.message || 'Credenciais inválidas ou erro de conexão.');
         } finally {
             setLoading(false);
         }
     };
 
+    const handleRegisterClick = (e) => {
+        e.preventDefault();
+        router.push("/register");
+    }
+
     return (
         // Container Fundo Bege Claro (#f5f4ed)
-        <div style={{ backgroundColor: '#f5f4ed', minHeight: '100vh', display: 'flex', justifyContent: 'center', alignItems: 'center', padding: '20px' }}>
-
+        <div style={{
+            backgroundColor: '#f5f4ed',
+            minHeight: '100vh',
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center',
+            padding: '20px'
+        }}>
             {/* Card de Login Marrom Claro (#DED2C2) */}
             <div className="login-container" style={{
                 backgroundColor: '#DED2C2',
@@ -66,14 +67,19 @@ const LoginPage = () => {
                 maxWidth: '400px',
                 textAlign: 'center'
             }}>
-
                 <img
                     src="https://imgur.com/HLvpHYn.png"
                     alt="Bookly Logo"
                     style={{ maxWidth: '180px', marginBottom: '1.5rem' }}
                 />
 
-                <p style={{ color: '#594A47', fontSize: '1.3rem', fontWeight: 'bold', marginBottom: '1.5rem', fontFamily: 'serif' }}>
+                <p style={{
+                    color: '#594A47',
+                    fontSize: '1.3rem',
+                    fontWeight: 'bold',
+                    marginBottom: '1.5rem',
+                    fontFamily: 'serif'
+                }}>
                     Acesse sua conta
                 </p>
 
@@ -129,7 +135,11 @@ const LoginPage = () => {
                             Esqueci a senha
                         </a>
 
-                        <a href="/register" style={{ color: '#594A47', fontWeight: 'bold', fontSize: '0.9rem', textDecoration: 'underline' }}>
+                        <a
+                            href="/register"
+                            onClick={handleRegisterClick}
+                            style={{ color: '#594A47', fontWeight: 'bold', fontSize: '0.9rem', textDecoration: 'underline', cursor: 'pointer' }}
+                        >
                             Criar Conta
                         </a>
                     </div>
