@@ -119,7 +119,16 @@ public class ReviewService {
             throw new RuntimeException("Você não pode deletar a review de outro usuário!");
         }
 
+        Long livroId = review.getLivro().getId();
+
         reviewRepository.delete(review);
+
+        try {
+            bibliotecaService.updateLivroStatus(userId, String.valueOf(livroId), Estado.QUERO_LER);
+        } catch (IllegalStateException e) {
+
+            System.err.println("Erro ao tentar atualizar status na biblioteca: " + e.getMessage());
+        }
     }
 
     public Double getMediaAvaliacaoLivro(Long livroId) {
@@ -142,7 +151,7 @@ public class ReviewService {
 
 
     public List<Livro> encontrarLivrosMaisRevisadosNaSemana() {
-            LocalDateTime umaSemanaAtras = LocalDateTime.now().minusDays(7);
-            return reviewRepository.findTopReviewedLivrosLastWeek(umaSemanaAtras);
-        }
+        LocalDateTime umaSemanaAtras = LocalDateTime.now().minusDays(7);
+        return reviewRepository.findTopReviewedLivrosLastWeek(umaSemanaAtras);
+    }
 }
