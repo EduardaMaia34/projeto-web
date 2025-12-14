@@ -58,6 +58,21 @@ public class SecurityConfig {
                         // --- Rotas Protegidas (USER ou ADMIN) ---
                         .requestMatchers(HttpMethod.GET, "/feed").hasAnyRole("USER", "ADMIN")
                         .requestMatchers(HttpMethod.GET, "/feed/**").hasAnyRole("USER", "ADMIN")
+                        .requestMatchers(
+                                org.springframework.http.HttpMethod.GET, "/feed/**"
+                        ).hasAnyRole("USER", "ADMIN")
+                        .requestMatchers(
+                                org.springframework.http.HttpMethod.GET, "/api/v1/biblioteca"
+                        ).permitAll()
+                        .requestMatchers(
+                                org.springframework.http.HttpMethod.POST, "/api/v1/users/favoritos/**"
+                        ).hasAnyRole("USER", "ADMIN")
+                        .requestMatchers(
+                                org.springframework.http.HttpMethod.DELETE, "/api/v1/users/favoritos/**"
+                        ).hasAnyRole("USER", "ADMIN")
+                        .requestMatchers(
+                                org.springframework.http.HttpMethod.GET, "/api/v1/users/favoritos/**"
+                        ).hasAnyRole("USER", "ADMIN")
 
                         // Reviews - Ações
                         .requestMatchers(HttpMethod.POST, "/api/v1/reviews/**").hasAnyRole("USER", "ADMIN")

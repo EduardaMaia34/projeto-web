@@ -1,6 +1,7 @@
 package com.br.edu.ufersa.pw.projeto.user.API.controllers;
 
 import com.br.edu.ufersa.pw.projeto.Security.CustomUserDetails;
+import com.br.edu.ufersa.pw.projeto.livro.API.dto.LivroCapaDTO;
 import com.br.edu.ufersa.pw.projeto.user.API.dto.InputUserDTO;
 import com.br.edu.ufersa.pw.projeto.user.API.dto.ReturnUserDTO;
 import com.br.edu.ufersa.pw.projeto.user.Model.entity.Seguindo;
@@ -14,6 +15,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
+import java.util.NoSuchElementException;
 
 @CrossOrigin(origins = "*")
 @RestController
@@ -22,10 +24,14 @@ public class UserController {
 
     private final UserService service;
 
+    // JwtTokenProvider removido pois usaremos @AuthenticationPrincipal (mais seguro e limpo)
+
     @Autowired
     public UserController(UserService service) {
         this.service = service;
     }
+
+    // --- LEITURA ---
 
     @GetMapping
     public ResponseEntity<List<ReturnUserDTO>> list(@RequestParam(required = false) String name) {
@@ -55,26 +61,25 @@ public class UserController {
                 .orElse(ResponseEntity.notFound().build());
     }
 
+    // --- CRIAÇÃO E ATUALIZAÇÃO ---
+
     @PostMapping
     public ResponseEntity<ReturnUserDTO> create(@Valid @RequestBody InputUserDTO user) {
         ReturnUserDTO savedUser = service.save(user);
         return new ResponseEntity<>(savedUser, HttpStatus.CREATED);
     }
 
-    // --- CORREÇÃO PRINCIPAL AQUI ---
     @PutMapping("/{id}")
     public ResponseEntity<ReturnUserDTO> update(
-            @PathVariable Long id, // Agora capturamos o ID da URL
+            @PathVariable Long id,
             @RequestBody InputUserDTO dto,
             @AuthenticationPrincipal CustomUserDetails loggedInUser) {
 
-        // 1. Verifica se está logado
         if (loggedInUser == null || loggedInUser.getId() == null) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
 
-        // 2. Segurança: Impede que o Usuário A atualize o perfil do Usuário B
-        // O ID do token deve ser igual ao ID da URL
+        // Segurança: Impede que User A edite User B pela URL
         if (!loggedInUser.getId().equals(id)) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
         }
@@ -82,7 +87,19 @@ public class UserController {
         ReturnUserDTO updatedUser = service.update(id, dto);
         return ResponseEntity.ok(updatedUser);
     }
-    // -------------------------------
+
+    @PutMapping("/me")
+    public ResponseEntity<ReturnUserDTO> updateMe(
+            @AuthenticationPrincipal CustomUserDetails loggedInUser,
+            @RequestBody InputUserDTO dto) {
+
+        if (loggedInUser == null || loggedInUser.getId() == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+
+        ReturnUserDTO updatedUser = service.update(loggedInUser.getId(), dto);
+        return ResponseEntity.ok(updatedUser);
+    }
 
     @PatchMapping("/me/password")
     public ResponseEntity<ReturnUserDTO> updateMyPassword(
@@ -100,6 +117,8 @@ public class UserController {
         ReturnUserDTO updatedUser = service.updatePasswordByUser(loggedInUser.getId(), dto.getSenha());
         return ResponseEntity.ok(updatedUser);
     }
+
+    // --- DELEÇÃO ---
 
     @DeleteMapping("/{userId}")
     public ResponseEntity<Void> removeById(@PathVariable Long userId) {
@@ -124,7 +143,59 @@ public class UserController {
         }
     }
 
-    // --- Métodos Sociais (Seguir/Seguidores) ---
+    // --- FAVORITOS (Corrigido para usar AuthenticationPrincipal) ---
+
+    @PostMapping("/favoritos/{livroId}")
+    public ResponseEntity<String> adicionarFavorito(
+            @PathVariable Long livroId,
+            @AuthenticationPrincipal CustomUserDetails loggedInUser) {
+
+        try {
+            if (loggedInUser == null || loggedInUser.getId() == null) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Usuário não autenticado.");
+            }
+
+            service.adicionarLivroFavorito(loggedInUser.getId(), livroId);
+            return ResponseEntity.ok("Livro adicionado aos favoritos.");
+        } catch (NoSuchElementException e) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, e.getMessage());
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Erro ao adicionar favorito.");
+        }
+    }
+
+    @DeleteMapping("/favoritos/{livroId}")
+    public ResponseEntity<String> removerFavorito(
+            @PathVariable Long livroId,
+            @AuthenticationPrincipal CustomUserDetails loggedInUser) {
+
+        try {
+            if (loggedInUser == null || loggedInUser.getId() == null) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Usuário não autenticado.");
+            }
+
+            service.removerLivroFavorito(loggedInUser.getId(), livroId);
+            return ResponseEntity.noContent().build();
+        } catch (NoSuchElementException e) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, e.getMessage());
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Erro ao remover favorito.");
+        }
+    }
+
+    @GetMapping("/{userId}/favoritos")
+    public ResponseEntity<List<LivroCapaDTO>> listarFavoritos(@PathVariable Long userId) {
+        try {
+            List<LivroCapaDTO> favoritos = service.listarLivrosFavoritos(userId);
+            return ResponseEntity.ok(favoritos);
+        } catch (NoSuchElementException e) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, e.getMessage());
+        } catch (Exception e) {
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Erro ao listar favoritos: " + e.getMessage());
+        }
+    }
+
+    // --- SEGUIR / SEGUIDORES ---
 
     @PostMapping("/seguir/{seguidoId}")
     public ResponseEntity<String> seguirUsuario(
@@ -162,11 +233,7 @@ public class UserController {
         return ResponseEntity.ok(service.listarSeguidores(loggedInUser.getId()));
     }
 
-    // Métodos legados para evitar erro 405 se chamados incorretamente
-    @DeleteMapping
-    public ResponseEntity<Void> removeByEmail() {
-        return ResponseEntity.status(HttpStatus.METHOD_NOT_ALLOWED).build();
-    }
+    // --- MÉTODOS DE COMPATIBILIDADE / ERROS (Padronizados) ---
 
     @PatchMapping("/{email}")
     public ResponseEntity<Void> updatePasswordLegacy() {

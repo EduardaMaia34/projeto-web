@@ -142,6 +142,7 @@ const EstantePage = () => {
 
     return (
         <>
+            <div style={{ backgroundColor: '#f5f4ed', minHeight: '100vh' }}>
             <Navbar onAddBookClick={handleAddBookClick} />
 
             <div className="container" style={{ paddingTop: '100px', paddingBottom: '50px' }}>
@@ -180,7 +181,7 @@ const EstantePage = () => {
                     onSaveSuccess={handleSaveSuccess}
                 />
             )}
-        </>
+            </div> </>
     );
 };
 

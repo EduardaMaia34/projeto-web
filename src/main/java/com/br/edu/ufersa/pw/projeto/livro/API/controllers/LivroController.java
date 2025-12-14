@@ -4,6 +4,7 @@ import com.br.edu.ufersa.pw.projeto.livro.API.dto.InputLivroDTO;
 import com.br.edu.ufersa.pw.projeto.livro.API.dto.ReturnLivroDTO;
 import com.br.edu.ufersa.pw.projeto.livro.Service.LivroService;
 import com.br.edu.ufersa.pw.projeto.livro.Model.entity.Livro;
+import com.br.edu.ufersa.pw.projeto.review.Service.ReviewService;
 import com.br.edu.ufersa.pw.projeto.user.Model.entity.Interesse;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -12,6 +13,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.NoSuchElementException;
 import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.Set;
@@ -21,10 +23,12 @@ import java.util.Set;
 public class LivroController {
 
     private final LivroService service;
+    private final ReviewService reviewService;
 
     @Autowired
-    public LivroController(LivroService service){
+    public LivroController(LivroService service, ReviewService reviewService){
         this.service = service;
+        this.reviewService = reviewService;
     }
 
 
@@ -49,11 +53,12 @@ public class LivroController {
 
     @GetMapping("/{id}")
     public ResponseEntity<ReturnLivroDTO> getById(@PathVariable Long id) {
-        Optional<Livro> livro = service.buscarPorId(id);
-
-        return livro.map(this::toReturnDTO)
-                .map(ResponseEntity::ok)
-                .orElse(ResponseEntity.notFound().build());
+        try {
+            ReturnLivroDTO dto = service.getDetalhesLivro(id);
+            return ResponseEntity.ok(dto);
+        } catch (NoSuchElementException e) {
+            return ResponseEntity.notFound().build();
+        }
     }
 
 
@@ -123,6 +128,8 @@ public class LivroController {
         dto.setAno(livro.getAno());
         dto.setDataCriacao(livro.getDataCriacao());
         dto.setUrlCapa(livro.getUrlCapa());
+
+        dto.setMediaAvaliacao(0.0);
 
         Set<Interesse> interesses = livro.getInteresses();
         if (interesses != null && !interesses.isEmpty()) {

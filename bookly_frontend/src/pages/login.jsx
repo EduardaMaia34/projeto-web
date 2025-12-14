@@ -1,4 +1,5 @@
 // src/pages/login.jsx
+
 import React, { useState } from 'react';
 import { useRouter } from 'next/router';
 import { loginUser } from '../api/booklyApi';
@@ -17,26 +18,32 @@ const LoginPage = () => {
         setError(null);
 
         try {
-            // 1. Tenta fazer o login
-            // A função loginUser (do booklyApi.js) já salva o token e o userData no localStorage
-            await loginUser(email, password);
+            // A função loginUser já salva o token e os dados no localStorage
+            const response = await loginUser(email, password);
 
-            // 2. Redireciona para a biblioteca após sucesso
-            console.log("✅ Login bem-sucedido! Redirecionando...");
-            router.push('/biblioteca');
+            // Tenta identificar o ID do usuário para redirecionar para a estante correta
+            // Verifica estrutura { user: { id: ... } } ou { id: ... } dependendo do retorno da API
+            const userId = response.user?.id || response.id;
+
+            if (userId) {
+                console.log(`✅ Login bem-sucedido! Redirecionando para /biblioteca/${userId}`);
+                // Ajuste a rota conforme suas rotas do Next.js.
+                // Se a rota for dinâmica [id].js, use assim:
+                router.push(`/biblioteca/${userId}`);
+            } else {
+                console.warn("⚠️ ID de usuário não encontrado, redirecionando para a raiz da biblioteca.");
+                router.push('/biblioteca');
+            }
 
         } catch (err) {
             console.error("Erro no submit:", err);
-
-            // Limpa dados se houver erro de autenticação
-            if (String(err.message).includes('403') || String(err.message).includes('401')) {
-                if (typeof window !== 'undefined') {
-                    localStorage.removeItem('jwtToken');
-                    localStorage.removeItem('userData');
-                }
-            }
-
             setError(err.message || 'Credenciais inválidas ou erro de conexão.');
+
+            // Se for erro de autenticação, garante que o storage esteja limpo
+            if (typeof window !== 'undefined') {
+                localStorage.removeItem('jwtToken');
+                localStorage.removeItem('userData');
+            }
         } finally {
             setLoading(false);
         }
@@ -84,7 +91,15 @@ const LoginPage = () => {
                 </p>
 
                 {error && (
-                    <div className="alert alert-danger" role="alert" style={{ fontSize: '0.9rem' }}>
+                    <div className="alert alert-danger" role="alert" style={{
+                        fontSize: '0.9rem',
+                        marginBottom: '1rem',
+                        color: '#721c24',
+                        backgroundColor: '#f8d7da',
+                        borderColor: '#f5c6cb',
+                        padding: '.75rem 1.25rem',
+                        borderRadius: '.25rem'
+                    }}>
                         {error}
                     </div>
                 )}
@@ -96,7 +111,7 @@ const LoginPage = () => {
                             className="form-control"
                             placeholder="Seu E-mail"
                             required
-                            style={{ padding: '10px', borderRadius: '5px' }}
+                            style={{ padding: '10px', borderRadius: '5px', width: '100%', marginBottom: '10px', border: '1px solid #ccc' }}
                             value={email}
                             onChange={(e) => setEmail(e.target.value)}
                         />
@@ -108,7 +123,7 @@ const LoginPage = () => {
                             className="form-control"
                             placeholder="Sua Senha"
                             required
-                            style={{ padding: '10px', borderRadius: '5px' }}
+                            style={{ padding: '10px', borderRadius: '5px', width: '100%', marginBottom: '10px', border: '1px solid #ccc' }}
                             value={password}
                             onChange={(e) => setPassword(e.target.value)}
                         />
@@ -124,13 +139,17 @@ const LoginPage = () => {
                             fontWeight: 'bold',
                             padding: '10px',
                             border: 'none',
+                            borderRadius: '5px',
+                            width: '100%',
+                            cursor: loading ? 'not-allowed' : 'pointer',
+                            opacity: loading ? 0.7 : 1,
                             transition: 'opacity 0.2s'
                         }}
                     >
                         {loading ? 'Acessando...' : 'Acessar conta'}
                     </button>
 
-                    <div className="d-flex justify-content-between align-items-center mt-2">
+                    <div className="d-flex justify-content-between align-items-center mt-2" style={{ display: 'flex', justifyContent: 'space-between' }}>
                         <a href="#" style={{ color: '#594A47', fontSize: '0.85rem', textDecoration: 'none' }}>
                             Esqueci a senha
                         </a>

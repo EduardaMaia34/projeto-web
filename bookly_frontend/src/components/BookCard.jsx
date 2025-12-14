@@ -7,22 +7,17 @@ import { useRouter } from 'next/navigation';
 export default function BookCard({ item, type }) {
     const router = useRouter();
 
-    // --- 1. Extração de Dados (Compatível com 'item' sendo Livro ou ItemEstante) ---
-    // Tenta pegar o ID de 'item.livro.id' (Estante) ou 'item.id' (Busca/Lista)
-    const livroId = item.livro?.id || item.id || item.livroId;
+    // --- 1. Extração de Dados Segura ---
+    const livroId = item.livro?.id || item.livroId || item.id;
+    const titulo = item.titulo || item.livro?.titulo || "Título Desconhecido";
+    const urlCapa = item.urlCapa || item.livro?.urlCapa || "https://placehold.co/150x225?text=Sem+Capa";
 
-    const titulo = item.livro?.titulo || item.titulo || "Título Desconhecido";
-    const autor = item.livro?.autor || item.autor || "Autor Desconhecido";
-
-    // Define a URL da capa com fallback para imagem genérica
-    const urlCapa = item.livro?.urlCapa || item.urlCapa || "https://placehold.co/150x225?text=Sem+Capa";
+    // CORREÇÃO: Definindo a variável autor que faltava
+    const autor = item.autor || item.livro?.autor || "Autor Desconhecido";
 
     // --- 2. Lógica de Avaliação (Rating) ---
-    // Pega a nota do review (se existir) ou do item
     const rawRating = item.nota || item.review?.nota || 0;
     const rating = parseFloat(rawRating) || 0;
-
-    // Gera as estrelas dinamicamente usando a função utils
     const starsHtml = displayStarRating(rating);
 
     // Status de leitura (se existir)
@@ -30,27 +25,43 @@ export default function BookCard({ item, type }) {
 
     // --- 3. Proteção contra Erros ---
     if (!livroId) {
-        return <div className="book-card text-danger p-2 border border-danger">Erro: Livro sem ID</div>;
+        return <div className="text-danger p-2 border border-danger">Erro: Livro sem ID</div>;
     }
 
-    // --- 4. Navegação ---
     const handleCardClick = () => {
         router.push(`/livros/${livroId}`);
     };
 
+    // Estilos
+    const cardStyle = {
+        width: '100%',
+        maxWidth: '150px',
+        display: 'block',
+        cursor: 'pointer',
+        textAlign: 'center' // Centraliza texto do card
+    };
+
+    const coverStyle = {
+        width: '100%',
+        height: '225px',
+        objectFit: 'cover',
+        borderRadius: '4px',
+    };
+
     return (
         <div
-            className="book-card"
+            className="book-card p-0"
             onClick={handleCardClick}
-            style={{ cursor: 'pointer' }}
+            style={cardStyle}
             title={`Ver detalhes de ${titulo}`}
         >
             <img
                 src={urlCapa}
                 className="book-cover mb-2"
                 alt={`Capa de ${titulo}`}
+                style={coverStyle}
                 onError={(e) => {
-                    e.target.onerror = null;
+                    e.target.onerror = null; // Evita loop infinito
                     e.target.src = "https://placehold.co/150x225?text=Sem+Capa";
                 }}
             />
@@ -62,14 +73,15 @@ export default function BookCard({ item, type }) {
                 </span>
             )}
 
-            {/* Mostra status se houver (ex: Lendo, Lido) */}
+            {/* Mostra status se houver */}
             {status && <small className="d-block text-muted mb-1">{status}</small>}
 
-            <p className="book-title-small mb-0 fw-bold" title={titulo}>
+            <p className="book-title-small mb-0 fw-bold text-truncate" title={titulo}>
                 {titulo}
             </p>
 
-            <small className="book-author-small text-muted">
+            {/* Agora a variável autor existe e não dará erro */}
+            <small className="book-author-small text-muted text-truncate d-block">
                 {autor}
             </small>
         </div>

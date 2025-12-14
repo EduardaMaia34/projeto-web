@@ -1,4 +1,3 @@
-
 const PORTA = 8081;
 const API_BASE_URL = `http://localhost:${PORTA}/api/v1`;
 
@@ -25,8 +24,7 @@ function parseJwt(token) {
 
 // Gera os headers com o Token de Autenticação
 const getHeaders = () => {
-    // Verifica se window existe (para evitar erro em SSR) e tenta pegar do localStorage, senão usa o MOCK
-    const token = (typeof window !== 'undefined' ? localStorage.getItem('jwtToken') : null) || MOCK_JWT_TOKEN;
+    const token = typeof window !== 'undefined' ? localStorage.getItem('jwtToken') : MOCK_JWT_TOKEN;
 
     if (!token) {
         console.warn("Aviso: Requisição feita sem token de autenticação.");
@@ -46,6 +44,7 @@ const getLoggedInUserIdFromToken = (token) => {
     try {
         if (!token) return null;
         const decoded = parseJwt(token);
+        // Tenta pegar o 'sub' (padrão JWT) ou 'id' ou 'userId' dependendo de como o backend gera
         return decoded?.sub || decoded?.id || decoded?.userId;
     } catch (e) {
         console.error("Falha ao ler ID do token:", e);
@@ -61,11 +60,11 @@ export const getLoggedInUserId = () => {
     return getLoggedInUserIdFromToken(token || MOCK_JWT_TOKEN);
 };
 
-
 export const loginUser = async (email, password) => {
     console.log(`🔵 Conectando em: ${API_BASE_URL}/auth/login`);
 
     try {
+        // 1. Faz o Login
         const response = await fetch(`${API_BASE_URL}/auth/login`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -78,18 +77,24 @@ export const loginUser = async (email, password) => {
         }
 
         const data = await response.json();
-        if (!data.token) throw new Error('Token não veio do Backend.');
 
-        // 1. Salva Token
+        if (!data.token) {
+            throw new Error('Autenticação bem-sucedida, mas o token não foi encontrado na resposta.');
+        }
+
+        // 2. Salva Token
         localStorage.setItem('jwtToken', data.token);
+        console.log("✅ Token salvo.");
 
-        // 2. Extrai ID do Token
+        // 3. Extrai ID do Token
         const userId = getLoggedInUserIdFromToken(data.token);
         if (!userId) throw new Error("ID não encontrado dentro do token.");
 
         console.log("✅ ID Recuperado do Token:", userId);
 
-        // 3. Tenta buscar dados completos do usuário
+        let userToSave = data.user || { id: userId, email: email };
+
+        // 4. Tenta buscar dados completos do usuário (Backend call)
         try {
             const userResp = await fetch(`${API_BASE_URL}/users/${userId}`, {
                 headers: { 'Authorization': `Bearer ${data.token}` }
@@ -97,18 +102,15 @@ export const loginUser = async (email, password) => {
 
             if (userResp.ok) {
                 const fullUser = await userResp.json();
-                if (!fullUser.id) fullUser.id = userId;
-                localStorage.setItem('userData', JSON.stringify(fullUser));
-                console.log("✅ Dados completos salvos com sucesso!");
-                return data;
+                userToSave = { ...userToSave, ...fullUser }; // Merge dos dados
+                console.log("✅ Dados completos do usuário recuperados.");
             }
         } catch (e) {
-            console.warn("⚠️ Falha ao buscar detalhes, salvando usuário básico.");
+            console.warn("⚠️ Falha ao buscar detalhes completos do usuário, usando dados básicos.", e);
         }
 
-        // Fallback: Salva básico
-        const basicUser = { id: userId, email, nome: "Usuário" };
-        localStorage.setItem('userData', JSON.stringify(basicUser));
+        // 5. Salva dados do usuário no LocalStorage
+        localStorage.setItem('userData', JSON.stringify(userToSave));
 
         return data;
 
@@ -162,7 +164,7 @@ export const getUserNameById = async (userId) => {
         return user.nome || `Usuário ID ${userId}`;
     } catch (error) {
         console.error(`Erro ao buscar nome do usuário ${userId}:`, error);
-        return `Usuário ID ${userId}`; // Retorno seguro
+        return `Usuário ID ${userId}`;
     }
 };
 
@@ -220,11 +222,17 @@ export async function searchUsersApi(name) {
 
 export const fetchEstanteData = async (type, userId = null, page = 0, size = 20) => {
     let url;
+    // Ajuste aqui se sua API usa /biblioteca/estante ou apenas /biblioteca
     let endpoint = type === 'estante' ? '/biblioteca/estante' : '/biblioteca';
 
-    if (userId) {
+    if (type === 'estante' && userId) {
+        // Se for estante de um usuário específico
+        url = `${API_BASE_URL}/biblioteca/estante/users/${userId}?page=${page}&size=${size}`;
+    } else if (userId) {
+        // Se for biblioteca geral de um usuário (caso exista essa distinção)
         url = `${API_BASE_URL}/biblioteca/users/${userId}?page=${page}&size=${size}`;
     } else {
+        // Padrão (usuário logado ou todos)
         url = `${API_BASE_URL}${endpoint}?page=${page}&size=${size}`;
     }
 
@@ -236,6 +244,32 @@ export const fetchEstanteData = async (type, userId = null, page = 0, size = 20)
     }
 
     return response.json();
+};
+
+export const adicionarLivroApi = async (payload) => {
+    const response = await fetch(`${API_BASE_URL}/biblioteca`, {
+        method: 'POST',
+        headers: getHeaders(),
+        body: JSON.stringify(payload)
+    });
+
+    if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ message: 'Falha ao adicionar livro à biblioteca.' }));
+        throw new Error(errorData.message || 'Erro ao adicionar livro à biblioteca.');
+    }
+    return response.json();
+};
+
+export const removerLivroApi = async (livroId) => {
+    const response = await fetch(`${API_BASE_URL}/biblioteca/${livroId}`, {
+        method: 'DELETE',
+        headers: getHeaders()
+    });
+
+    if (response.status !== 204 && !response.ok) {
+        const errorData = await response.json().catch(() => ({ message: 'Resposta do servidor inválida.' }));
+        throw new Error(`Falha ao remover livro da biblioteca: ${response.status} - ${errorData.message}`);
+    }
 };
 
 export const getLivroById = async (id) => {
@@ -261,9 +295,9 @@ export async function searchLivrosApi(termo) {
     if (!termo || termo.trim() === "") return [];
 
     try {
-        // Unificado para usar 'termo' como argumento, mas passando para o backend
         const response = await fetch(
-            `${API_BASE_URL}/livros?titulo=${encodeURIComponent(termo)}`,
+            // Nota: Verifique se seu backend espera 'termo' ou 'titulo'
+            `${API_BASE_URL}/livros?termo=${encodeURIComponent(termo)}`,
             {
                 method: "GET",
                 headers: getHeaders()
@@ -288,7 +322,7 @@ export const fetchInteresses = async () => {
     try {
         const response = await fetch(`${API_BASE_URL}/interesses`, {
             method: "GET",
-            headers: { "Content-Type": "application/json" }, // Interesses geralmente é público
+            headers: { "Content-Type": "application/json" },
         });
 
         if (!response.ok) return [];
@@ -341,6 +375,28 @@ export const getReviewsByLivroId = async (livroId) => {
     }
 };
 
+export const getUserStats = async (userId) => {
+    const url = `${API_BASE_URL}/reviews/usuario/${userId}/stats`;
+
+    try {
+        const response = await fetch(url, {
+            method: 'GET',
+            headers: getHeaders()
+        });
+
+        if (!response.ok) {
+            console.error(`Falha ao buscar estatísticas do usuário ${userId}. Status: ${response.status}`);
+            return { totalLidos: 0, lidosEsteAno: 0, totalNaBiblioteca: 0 };
+        }
+
+        return await response.json();
+
+    } catch (error) {
+        console.error(`Erro ao buscar estatísticas do usuário ${userId}:`, error);
+        return { totalLidos: 0, lidosEsteAno: 0, totalNaBiblioteca: 0 };
+    }
+};
+
 export const saveReviewApi = async (payload) => {
     const livroId = payload.livroId;
     const response = await fetch(`${API_BASE_URL}/reviews/${livroId}`, {
@@ -379,6 +435,98 @@ export const deleteReviewApi = async (reviewId) => {
         const errorData = await response.json().catch(() => ({ message: 'Erro ao deletar.' }));
         throw new Error(`Falha ao deletar review: ${response.status} - ${errorData.message}`);
     }
+};
+
+// ------------------------------------------------------------------
+// SEGUIR
+// ------------------------------------------------------------------
+
+export const getFollowStatus = async (seguidoId) => {
+    const seguidorId = getLoggedInUserId();
+    if (!seguidorId) return false;
+
+    try {
+        const response = await fetch(`${API_BASE_URL}/seguir/${seguidorId}`, {
+            method: 'GET',
+            headers: getHeaders()
+        });
+
+        if (!response.ok) return false;
+
+        const seguindoList = await response.json();
+        return seguindoList.some(user => String(user.id) === String(seguidoId));
+    } catch (error) {
+        console.error("Erro ao verificar status de seguir:", error);
+        return false;
+    }
+};
+
+export const followUser = async (seguidoId) => {
+    const seguidorId = getLoggedInUserId();
+    if (!seguidorId) throw new Error("Usuário não logado.");
+
+    const response = await fetch(`${API_BASE_URL}/seguir/${seguidorId}/${seguidoId}`, {
+        method: 'POST',
+        headers: getHeaders()
+    });
+
+    if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ message: 'Falha ao seguir.' }));
+        throw new Error(errorData.message || 'Erro ao seguir usuário.');
+    }
+    return response.text();
+};
+
+export const unfollowUser = async (seguidoId) => {
+    const seguidorId = getLoggedInUserId();
+    if (!seguidorId) throw new Error("Usuário não logado.");
+
+    const response = await fetch(`${API_BASE_URL}/seguir/${seguidorId}/${seguidoId}`, {
+        method: 'DELETE',
+        headers: getHeaders()
+    });
+
+    if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ message: 'Falha ao deixar de seguir.' }));
+        throw new Error(errorData.message || 'Erro ao deixar de seguir usuário.');
+    }
+    return response.text();
+};
+
+// ------------------------------------------------------------------
+// FAVORITOS
+// ------------------------------------------------------------------
+
+export const fetchFavoriteBooks = async (userId) => {
+    try {
+        const response = await fetch(`${API_BASE_URL}/users/${userId}/favoritos`, {
+            method: 'GET',
+            headers: getHeaders()
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({ message: 'Falha ao buscar favoritos.' }));
+            throw new Error(errorData.message || 'Erro ao listar livros favoritos.');
+        }
+
+        return await response.json();
+    } catch (error) {
+        console.error("Erro ao buscar livros favoritos:", error);
+        return [];
+    }
+};
+
+export const adicionarLivroFavoritoApi = async (livroId) => {
+    const response = await fetch(`${API_BASE_URL}/users/favoritos/${livroId}`, {
+        method: 'POST',
+        headers: getHeaders()
+    });
+
+    if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ message: 'Falha ao adicionar livro aos favoritos.' }));
+        throw new Error(errorData.message || 'Erro ao adicionar livro aos favoritos.');
+    }
+    return response.text();
 };
 
 export { MOCK_JWT_TOKEN };

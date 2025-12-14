@@ -141,3 +141,48 @@
     /* Usando a cor ouro global */
     color: var(--color-rating-gold);
 }
+
+/* Definição do Marrom Escuro Principal */
+.text-dark-brown {
+    color: #594A47 !important;
+}
+
+.text-dark-brown:hover {
+    color: #4a3c39 !important;
+}
+
+
+.btn-review-dark-brown {
+    /* Estado Normal: Fundo Marrom, Texto Branco */
+    background-color: #594A47 !important;
+    border: 1px solid #594A47 !important;
+    color: white !important;
+    transition: all 0.2s ease-in-out;
+}
+
+.btn-review-dark-brown:hover,
+.btn-review-dark-brown:focus {
+    /* Estado Hover: Fundo Branco (ou muito claro), Texto Marrom */
+    background-color: white !important;
+    border: 1px solid #594A47 !important;
+    color: #594A47 !important;
+    transform: translateY(-1px); /* Pequeno efeito de elevação */
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.custom-hr {
+    border: 0;
+    height: 1px;
+    background-image: linear-gradient(to right, rgba(0, 0, 0, 0), rgba(0, 0, 0, 0.75), rgba(0, 0, 0, 0));
+    margin: 2rem 0;
+}
+
+/* Opcional: Ajuste para o texto principal da página de detalhes */
+.book-details-section {
+    color: #333;
+}
+
+/* Opcional: Cor do título da seção de reviews */
+.row h4 {
+    color: #594A47;
+}

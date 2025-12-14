@@ -1,5 +1,7 @@
 package com.br.edu.ufersa.pw.projeto.livro.API.dto;
 
+import com.br.edu.ufersa.pw.projeto.livro.Model.entity.Livro;
+
 // commit
 public class LivroCapaDTO {
 
@@ -7,7 +9,15 @@ public class LivroCapaDTO {
     private String titulo;
     private String autor;
     private String urlCapa;
+    private Double notaMedia;
 
+    public LivroCapaDTO(Livro livro) {
+        this.id = livro.getId();
+        this.titulo = livro.getTitulo();
+        this.autor = livro.getAutor();
+        this.urlCapa = livro.getUrlCapa();
+        this.notaMedia = null;
+    }
     public Long getId() {
         return id;
     }

@@ -143,6 +143,16 @@ public class User implements UserDetails {
         return this.email;
     }
 
+    public List<Livro> getLivrosFavoritos() {
+        if (livrosFavoritos == null) {
+            livrosFavoritos = new java.util.ArrayList<>();
+        }
+        return livrosFavoritos;
+    }
+
+    public void setLivrosFavoritos(List<Livro> livrosFavoritos) {
+        this.livrosFavoritos = livrosFavoritos;
+    }
 
     @Override
     public boolean isAccountNonExpired() { return true; }

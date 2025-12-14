@@ -1,5 +1,7 @@
 package com.br.edu.ufersa.pw.projeto.user.Service;
 
+import com.br.edu.ufersa.pw.projeto.livro.API.dto.LivroCapaDTO;
+import com.br.edu.ufersa.pw.projeto.livro.Model.entity.Livro;
 import com.br.edu.ufersa.pw.projeto.user.API.dto.InputUserDTO;
 import com.br.edu.ufersa.pw.projeto.user.API.dto.ReturnUserDTO;
 import com.br.edu.ufersa.pw.projeto.user.Model.entity.Seguindo;
@@ -265,6 +267,44 @@ public class UserService implements UserDetailsService {
         if (seguindoRepository.existsBySeguidorAndSeguido(seguidor, seguido)) {
             seguindoRepository.deleteBySeguidorAndSeguido(seguidor, seguido);
         }
+    }
+
+    @Transactional
+    public void adicionarLivroFavorito(Long userId, Long livroId) {
+        User user = repository.findById(userId)
+                .orElseThrow(() -> new NoSuchElementException("Usuário com ID " + userId + " não encontrado."));
+
+
+        Livro livro = livroService.buscarPorId(livroId)
+                .orElseThrow(() -> new NoSuchElementException("Livro com ID " + livroId + " não encontrado."));
+
+        if (!user.getLivrosFavoritos().contains(livro)) {
+            user.getLivrosFavoritos().add(livro);
+            repository.save(user);}
+    }
+
+    @Transactional
+    public void removerLivroFavorito(Long userId, Long livroId) {
+        User user = repository.findById(userId)
+                .orElseThrow(() -> new NoSuchElementException("Usuário com ID " + userId + " não encontrado."));
+
+        Livro livroParaRemover = user.getLivrosFavoritos().stream()
+                .filter(l -> l.getId().equals(livroId))
+                .findFirst()
+                .orElseThrow(() -> new NoSuchElementException("Livro com ID " + livroId + " não está na lista de favoritos do usuário."));
+
+        if (user.getLivrosFavoritos().remove(livroParaRemover)) {
+            repository.save(user); }
+    }
+
+    public List<LivroCapaDTO> listarLivrosFavoritos(Long userId) {
+        User user = repository.findById(userId)
+                .orElseThrow(() -> new NoSuchElementException("Usuário com ID " + userId + " não encontrado."));
+
+
+        return user.getLivrosFavoritos().stream()
+                .map(LivroCapaDTO::new)
+                .collect(Collectors.toList());
     }
 
     public List<Seguindo> listarSeguindo(Long userId) {

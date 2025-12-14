@@ -4,6 +4,7 @@ import com.br.edu.ufersa.pw.projeto.user.Model.entity.Seguindo;
 import com.br.edu.ufersa.pw.projeto.user.Model.entity.User;
 import com.br.edu.ufersa.pw.projeto.user.Model.repository.SeguindoRepository;
 import com.br.edu.ufersa.pw.projeto.user.Model.repository.UserRepository;
+import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -20,7 +21,7 @@ public class SeguindoService {
     @Autowired
     private UserRepository userRepository;
 
-
+    @Transactional
     public String seguir(Long seguidorId, Long seguidoId) {
         if (seguidorId.equals(seguidoId)) {
             throw new RuntimeException("Você não pode seguir a si mesmo!");
@@ -43,6 +44,7 @@ public class SeguindoService {
         return "Agora você está seguindo " + seguido.getNome() + "!";
     }
 
+    @Transactional
     public String deixarDeSeguir(Long seguidorId, Long seguidoId) {
         User seguidor = userRepository.findById(seguidorId)
                 .orElseThrow(() -> new RuntimeException("Usuário seguidor não encontrado"));

@@ -4,73 +4,226 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useParams } from 'next/navigation';
 import Navbar from '../../../components/Navbar';
 import ReviewModal from '../../../components/ReviewModal.jsx';
-import { getUserById } from '../../../api/booklyApi';
+import AddBookSearchModal from '../../../components/AddBookModal.jsx';
+import BookCard from '../../../components/BookCard.jsx';
+import {
+    getUserById,
+    getUserStats,
+    followUser,
+    unfollowUser,
+    getFollowStatus,
+    fetchInteresses,
+    fetchFavoriteBooks
+} from '../../../api/booklyApi';
 
 import './perfilDetails.css';
 import 'bootstrap/dist/css/bootstrap.min.css';
 
-// Componente para os livros (Estilo Grid)
+// Componente para os livros (Estilo Grid) - CORRIGIDO
 const BookGridItem = ({ src, title, rating }) => (
     <div className="col-6 col-md-3 mb-4 text-center">
-        <img
-            src={src || "https://via.placeholder.com/150x225?text=Capa"}
-            className="book-cover-profile mb-1"
-            alt={title}
-        />
-        {rating && <span className="star-rating-static">★ {rating}</span>}
+        <img src={src} alt={title} className="img-fluid rounded shadow-sm mb-2" style={{ width: '100px', height: '150px', objectFit: 'cover' }} />
+        <h6 className="mb-1" style={{ fontSize: '0.9rem', fontWeight: 'bold' }}>{title}</h6>
+        <small className="text-warning">{rating}</small>
     </div>
 );
 
+const AddBookSlot = ({ onClick }) => (
+    <div className="col-6 col-md-3 mb-4 text-center">
+        <button
+            onClick={onClick}
+            className="btn btn-outline-secondary d-flex justify-content-center align-items-center mx-auto"
+            style={{
+                width: '100%',
+                maxWidth: '150px',
+                height: '225px',
+                borderWidth: '2px',
+                borderStyle: 'dashed',
+                color: '#387638',
+                borderColor: '#387638',
+                backgroundColor: 'transparent'
+            }}
+        >
+            <i className="bi bi-plus-lg" style={{ fontSize: '2rem' }}></i>
+        </button>
+    </div>
+);
+
+const SuccessToast = ({ show, onClose, message }) => {
+    return (
+        <div
+            className="toast show align-items-center text-white bg-success border-0"
+            role="alert"
+            aria-live="assertive"
+            aria-atomic="true"
+            style={{
+                position: 'fixed',
+                top: '70px',
+                right: '20px',
+                zIndex: 1100,
+                transition: 'opacity 0.3s ease-in-out',
+                opacity: show ? 1 : 0
+            }}
+        >
+            <div className="d-flex">
+                <div className="toast-body">
+                    {message}
+                </div>
+                <button
+                    type="button"
+                    className="btn-close btn-close-white me-2 m-auto"
+                    data-bs-dismiss="toast"
+                    aria-label="Close"
+                    onClick={onClose}
+                ></button>
+            </div>
+        </div>
+    );
+};
+
 export default function PerfilDinamicoPage() {
     const params = useParams();
-    // Garante que pegamos o ID corretamente (em alguns casos pode vir como params.userId dependendo da rota)
+    // Garante que pegamos o ID corretamente
     const id = params?.id || params?.userId;
 
     const [perfil, setPerfil] = useState(null);
     const [isMeuPerfil, setIsMeuPerfil] = useState(false);
     const [loading, setLoading] = useState(true);
+    const [loggedInUserId, setLoggedInUserId] = useState(null);
 
-    // Estado para controlar a visibilidade do modal de review
+    const [interessesMap, setInteressesMap] = useState({});
+    const [favoritos, setFavoritos] = useState([]);
+
+    const [stats, setStats] = useState({
+        totalLidos: 0,
+        lidosEsteAno: 0,
+        totalNaBiblioteca: 0
+    });
+
     const [openAddModal, setOpenAddModal] = useState(false);
+    const [openSearchModal, setOpenSearchModal] = useState(false);
+    const [toast, setToast] = useState({ show: false, message: '' });
+    const [isFollowing, setIsFollowing] = useState(false);
 
+    useEffect(() => {
+        const storedUser = typeof window !== 'undefined' ? localStorage.getItem('userData') : null;
+        if (storedUser) {
+            try {
+                const meuUsuario = JSON.parse(storedUser);
+                if (meuUsuario && (typeof meuUsuario.id === 'string' || typeof meuUsuario.id === 'number')) {
+                    setLoggedInUserId(meuUsuario.id);
+                }
+            } catch (e) {
+                setLoggedInUserId(null);
+            }
+        }
+
+        const loadInteresses = async () => {
+            try {
+                const interessesList = await fetchInteresses();
+                const map = {};
+                interessesList.forEach(interesse => {
+                    map[interesse.id] = interesse.nome;
+                });
+                setInteressesMap(map);
+            } catch (error) {
+                console.error("Erro ao carregar lista de interesses:", error);
+            }
+        };
+
+        loadInteresses();
+    }, []);
+
+    const carregarPerfil = useCallback(async () => {
+        if (!id) {
+            setLoading(false);
+            return;
+        }
+
+        setLoading(true);
+        try {
+            const [dadosUsuario, dadosStats, dadosFavoritos] = await Promise.all([
+                getUserById(id),
+                getUserStats(id),
+                fetchFavoriteBooks(id)
+            ]);
+
+            setPerfil(dadosUsuario);
+            setStats(dadosStats);
+            setFavoritos(dadosFavoritos);
+
+            const loggedUserId = loggedInUserId;
+            const isCurrentUsersProfile = String(id) === String(loggedUserId);
+            setIsMeuPerfil(isCurrentUsersProfile);
+
+            if (!isCurrentUsersProfile && loggedUserId) {
+                const status = await getFollowStatus(id);
+                setIsFollowing(status);
+            } else {
+                setIsFollowing(false);
+            }
+
+        } catch (error) {
+            console.error("Erro ao carregar perfil:", error);
+            setPerfil(null);
+            setFavoritos([]);
+        } finally {
+            setLoading(false);
+        }
+    }, [id, loggedInUserId]);
+
+    // Recarregar perfil quando ID ou Login mudar
     useEffect(() => {
         if (id) {
             carregarPerfil();
         }
-    }, [id]);
+    }, [id, loggedInUserId, carregarPerfil]);
 
-    const carregarPerfil = async () => {
-        setLoading(true);
-        try {
-            const dadosUsuario = await getUserById(id);
-            setPerfil(dadosUsuario);
-
-            // Verifica se é o perfil do usuário logado
-            const storedUser = localStorage.getItem('userData');
-            if (storedUser) {
-                const meuUsuario = JSON.parse(storedUser);
-                // Verifica se o ID do perfil na URL é igual ao ID do usuário logado
-                if (String(meuUsuario.id) === String(id)) {
-                    setIsMeuPerfil(true);
-                } else {
-                    setIsMeuPerfil(false);
-                }
-            }
-        } catch (error) {
-            console.error("Erro ao carregar perfil:", error);
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    // Handler para abrir o modal
+    // Handler para abrir o modal de review
     const handleAddBookClick = useCallback(() => {
         setOpenAddModal(true);
     }, []);
 
-    // Handler para o sucesso da review
-    const handleSaveSuccess = () => {
-        carregarPerfil(); // Recarrega para atualizar contadores ou listas
+    // Handler para abrir modal de favoritos
+    const handleOpenAddBookModal = useCallback(() => {
+        setOpenSearchModal(true);
+    }, []);
+
+    // Handler para sucesso (unificado)
+    const handleSaveSuccess = useCallback(() => {
+        carregarPerfil();
+    }, [carregarPerfil]);
+
+    // Toast Timer
+    useEffect(() => {
+        if (toast.show) {
+            const timer = setTimeout(() => {
+                setToast({ show: false, message: '' });
+            }, 4000);
+            return () => clearTimeout(timer);
+        }
+    }, [toast.show]);
+
+    const handleFollowClick = async () => {
+        if (!perfil || !loggedInUserId) return;
+
+        if (isFollowing) {
+            try {
+                await unfollowUser(id);
+                setIsFollowing(false);
+                setToast({ show: true, message: `Você deixou de seguir ${perfil.nome}.` });
+            } catch (error) {
+                alert(error.message || "Falha ao deixar de seguir.");
+            }
+        } else {
+            try {
+                await followUser(id);
+                setIsFollowing(true);
+                setToast({ show: true, message: `Você agora está seguindo ${perfil.nome}!` });
+            } catch (error) {
+                alert(error.message || "Falha ao seguir usuário.");
+            }
+        }
     };
 
     if (loading) {
@@ -90,15 +243,21 @@ export default function PerfilDinamicoPage() {
         );
     }
 
-    const stats = {
-        lidos: perfil.totalLidos || 0,
-        esteAno: perfil.lidosEsteAno || 0,
-        salvos: perfil.totalSalvos || 0
-    };
+    const followButtonClass = isFollowing ? "btn-success" : "btn-outline-success";
+    const followButtonText = isFollowing ? "Seguindo" : "Seguir";
+    const followButtonStyle = isFollowing ? { backgroundColor: '#387638', borderColor: '#387638', color: 'white' } : {};
+
+    const userInteresses = perfil.interessesIds
+        ? perfil.interessesIds
+            .map(id => interessesMap[id])
+            .filter(name => name)
+        : [];
+
+    const MAX_FAVORITES = 4;
+    const canAddFavorite = isMeuPerfil && favoritos.length < MAX_FAVORITES;
 
     return (
         <div className="perfil-page-container pb-5" style={{ paddingTop: '100px', minHeight: '100vh' }}>
-            {/* IMPORTANTE: Passando o handler para a Navbar funcionar */}
             <Navbar onAddBookClick={handleAddBookClick} />
 
             <div className="container mt-4">
@@ -128,9 +287,15 @@ export default function PerfilDinamicoPage() {
                                             EDITAR PERFIL
                                         </a>
                                     ) : (
-                                        <button className="btn btn-sm btn-outline-success ms-3 fw-bold rounded-pill px-3">
-                                            Seguir
-                                        </button>
+                                        loggedInUserId && (
+                                            <button
+                                                className={`btn btn-sm ms-3 fw-bold rounded-pill px-3 ${followButtonClass}`}
+                                                style={followButtonStyle}
+                                                onClick={handleFollowClick}
+                                            >
+                                                {followButtonText}
+                                            </button>
+                                        )
                                     )}
                                 </div>
 
@@ -142,21 +307,30 @@ export default function PerfilDinamicoPage() {
                                     {perfil.interesses && perfil.interesses.map((interesse, index) => (
                                         <span key={index} className="interest-tag">{interesse.nome || interesse}</span>
                                     ))}
-                                    {!perfil.interesses && <span className="interest-tag">Leitor</span>}
+                                    {userInteresses.length > 0 ? (
+                                        userInteresses.map(interesseNome => (
+                                            <span key={interesseNome} className="interest-tag">
+                                                {interesseNome}
+                                            </span>
+                                        ))
+                                    ) : (
+                                        (!perfil.interesses || perfil.interesses.length === 0) &&
+                                        <span className="text-muted small">Nenhum interesse listado.</span>
+                                    )}
                                 </div>
                             </div>
 
                             <div className="stats-container ms-auto pt-2">
                                 <div className="stats-item">
-                                    <h5 className="mb-0 fw-bold fs-4">{stats.lidos}</h5>
+                                    <h5 className="mb-0 fw-bold fs-4">{stats.totalLidos}</h5>
                                     <small className="text-muted text-uppercase fw-bold">Lidos</small>
                                 </div>
                                 <div className="stats-item">
-                                    <h5 className="mb-0 fw-bold fs-4">{stats.esteAno}</h5>
+                                    <h5 className="mb-0 fw-bold fs-4">{stats.lidosEsteAno}</h5>
                                     <small className="text-muted text-uppercase fw-bold">Ano</small>
                                 </div>
                                 <div className="stats-item me-0">
-                                    <h5 className="mb-0 fw-bold fs-4">{stats.salvos}</h5>
+                                    <h5 className="mb-0 fw-bold fs-4">{stats.totalNaBiblioteca}</h5>
                                     <small className="text-muted text-uppercase fw-bold">Salvos</small>
                                 </div>
                             </div>
@@ -164,13 +338,27 @@ export default function PerfilDinamicoPage() {
 
                         <h5 className="mb-4 fw-bold text-uppercase ls-1">Favoritos</h5>
                         <div className="row mb-5 gx-3 gy-4">
-                            {/* Aqui futuramente você pode mapear perfil.favoritos */}
-                            <BookGridItem src="https://i.imgur.com/k9b8f2G.png" title="Livro 1" rating="★★★★☆" />
-                            <BookGridItem src="https://i.imgur.com/eBv6d1P.png" title="Livro 2" rating="★★★★☆" />
-                            <BookGridItem src="https://i.imgur.com/pY40i0A.png" title="Livro 3" rating="★★★☆☆" />
-                            <BookGridItem src="https://i.imgur.com/j4C6s9x.png" title="Livro 4" rating="★★★☆☆" />
-                        </div>
+                            {favoritos.length > 0 ? (
+                                favoritos.map(livro => (
+                                    <div key={livro.id} className="col-6 col-md-3 mb-4 text-center">
+                                        <BookCard item={livro} type="favorite" />
+                                    </div>
+                                ))
+                            ) : (
+                                !canAddFavorite && !isMeuPerfil && (
+                                    <div className="col-12">
+                                        <p className="text-muted">
+                                            {perfil.nome} ainda não adicionou livros favoritos.
+                                        </p>
+                                    </div>
+                                )
+                            )}
 
+                            {/* Slot de adição: aparece se puder adicionar (é o próprio perfil e não atingiu o limite) */}
+                            {canAddFavorite && (
+                                <AddBookSlot onClick={handleOpenAddBookModal} />
+                            )}
+                        </div>
                     </div>
 
                     {/* === SIDEBAR (Direita) === */}
@@ -179,15 +367,12 @@ export default function PerfilDinamicoPage() {
 
                             {isMeuPerfil ? (
                                 <>
-                                    {/* Minha Biblioteca (Watchlist) */}
                                     <a href={`/biblioteca/${id}`} className="sidebar-link">
                                         <span className="sidebar-icon bi bi-bookmarks-fill"></span> Minha Biblioteca
                                     </a>
-                                    {/* Minha Estante (Lidos/Com Review) */}
                                     <a href={`/estante/${id}`} className="sidebar-link">
-                                        <span className="sidebar-icon bi bi-book-fill"></span> Meus Lidos
+                                        <span className="sidebar-icon bi bi-book-fill"></span> Minha Estante
                                     </a>
-                                    {/* Minhas Reviews */}
                                     <a href={`/reviews/${id}`} className="sidebar-link">
                                         <span className="sidebar-icon bi bi-pencil-square"></span> Minhas Reviews
                                     </a>
@@ -197,22 +382,18 @@ export default function PerfilDinamicoPage() {
                                     <div className="alert alert-light border shadow-sm">
                                         <small className="text-dark-custom text-uppercase fw-bold mb-2 d-block">Explorar</small>
 
-                                        {/* Biblioteca (Watchlist) de Outro Usuário */}
                                         <a href={`/biblioteca/${id}`} className="sidebar-link ps-0">
                                             <span className="sidebar-icon bi bi-bookmarks-fill"></span> Biblioteca de {perfil.nome}
                                         </a>
-                                        {/* Estante (Lidos) de Outro Usuário */}
                                         <a href={`/estante/${id}`} className="sidebar-link ps-0">
                                             <span className="sidebar-icon bi bi-book-fill"></span> Estante de {perfil.nome}
                                         </a>
-                                        {/* Reviews de Outro Usuário */}
                                         <a href={`/reviews/${id}`} className="sidebar-link ps-0">
                                             <span className="sidebar-icon bi bi-chat-quote-fill"></span> Reviews de {perfil.nome}
                                         </a>
                                     </div>
                                 </>
                             )}
-
                         </div>
                     </div>
 
@@ -224,6 +405,21 @@ export default function PerfilDinamicoPage() {
                 show={openAddModal}
                 onHide={() => setOpenAddModal(false)}
                 onSaveSuccess={handleSaveSuccess}
+            />
+
+            <AddBookSearchModal
+                show={openSearchModal}
+                onHide={() => setOpenSearchModal(false)}
+                currentUserId={loggedInUserId}
+                onBookAdded={handleSaveSuccess}
+                currentFavoritesCount={favoritos.length}
+                maxFavorites={MAX_FAVORITES}
+            />
+
+            <SuccessToast
+                show={toast.show}
+                onClose={() => setToast({ show: false, message: '' })}
+                message={toast.message}
             />
         </div>
     );

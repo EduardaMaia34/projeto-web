@@ -24,9 +24,7 @@ const cleanString = (str) => {
 };
 
 const getUserIdFromPathname = (pathname) => {
-    // Exemplo: pathname = /biblioteca/123 -> retorna 123
     const segments = pathname.split('/').filter(Boolean);
-    // O ID é o último segmento
     return segments.length > 0 ? segments[segments.length - 1] : null;
 };
 
@@ -132,9 +130,10 @@ const BibliotecaPage = () => {
 
     return (
         <>
+            <div style={{ backgroundColor: '#f5f4ed', minHeight: '100vh' }}>
             <Navbar onAddBookClick={handleAddBookClick} />
 
-            <div className="container" style={{ paddingTop: '100px' }}>
+            <div className="container" style={{  paddingTop: '100px' }}>
                 <div className="d-flex justify-content-between align-items-center mb-4">
                     <h3 id="pageTitle" style={{ color: '#594A47' }}>{title}</h3>
                     <EstanteSearchBar searchTerm={searchTerm} onSearchChange={handleSearchChange} />
@@ -171,7 +170,8 @@ const BibliotecaPage = () => {
                     onSaveSuccess={handleSaveSuccess}
                 />
             )}
-        </>
+            </div></>
+
     );
 };
 
