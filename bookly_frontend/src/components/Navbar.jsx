@@ -11,6 +11,7 @@ export default function Navbar({ onAddBookClick }) {
     const [isLoggedIn, setIsLoggedIn] = useState(false);
     const [userData, setUserData] = useState({ name: "", photo: "" });
     const [userId, setUserId] = useState(null);
+    const [isAdmin, setIsAdmin] = useState(false);
     const [openSearchModal, setOpenSearchModal] = useState(false);
     const [isLoadingUser, setIsLoadingUser] = useState(true);
 
@@ -18,35 +19,39 @@ export default function Navbar({ onAddBookClick }) {
         let user;
         let token;
 
-        // Atrasar um pouco para garantir que o localStorage seja resolvido no cliente
         const timer = setTimeout(() => {
             token = typeof window !== "undefined" && localStorage.getItem("jwtToken");
             setIsLoggedIn(!!token);
 
             if (token) {
                 try {
-                    // Tenta ler userData
-                    user = JSON.parse(localStorage.getItem("userData") || "{}");
+                    const userStr = localStorage.getItem("userData");
+                    user = JSON.parse(userStr || "{}");
+
                     setUserData({
-                        // Procura por 'nome' (DTO) ou 'name' (fallback), com fallback final "Usuário"
                         name: user.nome || user.name || "Usuário",
-                        // Procura por 'fotoPerfil' (DTO) ou 'photo', com fallback para o ícone
                         photo: user.fotoPerfil || user.photo || "",
                     });
 
-                    // Salva o ID do usuário para usar no link
                     if (user.id) {
                         setUserId(user.id);
                     }
+
+                    // Verificação Robusta
+                    const role = user.role || user.perfil || user.roles;
+                    const isAdminCheck = role === 'ROLE_ADMIN' || (Array.isArray(role) && role.includes('ROLE_ADMIN'));
+
+                    setIsAdmin(isAdminCheck);
 
                 } catch (e) {
                     console.error("Erro ao parsear userData:", e);
                     setUserData({ name: "Usuário", photo: "" });
                     setUserId(null);
+                    setIsAdmin(false);
                 }
             }
             setIsLoadingUser(false);
-        }, 50); // Pequeno delay de 50ms
+        }, 50);
 
         return () => clearTimeout(timer);
     }, []);
@@ -59,14 +64,14 @@ export default function Navbar({ onAddBookClick }) {
         if (typeof window !== "undefined") {
             localStorage.removeItem("jwtToken");
             localStorage.removeItem("userData");
+            setIsLoggedIn(false);
+            setIsAdmin(false);
             router.push("/login");
         }
     };
 
-    // Variável que verifica se devemos usar o ícone de fallback
     const useIconFallback = !userData.photo || userData.photo === "https://imgur.com/pcf2EUA.png";
 
-    // Se ainda estiver carregando, mostra apenas a barra simples
     if (isLoadingUser) {
         return (
             <nav className="navbar navbar-light header-bar p-3 fixed-top">
@@ -86,8 +91,6 @@ export default function Navbar({ onAddBookClick }) {
                 </Link>
 
                 <div className="d-flex align-items-center ms-auto">
-
-                    {/* Botão de lupa para abrir o modal de busca */}
                     <button
                         className="btn btn-link text-dark me-3"
                         onClick={() => setOpenSearchModal(true)}
@@ -99,13 +102,11 @@ export default function Navbar({ onAddBookClick }) {
                     <div id="profileGroupNavbar" className="d-flex align-items-center">
                         {isLoggedIn ? (
                             <>
-                                {/* Link do Perfil: Dinâmico usando o componente Link */}
                                 <Link
                                     href={userId ? `/perfil/${userId}` : '/perfil'}
                                     className="d-flex align-items-center me-3 text-decoration-none text-dark"
                                     title={userData.name}
                                 >
-                                    {/* LÓGICA DE FALLBACK */}
                                     {useIconFallback ? (
                                         <i
                                             className="bi bi-person-circle"
@@ -120,6 +121,19 @@ export default function Navbar({ onAddBookClick }) {
                                         />
                                     )}
                                 </Link>
+
+                                {/* Botão visível APENAS para ROLE_ADMIN */}
+                                {isAdmin && (
+                                    <Link
+                                        href="/admin/cadastrar-livro"
+                                        /* Usamos apenas 'btn' e aplicamos o estilo manual para o azul escuro */
+                                        className="btn me-3 fw-bold"
+                                        style={{ backgroundColor: "#003366", color: "#fff", borderColor: "#003366" }}
+                                        title="Área Administrativa"
+                                    >
+                                        Cadastrar Livros
+                                    </Link>
+                                )}
 
                                 <button
                                     className="btn btn-success me-3 d-flex align-items-center"

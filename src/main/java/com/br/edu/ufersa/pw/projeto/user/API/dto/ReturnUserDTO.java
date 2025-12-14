@@ -5,9 +5,8 @@ import com.br.edu.ufersa.pw.projeto.user.Model.entity.User;
 import com.br.edu.ufersa.pw.projeto.livro.API.dto.LivroCapaDTO;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList; // Import necessário
+import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
 
 public class ReturnUserDTO {
 
@@ -17,12 +16,10 @@ public class ReturnUserDTO {
     private String bio;
     private LocalDateTime dataCadastro;
     private String fotoPerfil;
-
-    // --- ALTERAÇÃO 1: Retorna a lista de objetos, não só IDs ---
     private List<Interesse> interesses;
-    // -----------------------------------------------------------
-
     private List<LivroCapaDTO> livrosFavoritos;
+
+    private String role;
 
     public ReturnUserDTO() {
     }
@@ -35,13 +32,18 @@ public class ReturnUserDTO {
         this.dataCadastro = user.getDataCadastro();
         this.fotoPerfil = user.getFotoPerfil();
 
-        // --- ALTERAÇÃO 2: Converte o Set<Interesse> do User para List<Interesse> do DTO ---
         if (user.getInteresses() != null) {
             this.interesses = new ArrayList<>(user.getInteresses());
         } else {
             this.interesses = new ArrayList<>();
         }
-        // ----------------------------------------------------------------------------------
+
+        // --- NOVA LÓGICA DE MAPEAMENTO ---
+        // Pega o Enum (ROLE_ADMIN) e transforma em String "ROLE_ADMIN"
+        if (user.getRole() != null) {
+            this.role = user.getRole().toString();
+        }
+        // ---------------------------------
     }
 
     public ReturnUserDTO(User user, List<LivroCapaDTO> livrosFavoritos){
@@ -60,10 +62,8 @@ public class ReturnUserDTO {
     public String getNome() { return nome; }
     public void setNome(String nome) { this.nome = nome; }
 
-    // --- Getter e Setter atualizados para List<Interesse> ---
     public List<Interesse> getInteresses() { return interesses; }
     public void setInteresses(List<Interesse> interesses) { this.interesses = interesses; }
-    // --------------------------------------------------------
 
     public String getBio() { return bio; }
     public void setBio(String bio) { this.bio = bio; }
@@ -76,4 +76,9 @@ public class ReturnUserDTO {
 
     public List<LivroCapaDTO> getLivrosFavoritos() { return livrosFavoritos; }
     public void setLivrosFavoritos(List<LivroCapaDTO> livrosFavoritos) { this.livrosFavoritos = livrosFavoritos; }
+
+    // --- GETTER E SETTER DO ROLE ---
+    public String getRole() { return role; }
+    public void setRole(String role) { this.role = role; }
+    // -------------------------------
 }
