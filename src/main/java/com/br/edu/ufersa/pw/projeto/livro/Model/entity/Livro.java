@@ -46,16 +46,7 @@ public class Livro {
     // Construtores
     public Livro(){
     }
-
-    // NOVO CONSTRUTOR: Para mapear Título, Autor e Descrição (campos obrigatórios)
-    public Livro(String titulo, String autor, String descricao) {
-        this.titulo = titulo;
-        this.autor = autor;
-        this.descricao = descricao;
-    }
-
-    // Construtor original (mantido, mas pode ser desnecessário se houver o @PrePersist)
-    public Livro(String titulo, String autor, String descricao,  String urlCapa, int ano, LocalDateTime dataCriacao) {
+    public Livro(String titulo, String autor, String descricao){
         this.titulo = titulo;
         this.autor=autor;
         this.descricao=descricao;
@@ -64,7 +55,7 @@ public class Livro {
         this.dataCriacao = dataCriacao;
     }
 
-    // getters e setters
+    //getters e setters
     public Long getId() {
         return id;
     }

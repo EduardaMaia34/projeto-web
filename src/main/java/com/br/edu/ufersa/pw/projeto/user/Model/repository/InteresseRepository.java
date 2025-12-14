@@ -9,3 +9,4 @@ public interface InteresseRepository extends JpaRepository<Interesse, Long> {
 
 
 }
+

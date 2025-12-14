@@ -1,14 +1,26 @@
+/* Variáveis (Se já estiverem no globals.css, pode apagar daqui) */
+:root {
+    --cor-principal: #f5f4ed;
+    --cor-texto: #594A47;
+    --cor-verde-botao: #385d38;
+    --bookly-brown-mid: rgba(89, 74, 71, 0.5);
+    --bookly-star-gold: #ffc107;
+}
+
 /* src/app/livros/[id]/bookDetails.css */
 
 /* Removido o bloco :root, pois as variáveis principais já estão em index.css */
 
 .book-page-wrapper {
+    background-color: var(--cor-principal);
+    color: var(--cor-texto);
     /* Usando a cor de fundo global */
     background-color: var(--color-background-light);
     /* Usando a cor de texto global */
     color: var(--color-text-primary);
     font-family: 'Cormorant Unicase', serif;
     min-height: 100vh;
+    padding-top: 80px; /* Espaço para a Navbar Fixa não cobrir o conteúdo */
     /* Ajuste de padding para Navbar (80px é um bom chute) */
     padding-top: 80px;
 }
@@ -34,12 +46,14 @@
 .book-bookmark {
     /* Usando o marrom com opacidade */
     color: rgba(89, 74, 71, 0.5);
+    color: var(--bookly-brown-mid);
     font-size: 1.5rem;
     cursor: pointer;
     transition: color 0.3s;
 }
 
 .book-bookmark:hover {
+    color: var(--cor-verde-botao);
     /* Usando a cor verde global */
     color: var(--color-button-success);
 }
@@ -78,6 +92,11 @@
     font-size: 0.8rem;
 }
 
+/* Botão Logar */
+.btn-locar-livro {
+    background-color: var(--bookly-brown-mid);
+    border: none;
+    color: var(--cor-texto);
 
 /* --- Botão Criar Review --- */
 .btn-review-primary {
@@ -91,8 +110,12 @@
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
     font-size: 1.1rem;
     transition: all 0.2s ease-in-out;
+    transition: transform 0.2s;
 }
 
+.btn-locar-livro:hover {
+    transform: scale(1.05); /* Efeitinho de zoom */
+    background-color: rgba(89, 74, 71, 0.7);
 .btn-review-primary:hover,
 .btn-review-primary:focus {
     background-color: var(--color-background-light); /* Fundo bege/creme */
@@ -107,6 +130,8 @@
     background-color: rgba(89, 74, 71, 0.5);
     /* Usando a cor de texto global */
     color: var(--color-text-primary);
+    background-color: var(--bookly-brown-mid);
+    color: var(--cor-texto);
     max-width: 800px;
     margin: 0 auto;
 }

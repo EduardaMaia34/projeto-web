@@ -34,13 +34,12 @@ public class LivroController {
 
     @GetMapping()
     public ResponseEntity<List<ReturnLivroDTO>> list(
-            // Alterado de 'titulo' para o parâmetro genérico 'termo'
-            @RequestParam(required = false) String termo) {
+            @RequestParam(required = false) String titulo) {
 
         List<Livro> livros;
 
-        if (termo != null && !termo.trim().isEmpty()) {
-            livros = service.buscarPorTermo(termo);
+        if (titulo != null && !titulo.trim().isEmpty()) {
+            livros = service.buscarPorTitulo(titulo);
         } else {
             livros = service.buscarTodos();
         }
@@ -88,15 +87,17 @@ public class LivroController {
     }
 
     // ----------------------------------------------------------------------
-    // PUT: Atualizar livro completo
+    // PUT: Atualizar livro completo - CORRIGIDO para usar o DTO
     // ----------------------------------------------------------------------
     @PutMapping("/{id}")
     public ResponseEntity<ReturnLivroDTO> update (@PathVariable Long id, @Valid @RequestBody InputLivroDTO livroDTO) {
+        // Verifica se o livro a ser atualizado existe
         if (service.buscarPorId(id).isEmpty()) {
             return ResponseEntity.notFound().build();
         }
 
         try {
+            // CORREÇÃO ESSENCIAL: Chama o método que recebe o ID e o DTO para atualização
             Livro resultado = service.atualizarLivroComInteresses(id, livroDTO);
 
             return new ResponseEntity<>(toReturnDTO(resultado), HttpStatus.OK);
@@ -111,6 +112,7 @@ public class LivroController {
     // MÉTODOS DE MAPEAMENTO (DTO <-> ENTITY)
     // ----------------------------------------------------------------------
 
+    // Mapeia InputLivroDTO para Livro Entity - MÉTODO REMOVIDO/INUTILIZADO
     private Livro toEntity(InputLivroDTO dto) {
         Livro livro = new Livro(dto.getTitulo(), dto.getAutor(), dto.getDescricao());
         return livro;

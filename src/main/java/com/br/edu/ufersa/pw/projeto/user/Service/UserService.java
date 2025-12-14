@@ -24,6 +24,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.HashSet; // Import Necessário
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Optional;
@@ -37,21 +38,23 @@ public class UserService implements UserDetailsService {
     private final PasswordEncoder passwordEncoder;
     private final ReviewRepository reviewRepository;
     private final BibliotecaRepository bibliotecaRepository;
-
-    @Autowired
-    private SeguindoRepository seguindoRepository;
-
+    private final SeguindoRepository seguindoRepository;
     private final LivroService livroService;
 
     @Autowired
-    public UserService(UserRepository repository, InteresseRepository interesseRepository,
-                       PasswordEncoder passwordEncoder, ReviewRepository reviewRepository,
-                       BibliotecaRepository bibliotecaRepository, @Lazy LivroService livroService) {
+    public UserService(UserRepository repository,
+                       InteresseRepository interesseRepository,
+                       PasswordEncoder passwordEncoder,
+                       ReviewRepository reviewRepository,
+                       BibliotecaRepository bibliotecaRepository,
+                       SeguindoRepository seguindoRepository,
+                       @Lazy LivroService livroService) {
         this.repository = repository;
         this.interesseRepository = interesseRepository;
         this.passwordEncoder = passwordEncoder;
         this.reviewRepository = reviewRepository;
         this.bibliotecaRepository = bibliotecaRepository;
+        this.seguindoRepository = seguindoRepository;
         this.livroService = livroService;
     }
 
@@ -88,23 +91,15 @@ public class UserService implements UserDetailsService {
         String normalizedUrl = url;
 
         if (normalizedUrl.contains("imgur.com")) {
-            // Extrai o hash da imagem (o último segmento que parece um hash de imagem)
             String hash = normalizedUrl.replaceAll("^.*[i\\.]?imgur\\.com/+(a/)?", "").replaceAll("(\\..*|\\?.*)$", "");
-
             if (hash.isEmpty()) {
                 return normalizedUrl;
             }
-
-            // Constrói a URL usando o formato imgur.com/HASH.png, que provou ser funcional
             String format = "https://imgur.com/%s.png";
-
             return String.format(format, hash);
         }
-
-        // Se não for Imgur, retorna a URL original
         return normalizedUrl;
     }
-
 
     @Transactional
     public ReturnUserDTO save(InputUserDTO dto){
@@ -114,38 +109,30 @@ public class UserService implements UserDetailsService {
 
         User user = new User(dto);
 
-        user.setRole("admin@seu-dominio.com".equalsIgnoreCase(dto.getEmail()) ? Role.ROLE_ADMIN : Role.ROLE_USER);
-
+        user.setRole("admin@bookly.com".equalsIgnoreCase(dto.getEmail()) ? Role.ROLE_ADMIN : Role.ROLE_USER);
         user.setSenha(passwordEncoder.encode(dto.getSenha()));
-
         user.setBio(dto.getBio());
-
         user.setFotoPerfil(normalizeImgurUrl(dto.getFotoPerfil()));
 
-
+        // --- LÓGICA DE INTERESSES (SAVE) ---
         if (dto.getInteressesIds() != null && !dto.getInteressesIds().isEmpty()) {
-            if (dto.getInteressesIds().size() > 3) {
-                throw new IllegalStateException("O usuário só pode escolher até 3 interesses.");
+            // VALIDAÇÃO: Limite atualizado para 5
+            if (dto.getInteressesIds().size() > 5) {
+                throw new IllegalStateException("O usuário só pode escolher até 5 interesses.");
             }
 
-            List<Interesse> interesses = interesseRepository.findAllById(dto.getInteressesIds());
-            if (interesses.size() != dto.getInteressesIds().size()) {
+            List<Interesse> interessesList = interesseRepository.findAllById(dto.getInteressesIds());
+
+            if (interessesList.size() != dto.getInteressesIds().size()) {
                 throw new NoSuchElementException("Um ou mais IDs de interesse não são válidos.");
             }
-            user.setInteresses(interesses);
+
+            // CONVERSÃO: List -> Set (HashSet)
+            user.setInteresses(new HashSet<>(interessesList));
         }
 
         User savedUser = repository.save(user);
         return new ReturnUserDTO(savedUser);
-    }
-
-    @Transactional(readOnly = true)
-    public List<Long> getIdsDosSeguidos(Long seguidorId) {
-        List<Seguindo> seguidos = seguindoRepository.findBySeguidor_Id(seguidorId);
-
-        return seguidos.stream()
-                .map(s -> s.getSeguido().getId())
-                .collect(Collectors.toList());
     }
 
     @Transactional
@@ -165,20 +152,34 @@ public class UserService implements UserDetailsService {
             user.setFotoPerfil(normalizeImgurUrl(dto.getFotoPerfil()));
         }
 
-
+        // --- LÓGICA DE INTERESSES (UPDATE) ---
         if (dto.getInteressesIds() != null) {
-            if (dto.getInteressesIds().size() > 3) {
-                throw new IllegalStateException("O usuário só pode escolher até 3 interesses.");
+            // VALIDAÇÃO: Limite atualizado para 5
+            if (dto.getInteressesIds().size() > 5) {
+                throw new IllegalStateException("O usuário só pode escolher até 5 interesses.");
             }
-            List<Interesse> interesses = interesseRepository.findAllById(dto.getInteressesIds());
-            if (interesses.size() != dto.getInteressesIds().size()) {
+
+            List<Interesse> interessesList = interesseRepository.findAllById(dto.getInteressesIds());
+
+            if (interessesList.size() != dto.getInteressesIds().size()) {
                 throw new NoSuchElementException("Um ou mais IDs de interesse não são válidos.");
             }
-            user.setInteresses(interesses);
+
+            // CONVERSÃO: List -> Set (HashSet)
+            user.setInteresses(new HashSet<>(interessesList));
         }
 
         User updatedUser = repository.save(user);
         return new ReturnUserDTO(updatedUser);
+    }
+
+    @Transactional(readOnly = true)
+    public List<Long> getIdsDosSeguidos(Long seguidorId) {
+        List<Seguindo> seguidos = seguindoRepository.findBySeguidor_Id(seguidorId);
+
+        return seguidos.stream()
+                .map(s -> s.getSeguido().getId())
+                .collect(Collectors.toList());
     }
 
     @Transactional
@@ -216,7 +217,6 @@ public class UserService implements UserDetailsService {
         User user = repository.findById(userId)
                 .orElseThrow(() -> new NoSuchElementException("Usuário com ID " + userId + " não encontrado."));
 
-
         reviewRepository.deleteByUserId(userId);
         bibliotecaRepository.deleteByUserId(userId);
         seguindoRepository.deleteBySeguidor(user);
@@ -226,7 +226,6 @@ public class UserService implements UserDetailsService {
             user.getInteresses().clear();
         }
         repository.save(user);
-
         repository.deleteById(userId);
     }
 
@@ -237,7 +236,6 @@ public class UserService implements UserDetailsService {
 
         deleteById(user.getId());
     }
-
 
     public void seguirUsuario(Long seguidorId, Long seguidoId) {
         if (seguidorId.equals(seguidoId)) {
@@ -255,7 +253,6 @@ public class UserService implements UserDetailsService {
             Seguindo seguindo = new Seguindo();
             seguindo.setSeguidor(seguidor);
             seguindo.setSeguido(seguido);
-
             seguindoRepository.save(seguindo);
         }
     }
@@ -267,9 +264,7 @@ public class UserService implements UserDetailsService {
         User seguido = repository.findById(seguidoId)
                 .orElseThrow(() -> new NoSuchElementException("Seguido não encontrado."));
 
-
         if (seguindoRepository.existsBySeguidorAndSeguido(seguidor, seguido)) {
-
             seguindoRepository.deleteBySeguidorAndSeguido(seguidor, seguido);
         }
     }

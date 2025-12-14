@@ -1,16 +1,14 @@
 "use client";
 
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-// Importações do App Router
+// Importações do App Router (Se estiver usando Pages Router, isso funciona, mas o ideal seria next/router)
 import { useRouter, usePathname } from 'next/navigation';
-import Navbar from '../../../components/Navbar.jsx';
-import BookCard from '../../../components/BookCard.jsx';
-import EstanteSearchBar from '../../../components/EstanteSearchBar.jsx';
-import ReviewModal from '../../../components/ReviewModal.jsx';
-// Assumindo que essas funções foram atualizadas no booklyApi.js
-import { fetchEstanteData, getUserNameById, getLoggedInUserId } from '../../../api/booklyApi.js';
 
-// --- Funções de Ajuda (Helpers) ---
+import Navbar from '@/components/Navbar.jsx';
+import BookCard from '@/components/BookCard.jsx';
+import EstanteSearchBar from '@/components/EstanteSearchBar.jsx';
+import ReviewModal from '@/components/ReviewModal.jsx';
+import { fetchEstanteData, getUserNameById, getLoggedInUserId } from '@/api/booklyApi.js';
 
 const isAuthenticated = () => typeof window !== 'undefined' && !!localStorage.getItem('jwtToken');
 
@@ -26,8 +24,9 @@ const cleanString = (str) => {
 
 const getUserIdFromPathname = (pathname) => {
     // Exemplo: pathname = /estante/123 -> retorna 123
+    // Exemplo: pathname = /estante -> retorna 'estante'
+    if (!pathname) return null;
     const segments = pathname.split('/').filter(Boolean);
-    // O ID é o último segmento
     return segments.length > 0 ? segments[segments.length - 1] : null;
 };
 
@@ -37,10 +36,13 @@ const EstantePage = () => {
     const router = useRouter();
     const pathname = usePathname();
 
-    // [NOVO] Obtém o ID do pathname ou usa o ID logado como fallback.
+    // Lógica para decidir qual ID buscar
     const urlUserId = getUserIdFromPathname(pathname);
     const loggedInUserId = useMemo(() => getLoggedInUserId(), []);
-    const userIdToFetch = urlUserId && urlUserId !== 'estante' ? urlUserId : loggedInUserId;
+
+    // Se o ID na URL for "estante" (rota base) ou nulo, usa o logado.
+    // Se for um número/ID específico, usa ele.
+    const userIdToFetch = (urlUserId && urlUserId !== 'estante') ? urlUserId : loggedInUserId;
 
     const [books, setBooks] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -50,9 +52,8 @@ const EstantePage = () => {
     const [isClient, setIsClient] = useState(false);
     const [openAddModal, setOpenAddModal] = useState(false);
 
-    // [NOVO] Verifica se a página pertence ao usuário logado
-    const isOwner = userIdToFetch === loggedInUserId;
-
+    // Verifica se a página pertence ao usuário logado
+    const isOwner = String(userIdToFetch) === String(loggedInUserId);
 
     useEffect(() => {
         setIsClient(true);
@@ -60,7 +61,6 @@ const EstantePage = () => {
             router.push('/login');
         }
     }, [router]);
-
 
     const fetchBooks = useCallback(async () => {
         if (!isAuthenticated() || !userIdToFetch) return;
@@ -84,6 +84,7 @@ const EstantePage = () => {
                 }
             }
         } catch (err) {
+            console.error(err);
             if (String(err.message).includes('403') || String(err.message).includes('401')) {
                 if (typeof window !== 'undefined') {
                     localStorage.removeItem('jwtToken');
@@ -92,13 +93,12 @@ const EstantePage = () => {
                 router.push('/login');
                 return;
             }
-            setError(err.message || 'Falha ao carregar a estante.');
+            setError('Falha ao carregar a estante.');
             setBooks([]);
         } finally {
             setLoading(false);
         }
     }, [userIdToFetch, isOwner, router]);
-
 
     useEffect(() => {
         if (isClient && isAuthenticated() && userIdToFetch) {
@@ -131,7 +131,13 @@ const EstantePage = () => {
     }, [books, searchTerm]);
 
     if (!isClient || !isAuthenticated()) {
-        return <div className="text-center p-5">Carregando / Redirecionando...</div>;
+        return (
+            <div className="d-flex justify-content-center align-items-center" style={{ height: '100vh' }}>
+                <div className="spinner-border text-primary" role="status">
+                    <span className="visually-hidden">Carregando...</span>
+                </div>
+            </div>
+        );
     }
 
     return (
@@ -139,29 +145,31 @@ const EstantePage = () => {
             <div style={{ backgroundColor: '#f5f4ed', minHeight: '100vh' }}>
             <Navbar onAddBookClick={handleAddBookClick} />
 
-            <div className="container" style={{ paddingTop: '100px' }}>
-                <div className="d-flex justify-content-between align-items-center mb-4">
-                    <h3 id="pageTitle" style={{ color: '#594A47' }}>{title}</h3>
-                    <EstanteSearchBar searchTerm={searchTerm} onSearchChange={handleSearchChange} />
+            <div className="container" style={{ paddingTop: '100px', paddingBottom: '50px' }}>
+                <div className="d-flex justify-content-between align-items-center mb-4 flex-wrap">
+                    <h3 id="pageTitle" style={{ color: '#594A47', fontWeight: 'bold' }}>{title}</h3>
+                    <div style={{ minWidth: '300px' }}>
+                        <EstanteSearchBar searchTerm={searchTerm} onSearchChange={handleSearchChange} />
+                    </div>
                 </div>
 
-                <div id="bookListContainer" className="book-grid">
-                    {loading && <p className="text-muted">Carregando livros...</p>}
-                    {error && <p className="text-danger">{error}</p>}
+                <div id="bookListContainer" className="row">
+                    {loading && <p className="text-muted text-center">Carregando livros...</p>}
+                    {error && <p className="text-danger text-center">{error}</p>}
 
                     {!loading && !error && filteredBooks.length === 0 && (
-                        <p className="text-muted" style={{ color: '#594A47' }}>
-                            {searchTerm ? `Nenhum livro encontrado para "${searchTerm}".` : "Esta estante está vazia."}
-                        </p>
+                        <div className="col-12 text-center mt-5">
+                            <p className="text-muted fs-5" style={{ color: '#594A47' }}>
+                                {searchTerm ? `Nenhum livro encontrado para "${searchTerm}".` : "Esta estante está vazia."}
+                            </p>
+                        </div>
                     )}
 
                     {!loading && !error && filteredBooks.map(book => (
-                        <BookCard key={book.id} item={book} type="estante" isOwner={isOwner} />
+                        <div className="col-6 col-md-4 col-lg-3 mb-4 d-flex justify-content-center" key={book.id}>
+                            <BookCard item={book} type="estante" isOwner={isOwner} />
+                        </div>
                     ))}
-                </div>
-
-                <div id="pagination-controls" className="d-flex justify-content-center mt-5">
-                    {/* Controles de Paginação/Scroll Infinito */}
                 </div>
             </div>
 

@@ -1,113 +1,125 @@
 package com.br.edu.ufersa.pw.projeto.Security;
 
-import org.springframework.context.annotation.*;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
-import org.springframework.security.web.*;
 import org.springframework.security.config.http.SessionCreationPolicy;
-import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
-import org.springframework.security.authentication.*;
-import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+import org.springframework.beans.factory.annotation.Qualifier;
 
 import java.util.Arrays;
+import java.util.List;
 
 @Configuration
 @EnableWebSecurity
 public class SecurityConfig {
+
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http, JwtAuthenticationFilter jwtFilter) throws Exception {
         http
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .csrf(csrf -> csrf.disable())
+                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
+                        // --- Rotas Públicas ---
                         .requestMatchers("/").permitAll()
-                        .requestMatchers(org.springframework.http.HttpMethod.GET,"/api/v1/").permitAll()
                         .requestMatchers("/api/v1/auth/**").permitAll()
-                        .requestMatchers(org.springframework.http.HttpMethod.GET,"/api/v1/interesses").permitAll()
-                        .requestMatchers(org.springframework.http.HttpMethod.POST, "/api/v1/users").permitAll()
-                        .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/v1/users").permitAll()
-                        .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/v1/livros").permitAll()
-                        .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/v1/livros/**").permitAll()
-                        .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/v1/reviews").permitAll()
-                        .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/v1/reviews/**").permitAll()
-                        .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/v1/biblioteca/users/**").permitAll()
-                        .requestMatchers(
-                                org.springframework.http.HttpMethod.GET, "/feed"
-                        ).hasAnyRole("USER", "ADMIN")
-                        .requestMatchers(
-                                org.springframework.http.HttpMethod.POST, "/api/v1/livros"
-                        ).hasRole("ADMIN")
-                        .requestMatchers(
-                                org.springframework.http.HttpMethod.PUT, "/api/v1/livros/**"
-                        ).hasRole("ADMIN")
-                        .requestMatchers(
-                                org.springframework.http.HttpMethod.DELETE, "/api/v1/livros/**"
-                        ).hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.POST, "/api/v1/users").permitAll() // Criar conta
 
-                        .requestMatchers(
-                                org.springframework.http.HttpMethod.POST, "/api/v1/reviews/**"
-                        ).hasAnyRole("USER", "ADMIN")
-                        .requestMatchers(
-                                org.springframework.http.HttpMethod.POST, "/api/v1/biblioteca"
-                        ).hasAnyRole("USER", "ADMIN")
-                        .requestMatchers(
-                                org.springframework.http.HttpMethod.PUT, "/api/v1/reviews/**"
-                        ).hasAnyRole("USER", "ADMIN")
-                        .requestMatchers(
-                                org.springframework.http.HttpMethod.DELETE, "/api/v1/reviews/**"
-                        ).hasAnyRole("USER", "ADMIN")
-                        .requestMatchers(
-                                org.springframework.http.HttpMethod.DELETE, "/api/v1/biblioteca/**"
-                        ).permitAll()
-                        .requestMatchers(
-                                org.springframework.http.HttpMethod.GET, "/api/v1/biblioteca/estante"
-                        ).hasAnyRole("USER", "ADMIN")
-                        .requestMatchers(
-                                org.springframework.http.HttpMethod.POST, "/api/v1/users/seguir/**"
-                        ).hasAnyRole("USER", "ADMIN")
-                        .requestMatchers(
-                                org.springframework.http.HttpMethod.DELETE, "/api/v1/users/deixarDeSeguir/**"
-                        ).hasAnyRole("USER", "ADMIN")
-                        .requestMatchers(
-                                org.springframework.http.HttpMethod.DELETE, "/api/v1/users/**"
-                        ).hasAnyRole("USER", "ADMIN")
-                        .requestMatchers(
-                                org.springframework.http.HttpMethod.GET, "/api/v1/users/seguindo"
-                        ).hasAnyRole("USER", "ADMIN")
-                        .requestMatchers(
-                                org.springframework.http.HttpMethod.GET, "/api/v1/users/seguidores"
-                        ).hasAnyRole("USER", "ADMIN")
+                        // --- INTERESSES (NOVO) ---
+                        // GET: Permitir que qualquer um veja as tags (útil para busca/cadastro)
+                        .requestMatchers(HttpMethod.GET, "/api/v1/interesses").permitAll()
+                        // POST: Apenas usuários logados podem criar tags
+                        .requestMatchers(HttpMethod.POST, "/api/v1/interesses").authenticated()
+                        // -------------------------
 
-                        .requestMatchers(
-                                org.springframework.http.HttpMethod.GET, "/feed/**"
-                        ).hasAnyRole("USER", "ADMIN")
-                        .requestMatchers(
-                                org.springframework.http.HttpMethod.GET, "/api/v1/biblioteca"
-                        ).permitAll()
-                        .requestMatchers(
-                                org.springframework.http.HttpMethod.POST, "/api/v1/users/favoritos/**"
-                        ).hasAnyRole("USER", "ADMIN")
-                        .requestMatchers(
-                                org.springframework.http.HttpMethod.DELETE, "/api/v1/users/favoritos/**"
-                        ).hasAnyRole("USER", "ADMIN")
-                        .requestMatchers(
-                                org.springframework.http.HttpMethod.GET, "/api/v1/users/favoritos/**"
-                        ).hasAnyRole("USER", "ADMIN")
+                        // Livros - Leitura pública
+                        .requestMatchers(HttpMethod.GET, "/api/v1/livros").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/v1/livros/**").permitAll()
 
+                        // Users
+                        .requestMatchers(HttpMethod.GET, "/api/v1/users").permitAll() // Listar users público
+                        .requestMatchers(HttpMethod.PUT, "/api/v1/users/**").authenticated() // Editar user requer token
+                        .requestMatchers(HttpMethod.GET, "/api/v1/users/**").authenticated() // Ver detalhes requer token (ou publico dependendo da regra)
 
+                        // Reviews - Leitura pública
+                        .requestMatchers(HttpMethod.GET, "/api/v1/reviews").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/v1/reviews/**").permitAll()
+
+                        // Biblioteca Pública (Estante de outros usuários)
+                        .requestMatchers(HttpMethod.GET, "/api/v1/biblioteca/users/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/v1/biblioteca").permitAll()
+
+                        // --- Rotas Protegidas (USER ou ADMIN) ---
+                        .requestMatchers(HttpMethod.GET, "/feed/**").hasAnyRole("USER", "ADMIN")
+
+                        // Favoritos
+                        .requestMatchers(HttpMethod.POST, "/api/v1/users/favoritos/**").hasAnyRole("USER", "ADMIN")
+                        .requestMatchers(HttpMethod.DELETE, "/api/v1/users/favoritos/**").hasAnyRole("USER", "ADMIN")
+                        .requestMatchers(HttpMethod.GET, "/api/v1/users/favoritos/**").hasAnyRole("USER", "ADMIN")
+
+                        // Reviews - Ações
+                        .requestMatchers(HttpMethod.POST, "/api/v1/reviews/**").hasAnyRole("USER", "ADMIN")
+                        .requestMatchers(HttpMethod.PUT, "/api/v1/reviews/**").hasAnyRole("USER", "ADMIN")
+                        .requestMatchers(HttpMethod.DELETE, "/api/v1/reviews/**").hasAnyRole("USER", "ADMIN")
+
+                        // Biblioteca Pessoal (Minha estante)
+                        .requestMatchers(HttpMethod.POST, "/api/v1/biblioteca").hasAnyRole("USER", "ADMIN")
+                        .requestMatchers(HttpMethod.DELETE, "/api/v1/biblioteca/**").hasAnyRole("USER", "ADMIN")
+                        .requestMatchers(HttpMethod.GET, "/api/v1/biblioteca/estante").hasAnyRole("USER", "ADMIN")
+
+                        // Social (Seguir/Deixar de seguir)
+                        .requestMatchers(HttpMethod.POST, "/api/v1/users/seguir/**").hasAnyRole("USER", "ADMIN")
+                        .requestMatchers(HttpMethod.DELETE, "/api/v1/users/deixarDeSeguir/**").hasAnyRole("USER", "ADMIN")
+                        .requestMatchers(HttpMethod.GET, "/api/v1/users/seguindo").hasAnyRole("USER", "ADMIN")
+                        .requestMatchers(HttpMethod.GET, "/api/v1/users/seguidores").hasAnyRole("USER", "ADMIN")
+
+                        // Delete User
+                        .requestMatchers(HttpMethod.DELETE, "/api/v1/users/**").hasAnyRole("USER", "ADMIN")
+
+                        // --- Rotas de ADMIN ---
+                        .requestMatchers(HttpMethod.POST, "/api/v1/livros").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.PUT, "/api/v1/livros/**").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.DELETE, "/api/v1/livros/**").hasRole("ADMIN")
+
+                        // Qualquer outra requisição precisa estar autenticada
                         .anyRequest().authenticated()
                 )
-                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
+
         return http.build();
+    }
+
+    @Bean
+    public CorsConfigurationSource corsConfigurationSource() {
+        CorsConfiguration configuration = new CorsConfiguration();
+
+        configuration.setAllowedOrigins(Arrays.asList(
+                "http://localhost:3000",
+                "http://127.0.0.1:3000",
+                "https://SEU-FRONTEND-DOMINIO.koyeb.app" // Ajuste para produção se necessário
+        ));
+
+        configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"));
+        configuration.setAllowedHeaders(List.of("*"));
+        configuration.setExposedHeaders(Arrays.asList("Authorization"));
+        configuration.setAllowCredentials(true);
+
+        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+        source.registerCorsConfiguration("/**", configuration);
+        return source;
     }
 
     @Bean
@@ -127,25 +139,4 @@ public class SecurityConfig {
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
     }
-
-    @Bean
-    public CorsConfigurationSource corsConfigurationSource() {
-        CorsConfiguration configuration = new CorsConfiguration();
-
-        configuration.setAllowedOrigins(Arrays.asList(
-                "http://localhost:3000",
-                "https://SEU-FRONTEND-DOMINIO.koyeb.app"
-        ));
-
-        configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"));
-
-        configuration.setAllowCredentials(true);
-
-        configuration.setAllowedHeaders(Arrays.asList("Authorization", "Content-Type", "Accept"));
-
-        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
-        source.registerCorsConfiguration("/**", configuration);
-        return source;
-    }
-
 }

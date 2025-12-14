@@ -1,43 +1,52 @@
+// src/components/Navbar.jsx
 "use client";
 
 import React, { useState, useEffect } from "react";
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import SearchModal from "./SearchModal";
-import { getLoggedInUserId } from "../api/booklyApi";
 
 export default function Navbar({ onAddBookClick }) {
     const router = useRouter();
     const [isLoggedIn, setIsLoggedIn] = useState(false);
     const [userData, setUserData] = useState({ name: "", photo: "" });
+    const [userId, setUserId] = useState(null);
     const [openSearchModal, setOpenSearchModal] = useState(false);
     const [isLoadingUser, setIsLoadingUser] = useState(true);
-
-    const loggedInUserId = React.useMemo(() => getLoggedInUserId(), []);
-    const profileLink = loggedInUserId ? `/perfil/${loggedInUserId}` : '/perfil';
-
 
     useEffect(() => {
         let user;
         let token;
 
+        // Atrasar um pouco para garantir que o localStorage seja resolvido no cliente
         const timer = setTimeout(() => {
             token = typeof window !== "undefined" && localStorage.getItem("jwtToken");
             setIsLoggedIn(!!token);
 
             if (token) {
                 try {
+                    // Tenta ler userData
                     user = JSON.parse(localStorage.getItem("userData") || "{}");
                     setUserData({
+                        // Procura por 'nome' (DTO) ou 'name' (fallback), com fallback final "Usuário"
                         name: user.nome || user.name || "Usuário",
+                        // Procura por 'fotoPerfil' (DTO) ou 'photo', com fallback para o ícone
                         photo: user.fotoPerfil || user.photo || "",
                     });
+
+                    // Salva o ID do usuário para usar no link
+                    if (user.id) {
+                        setUserId(user.id);
+                    }
+
                 } catch (e) {
                     console.error("Erro ao parsear userData:", e);
                     setUserData({ name: "Usuário", photo: "" });
+                    setUserId(null);
                 }
             }
             setIsLoadingUser(false);
-        }, 50);
+        }, 50); // Pequeno delay de 50ms
 
         return () => clearTimeout(timer);
     }, []);
@@ -54,15 +63,17 @@ export default function Navbar({ onAddBookClick }) {
         }
     };
 
+    // Variável que verifica se devemos usar o ícone de fallback
     const useIconFallback = !userData.photo || userData.photo === "https://imgur.com/pcf2EUA.png";
 
+    // Se ainda estiver carregando, mostra apenas a barra simples
     if (isLoadingUser) {
         return (
             <nav className="navbar navbar-light header-bar p-3 fixed-top">
-                <a className="navbar-brand d-flex align-items-center" href="/biblioteca">
+                <div className="navbar-brand d-flex align-items-center">
                     <img src="https://imgur.com/HLvpHYn.png" alt="Bookly Logo" style={{ height: 50, marginRight: 10 }} />
                     Bookly
-                </a>
+                </div>
             </nav>
         );
     }
@@ -70,13 +81,13 @@ export default function Navbar({ onAddBookClick }) {
     return (
         <>
             <nav className="navbar navbar-light header-bar p-3 fixed-top">
-                <a className="navbar-brand d-flex align-items-center" href="/biblioteca">
+                <Link href="/biblioteca" className="navbar-brand d-flex align-items-center">
                     <img src="https://imgur.com/HLvpHYn.png" alt="Bookly Logo" style={{ height: 50, marginRight: 10 }} />
-                </a>
+                </Link>
 
                 <div className="d-flex align-items-center ms-auto">
 
-                    {/* Botão de lupa para abrir o novo modal de busca */}
+                    {/* Botão de lupa para abrir o modal de busca */}
                     <button
                         className="btn btn-link text-dark me-3"
                         onClick={() => setOpenSearchModal(true)}
@@ -88,13 +99,12 @@ export default function Navbar({ onAddBookClick }) {
                     <div id="profileGroupNavbar" className="d-flex align-items-center">
                         {isLoggedIn ? (
                             <>
-                                {/* Link do Perfil: AGORA USA O ID DO USUÁRIO LOGADO */}
-                                <a
-                                    href={profileLink} // <-- Rota dinâmica
+                                {/* Link do Perfil: Dinâmico usando o componente Link */}
+                                <Link
+                                    href={userId ? `/perfil/${userId}` : '/perfil'}
                                     className="d-flex align-items-center me-3 text-decoration-none text-dark"
                                     title={userData.name}
                                 >
-
                                     {/* LÓGICA DE FALLBACK */}
                                     {useIconFallback ? (
                                         <i
@@ -109,7 +119,7 @@ export default function Navbar({ onAddBookClick }) {
                                             style={{ width: 30, height: 30, objectFit: "cover" }}
                                         />
                                     )}
-                                </a>
+                                </Link>
 
                                 <button
                                     className="btn btn-success me-3 d-flex align-items-center"
@@ -118,7 +128,7 @@ export default function Navbar({ onAddBookClick }) {
                                     <span style={{ fontSize: '1.2rem', lineHeight: 1, marginRight: 4 }}>+</span> Livro
                                 </button>
 
-                                <button className="btn btn-link text-dark" onClick={handleLogout}>
+                                <button className="btn btn-link text-dark" onClick={handleLogout} title="Sair">
                                     <i className="bi bi-box-arrow-right"></i>
                                 </button>
                             </>

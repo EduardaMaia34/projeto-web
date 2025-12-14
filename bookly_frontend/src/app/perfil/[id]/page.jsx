@@ -17,7 +17,16 @@ import {
 } from '../../../api/booklyApi';
 
 import './perfilDetails.css';
+import 'bootstrap/dist/css/bootstrap.min.css';
 
+// Componente para os livros (Estilo Grid) - CORRIGIDO
+const BookGridItem = ({ src, title, rating }) => (
+    <div className="col-6 col-md-3 mb-4 text-center">
+        <img src={src} alt={title} className="img-fluid rounded shadow-sm mb-2" style={{ width: '100px', height: '150px', objectFit: 'cover' }} />
+        <h6 className="mb-1" style={{ fontSize: '0.9rem', fontWeight: 'bold' }}>{title}</h6>
+        <small className="text-warning">{rating}</small>
+    </div>
+);
 
 const AddBookSlot = ({ onClick }) => (
     <div className="col-6 col-md-3 mb-4 text-center">
@@ -72,10 +81,10 @@ const SuccessToast = ({ show, onClose, message }) => {
     );
 };
 
-
 export default function PerfilDinamicoPage() {
     const params = useParams();
-    const { id } = params;
+    // Garante que pegamos o ID corretamente
+    const id = params?.id || params?.userId;
 
     const [perfil, setPerfil] = useState(null);
     const [isMeuPerfil, setIsMeuPerfil] = useState(false);
@@ -95,7 +104,6 @@ export default function PerfilDinamicoPage() {
     const [openSearchModal, setOpenSearchModal] = useState(false);
     const [toast, setToast] = useState({ show: false, message: '' });
     const [isFollowing, setIsFollowing] = useState(false);
-
 
     useEffect(() => {
         const storedUser = typeof window !== 'undefined' ? localStorage.getItem('userData') : null;
@@ -125,7 +133,6 @@ export default function PerfilDinamicoPage() {
 
         loadInteresses();
     }, []);
-
 
     const carregarPerfil = useCallback(async () => {
         if (!id) {
@@ -165,19 +172,29 @@ export default function PerfilDinamicoPage() {
         }
     }, [id, loggedInUserId]);
 
-
+    // Recarregar perfil quando ID ou Login mudar
     useEffect(() => {
         if (id) {
             carregarPerfil();
         }
     }, [id, loggedInUserId, carregarPerfil]);
 
+    // Handler para abrir o modal de review
+    const handleAddBookClick = useCallback(() => {
+        setOpenAddModal(true);
+    }, []);
 
+    // Handler para abrir modal de favoritos
+    const handleOpenAddBookModal = useCallback(() => {
+        setOpenSearchModal(true);
+    }, []);
+
+    // Handler para sucesso (unificado)
     const handleSaveSuccess = useCallback(() => {
         carregarPerfil();
-    }, [id, carregarPerfil]);
+    }, [carregarPerfil]);
 
-
+    // Toast Timer
     useEffect(() => {
         if (toast.show) {
             const timer = setTimeout(() => {
@@ -186,11 +203,6 @@ export default function PerfilDinamicoPage() {
             return () => clearTimeout(timer);
         }
     }, [toast.show]);
-
-
-    const handleOpenAddBookModal = useCallback(() => {
-        setOpenSearchModal(true);
-    }, []);
 
     const handleFollowClick = async () => {
         if (!perfil || !loggedInUserId) return;
@@ -226,11 +238,10 @@ export default function PerfilDinamicoPage() {
         return (
             <div className="perfil-page-container text-center pt-5" style={{ minHeight: '100vh' }}>
                 <Navbar />
-                <h3>Usuário não encontrado.</h3>
+                <h3 className="mt-5">Usuário não encontrado.</h3>
             </div>
         );
     }
-
 
     const followButtonClass = isFollowing ? "btn-success" : "btn-outline-success";
     const followButtonText = isFollowing ? "Seguindo" : "Seguir";
@@ -245,14 +256,14 @@ export default function PerfilDinamicoPage() {
     const MAX_FAVORITES = 4;
     const canAddFavorite = isMeuPerfil && favoritos.length < MAX_FAVORITES;
 
-
     return (
-        <div className="perfil-page-container" style={{  paddingTop: '100px' }}>
-            <Navbar />
+        <div className="perfil-page-container pb-5" style={{ paddingTop: '100px', minHeight: '100vh' }}>
+            <Navbar onAddBookClick={handleAddBookClick} />
 
             <div className="container mt-4">
                 <div className="row">
 
+                    {/* === COLUNA DA ESQUERDA (Info Principal) === */}
                     <div className="col-lg-8 pe-lg-5">
 
                         <div className="d-flex align-items-start mb-5 profile-header-wrapper">
@@ -261,6 +272,7 @@ export default function PerfilDinamicoPage() {
                                 src={perfil.fotoPerfil || "https://i.imgur.com/i4m4D7y.png"}
                                 alt={`Foto de ${perfil.nome}`}
                                 className="profile-img-large me-4"
+                                style={{ width: '150px', height: '150px', objectFit: 'cover', borderRadius: '50%' }}
                             />
 
                             <div className="d-flex flex-column pt-2 w-100">
@@ -292,6 +304,9 @@ export default function PerfilDinamicoPage() {
                                 </p>
 
                                 <div className="d-flex mt-2 mb-4 flex-wrap gap-2">
+                                    {perfil.interesses && perfil.interesses.map((interesse, index) => (
+                                        <span key={index} className="interest-tag">{interesse.nome || interesse}</span>
+                                    ))}
                                     {userInteresses.length > 0 ? (
                                         userInteresses.map(interesseNome => (
                                             <span key={interesseNome} className="interest-tag">
@@ -299,6 +314,7 @@ export default function PerfilDinamicoPage() {
                                             </span>
                                         ))
                                     ) : (
+                                        (!perfil.interesses || perfil.interesses.length === 0) &&
                                         <span className="text-muted small">Nenhum interesse listado.</span>
                                     )}
                                 </div>
@@ -325,7 +341,6 @@ export default function PerfilDinamicoPage() {
                             {favoritos.length > 0 ? (
                                 favoritos.map(livro => (
                                     <div key={livro.id} className="col-6 col-md-3 mb-4 text-center">
-                                        {/* SUBSTITUIÇÃO: Usando BookCard para renderizar */}
                                         <BookCard item={livro} type="favorite" />
                                     </div>
                                 ))
@@ -343,15 +358,10 @@ export default function PerfilDinamicoPage() {
                             {canAddFavorite && (
                                 <AddBookSlot onClick={handleOpenAddBookModal} />
                             )}
-
-                            {/* Caso a lista esteja vazia E seja o perfil logado */}
-                            {isMeuPerfil && favoritos.length === 0 && (
-                                <AddBookSlot onClick={handleOpenAddBookModal} />
-                            )}
                         </div>
-
                     </div>
 
+                    {/* === SIDEBAR (Direita) === */}
                     <div className="col-lg-4 mt-5 mt-lg-0">
                         <div className="p-3 sidebar-container">
 
@@ -384,13 +394,13 @@ export default function PerfilDinamicoPage() {
                                     </div>
                                 </>
                             )}
-
                         </div>
                     </div>
 
                 </div>
             </div>
 
+            {/* Modal de Review */}
             <ReviewModal
                 show={openAddModal}
                 onHide={() => setOpenAddModal(false)}
