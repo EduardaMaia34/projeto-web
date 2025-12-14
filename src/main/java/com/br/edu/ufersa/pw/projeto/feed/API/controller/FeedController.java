@@ -12,13 +12,13 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-@RequestMapping("/feed")
+@RequestMapping("/api/v1")
 public class FeedController {
 
     @Autowired
     private FeedService feedService;
 
-    @GetMapping
+    @GetMapping("/feed")
     public ResponseEntity<List<ReturnReviewDTO>> getFeed(
             @AuthenticationPrincipal CustomUserDetails loggedInUser) {
 

@@ -35,13 +35,10 @@ public class FeedService {
                 .map(Seguindo::getSeguido)
                 .collect(Collectors.toList());
 
-        // 2. Adiciona o próprio usuário à lista de usuários para buscar reviews
         seguindo.add(user);
 
-        // 3. pega as reviews desses amigos + próprio usuário
         List<Review> reviewsAmigos = reviewRepository.findByUserIn(seguindo);
 
-        // ... (restante da ordenação e mapeamento) ...
 
         return reviewsAmigos.stream()
                 .map(ReturnReviewDTO::new)

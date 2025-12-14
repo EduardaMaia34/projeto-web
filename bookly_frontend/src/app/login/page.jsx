@@ -1,8 +1,8 @@
-// src/pages/login.jsx
+'use client';
 
 import React, { useState } from 'react';
-import { useRouter } from 'next/router';
-import { loginUser } from '../api/booklyApi';
+import { useRouter } from 'next/navigation';
+import { loginUser, getLoggedInUserId } from '../../api/booklyApi.js';
 
 const LoginPage = () => {
     const [email, setEmail] = useState('');
@@ -18,28 +18,22 @@ const LoginPage = () => {
         setError(null);
 
         try {
-            // A função loginUser já salva o token e os dados no localStorage
-            const response = await loginUser(email, password);
+            // 🔹 Faz login (token já é salvo no localStorage aqui)
+            await loginUser(email, password);
 
-            // Tenta identificar o ID do usuário para redirecionar para a estante correta
-            // Verifica estrutura { user: { id: ... } } ou { id: ... } dependendo do retorno da API
-            const userId = response.user?.id || response.id;
+            // 🔹 ID vem do JWT (100% confiável)
+            const userId = getLoggedInUserId();
 
-            if (userId) {
-                console.log(`✅ Login bem-sucedido! Redirecionando para /biblioteca/${userId}`);
-                // Ajuste a rota conforme suas rotas do Next.js.
-                // Se a rota for dinâmica [id].js, use assim:
-                router.push(`/biblioteca/${userId}`);
-            } else {
-                console.warn("⚠️ ID de usuário não encontrado, redirecionando para a raiz da biblioteca.");
-                router.push('/biblioteca');
+            if (!userId) {
+                throw new Error('ID do usuário não encontrado após login.');
             }
+
+            router.push(`/`);
 
         } catch (err) {
             console.error("Erro no submit:", err);
             setError(err.message || 'Credenciais inválidas ou erro de conexão.');
 
-            // Se for erro de autenticação, garante que o storage esteja limpo
             if (typeof window !== 'undefined') {
                 localStorage.removeItem('jwtToken');
                 localStorage.removeItem('userData');
@@ -52,10 +46,9 @@ const LoginPage = () => {
     const handleRegisterClick = (e) => {
         e.preventDefault();
         router.push("/register");
-    }
+    };
 
     return (
-        // Container Fundo Bege Claro (#f5f4ed)
         <div style={{
             backgroundColor: '#f5f4ed',
             minHeight: '100vh',
@@ -64,7 +57,6 @@ const LoginPage = () => {
             alignItems: 'center',
             padding: '20px'
         }}>
-            {/* Card de Login Marrom Claro (#DED2C2) */}
             <div className="login-container" style={{
                 backgroundColor: '#DED2C2',
                 padding: '2.5rem',
@@ -111,7 +103,13 @@ const LoginPage = () => {
                             className="form-control"
                             placeholder="Seu E-mail"
                             required
-                            style={{ padding: '10px', borderRadius: '5px', width: '100%', marginBottom: '10px', border: '1px solid #ccc' }}
+                            style={{
+                                padding: '10px',
+                                borderRadius: '5px',
+                                width: '100%',
+                                marginBottom: '10px',
+                                border: '1px solid #ccc'
+                            }}
                             value={email}
                             onChange={(e) => setEmail(e.target.value)}
                         />
@@ -123,7 +121,13 @@ const LoginPage = () => {
                             className="form-control"
                             placeholder="Sua Senha"
                             required
-                            style={{ padding: '10px', borderRadius: '5px', width: '100%', marginBottom: '10px', border: '1px solid #ccc' }}
+                            style={{
+                                padding: '10px',
+                                borderRadius: '5px',
+                                width: '100%',
+                                marginBottom: '10px',
+                                border: '1px solid #ccc'
+                            }}
                             value={password}
                             onChange={(e) => setPassword(e.target.value)}
                         />
@@ -149,15 +153,31 @@ const LoginPage = () => {
                         {loading ? 'Acessando...' : 'Acessar conta'}
                     </button>
 
-                    <div className="d-flex justify-content-between align-items-center mt-2" style={{ display: 'flex', justifyContent: 'space-between' }}>
-                        <a href="#" style={{ color: '#594A47', fontSize: '0.85rem', textDecoration: 'none' }}>
+                    <div
+                        className="d-flex justify-content-between align-items-center mt-2"
+                        style={{ display: 'flex', justifyContent: 'space-between' }}
+                    >
+                        <a
+                            href="#"
+                            style={{
+                                color: '#594A47',
+                                fontSize: '0.85rem',
+                                textDecoration: 'none'
+                            }}
+                        >
                             Esqueci a senha
                         </a>
 
                         <a
                             href="/register"
                             onClick={handleRegisterClick}
-                            style={{ color: '#594A47', fontWeight: 'bold', fontSize: '0.9rem', textDecoration: 'underline', cursor: 'pointer' }}
+                            style={{
+                                color: '#594A47',
+                                fontWeight: 'bold',
+                                fontSize: '0.9rem',
+                                textDecoration: 'underline',
+                                cursor: 'pointer'
+                            }}
                         >
                             Criar Conta
                         </a>

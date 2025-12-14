@@ -4,7 +4,7 @@
 
 :root {
     /* Cor de fundo da página (Bege claro) */
-    --color-background-light: #f5f4ed;;
+    --color-background-light: #f5f4ed;
     /* Cor principal da barra de navegação e rodapés de modal (Bege escuro) */
     --color-background-dark: #DED2C2;
     /* Cor principal do texto e ícones (Marrom/Cáqui) */
@@ -109,7 +109,7 @@ h1, h2, h3, h4, h5, h6, a {
 
 
 /* ========================================================================= */
-/* 4. Estilos de Login (login.jsx) */
+/* 4. Estilos de Login (page.jsx) */
 /* ========================================================================= */
 
 .login-container {

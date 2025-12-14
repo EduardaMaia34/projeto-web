@@ -28,13 +28,10 @@ export default function Navbar({ onAddBookClick }) {
                     // Tenta ler userData
                     user = JSON.parse(localStorage.getItem("userData") || "{}");
                     setUserData({
-                        // Procura por 'nome' (DTO) ou 'name' (fallback), com fallback final "Usuário"
                         name: user.nome || user.name || "Usuário",
-                        // Procura por 'fotoPerfil' (DTO) ou 'photo', com fallback para o ícone
                         photo: user.fotoPerfil || user.photo || "",
                     });
 
-                    // Salva o ID do usuário para usar no link
                     if (user.id) {
                         setUserId(user.id);
                     }
@@ -59,14 +56,13 @@ export default function Navbar({ onAddBookClick }) {
         if (typeof window !== "undefined") {
             localStorage.removeItem("jwtToken");
             localStorage.removeItem("userData");
-            router.push("/login");
+            router.push("/");
+            window.location.reload();
         }
     };
 
-    // Variável que verifica se devemos usar o ícone de fallback
     const useIconFallback = !userData.photo || userData.photo === "https://imgur.com/pcf2EUA.png";
 
-    // Se ainda estiver carregando, mostra apenas a barra simples
     if (isLoadingUser) {
         return (
             <nav className="navbar navbar-light header-bar p-3 fixed-top">
@@ -81,7 +77,7 @@ export default function Navbar({ onAddBookClick }) {
     return (
         <>
             <nav className="navbar navbar-light header-bar p-3 fixed-top">
-                <Link href="/biblioteca" className="navbar-brand d-flex align-items-center">
+                <Link href="/" className="navbar-brand d-flex align-items-center">
                     <img src="https://imgur.com/HLvpHYn.png" alt="Bookly Logo" style={{ height: 50, marginRight: 10 }} />
                 </Link>
 
@@ -133,7 +129,7 @@ export default function Navbar({ onAddBookClick }) {
                                 </button>
                             </>
                         ) : (
-                            <button className="btn btn-primary" onClick={handleLogin}>
+                            <button className="btn btn-success me-3 d-flex align-items-center" onClick={handleLogin}>
                                 Log in
                             </button>
                         )}

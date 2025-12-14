@@ -9,8 +9,6 @@ import ReviewModal from '../../../components/ReviewModal.jsx';
 import { fetchEstanteData, getUserNameById, getLoggedInUserId } from '../../../api/booklyApi.js';
 import 'bootstrap-icons/font/bootstrap-icons.css';
 
-// --- Funções de Ajuda (Helpers) ---
-
 const isAuthenticated = () => typeof window !== 'undefined' && !!localStorage.getItem('jwtToken');
 
 const cleanString = (str) => {
@@ -28,15 +26,12 @@ const getUserIdFromPathname = (pathname) => {
     return segments.length > 0 ? segments[segments.length - 1] : null;
 };
 
-// --- Componente Principal ---
-
 const BibliotecaPage = () => {
     const router = useRouter();
-    const pathname = usePathname(); // Obtém a rota atual (ex: /biblioteca/123)
+    const pathname = usePathname();
 
-    // [NOVO] Obtém o ID diretamente do pathname ou usa o ID logado como fallback.
-    const urlUserId = getUserIdFromPathname(pathname);
     const loggedInUserId = useMemo(() => getLoggedInUserId(), []);
+    const urlUserId = getUserIdFromPathname(pathname);
     const userIdToFetch = urlUserId && urlUserId !== 'biblioteca' ? urlUserId : loggedInUserId;
 
     const [books, setBooks] = useState([]);
@@ -47,27 +42,28 @@ const BibliotecaPage = () => {
     const [isClient, setIsClient] = useState(false);
     const [openAddModal, setOpenAddModal] = useState(false);
 
-    // [NOVO] Verifica se a página pertence ao usuário logado
-    const isOwner = userIdToFetch === loggedInUserId;
+    // CORREÇÃO AQUI: isOwner é true apenas se houver um usuário logado E o ID for o mesmo.
+    const isOwner = !!loggedInUserId && userIdToFetch === loggedInUserId;
 
     useEffect(() => {
         setIsClient(true);
-        if (!isAuthenticated()) {
+        if (isOwner && !isAuthenticated()) {
             router.push('/login');
         }
-    }, [router]);
+    }, [router, isOwner]);
 
     const fetchBooks = useCallback(async () => {
-        if (!isAuthenticated() || !userIdToFetch) return;
+        if (!userIdToFetch) {
+            setLoading(false);
+            return;
+        }
 
         setLoading(true);
         setError(null);
         try {
-            // Usa userIdToFetch para buscar os dados
             const pageData = await fetchEstanteData('biblioteca', userIdToFetch);
             setBooks(pageData.content || []);
 
-            // Define o título da página
             if (isOwner) {
                 setTitle('Minha Biblioteca (Livros para Ler)');
             } else {
@@ -80,7 +76,7 @@ const BibliotecaPage = () => {
             }
 
         } catch (err) {
-            if (String(err.message).includes('403') || String(err.message).includes('401')) {
+            if (isOwner && (String(err.message).includes('403') || String(err.message).includes('401'))) {
                 if (typeof window !== 'undefined') {
                     localStorage.removeItem('jwtToken');
                     localStorage.removeItem('userData');
@@ -96,7 +92,7 @@ const BibliotecaPage = () => {
     }, [userIdToFetch, isOwner, router]);
 
     useEffect(() => {
-        if (isClient && isAuthenticated() && userIdToFetch) {
+        if (isClient && userIdToFetch) {
             fetchBooks();
         }
     }, [isClient, fetchBooks, userIdToFetch]);
@@ -124,52 +120,51 @@ const BibliotecaPage = () => {
         });
     }, [books, searchTerm]);
 
-    if (!isClient || !isAuthenticated()) {
+    if (!isClient) {
         return <div className="text-center p-5">Carregando / Redirecionando...</div>;
     }
 
     return (
         <>
             <div style={{ backgroundColor: '#f5f4ed', minHeight: '100vh' }}>
-            <Navbar onAddBookClick={handleAddBookClick} />
+                <Navbar onAddBookClick={handleAddBookClick} />
 
-            <div className="container" style={{  paddingTop: '100px' }}>
-                <div className="d-flex justify-content-between align-items-center mb-4">
-                    <h3 id="pageTitle" style={{ color: '#594A47' }}>{title}</h3>
-                    <EstanteSearchBar searchTerm={searchTerm} onSearchChange={handleSearchChange} />
+                <div className="container" style={{  paddingTop: '100px' }}>
+                    <div className="d-flex justify-content-between align-items-center mb-4">
+                        <h3 id="pageTitle" style={{ color: '#594A47' }}>{title}</h3>
+                        <EstanteSearchBar searchTerm={searchTerm} onSearchChange={handleSearchChange} />
+                    </div>
+
+                    <div id="bookListContainer" className="book-grid">
+                        {loading && <p className="text-muted">Carregando livros...</p>}
+                        {error && <p className="text-danger">{error}</p>}
+
+                        {!loading && !error && filteredBooks.length === 0 && (
+                            <p className="text-muted" style={{ color: '#594A47' }}>
+                                {searchTerm
+                                    ? `Nenhum livro encontrado para "${searchTerm}".`
+                                    : isOwner ? "Sua Biblioteca está vazia. Adicione livros para ler." : "Esta biblioteca está vazia."
+                                }
+                            </p>
+                        )}
+
+                        {!loading && !error && filteredBooks.map(book => (
+                            <BookCard key={book.id} item={book} type="biblioteca" isOwner={isOwner} />
+                        ))}
+                    </div>
+
+                    <div id="pagination-controls" className="d-flex justify-content-center mt-5">
+                        {/* Controles de Paginação/Scroll Infinito */}
+                    </div>
                 </div>
 
-                <div id="bookListContainer" className="book-grid">
-                    {loading && <p className="text-muted">Carregando livros...</p>}
-                    {error && <p className="text-danger">{error}</p>}
-
-                    {!loading && !error && filteredBooks.length === 0 && (
-                        <p className="text-muted" style={{ color: '#594A47' }}>
-                            {searchTerm
-                                ? `Nenhum livro encontrado para "${searchTerm}".`
-                                : isOwner ? "Sua Biblioteca está vazia. Adicione livros para ler." : "Esta biblioteca está vazia."
-                            }
-                        </p>
-                    )}
-
-                    {!loading && !error && filteredBooks.map(book => (
-                        <BookCard key={book.id} item={book} type="biblioteca" isOwner={isOwner} />
-                    ))}
-                </div>
-
-                <div id="pagination-controls" className="d-flex justify-content-center mt-5">
-                    {/* Controles de Paginação/Scroll Infinito */}
-                </div>
-            </div>
-
-            {/* O modal só é relevante se for o dono da página */}
-            {isOwner && (
-                <ReviewModal
-                    show={openAddModal}
-                    onHide={() => setOpenAddModal(false)}
-                    onSaveSuccess={handleSaveSuccess}
-                />
-            )}
+                {isOwner && (
+                    <ReviewModal
+                        show={openAddModal}
+                        onHide={() => setOpenAddModal(false)}
+                        onSaveSuccess={handleSaveSuccess}
+                    />
+                )}
             </div></>
 
     );

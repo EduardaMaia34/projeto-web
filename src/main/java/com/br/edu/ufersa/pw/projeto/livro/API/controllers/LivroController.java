@@ -34,12 +34,12 @@ public class LivroController {
 
     @GetMapping()
     public ResponseEntity<List<ReturnLivroDTO>> list(
-            @RequestParam(required = false) String titulo) {
+            @RequestParam(required = false) String termo) {
 
         List<Livro> livros;
 
-        if (titulo != null && !titulo.trim().isEmpty()) {
-            livros = service.buscarPorTitulo(titulo);
+        if (termo != null && !termo.trim().isEmpty()) {
+            livros = service.buscarPorTermo(termo);
         } else {
             livros = service.buscarTodos();
         }
@@ -97,7 +97,6 @@ public class LivroController {
         }
 
         try {
-            // CORREÇÃO ESSENCIAL: Chama o método que recebe o ID e o DTO para atualização
             Livro resultado = service.atualizarLivroComInteresses(id, livroDTO);
 
             return new ResponseEntity<>(toReturnDTO(resultado), HttpStatus.OK);

@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import Navbar from '../../../components/Navbar';
 import {
     getLivroById,
@@ -9,7 +9,7 @@ import {
     getLoggedInUserId,
     adicionarLivroApi,
     removerLivroApi,
-    fetchEstanteData
+    fetchLivroStatus
 } from '../../../api/booklyApi';
 import ReviewModal from '../../../components/ReviewModal.jsx';
 
@@ -65,6 +65,7 @@ const StaticStars = ({ nota }) => {
 
 export default function LivroPage() {
     const params = useParams();
+    const router = useRouter();
     const { id } = params;
     const livroId = id;
     const userId = getLoggedInUserId();
@@ -77,17 +78,6 @@ export default function LivroPage() {
     const [bibliotecaStatus, setBibliotecaStatus] = useState(null);
     const [showReviewModal, setShowReviewModal] = useState(false);
 
-    const checkInitialStatus = useCallback(async () => {
-        if (!userId || !livroId) return null;
-        try {
-            const data = await fetchEstanteData('biblioteca', userId, 0, 100);
-            const lista = data?.content ?? [];
-            const entry = lista.find(item => String(item.livroId) === String(livroId));
-            return entry ? entry.status : null;
-        } catch {
-            return null;
-        }
-    }, [userId, livroId]);
 
     const carregarDados = useCallback(async () => {
         if (!livroId) {
@@ -101,10 +91,15 @@ export default function LivroPage() {
 
         try {
             const promises = [getLivroById(livroId), getReviewsByLivroId(livroId)];
-            if (userId) promises.push(checkInitialStatus());
+
+            let statusPromise = Promise.resolve(null);
+            if (userId) {
+                statusPromise = fetchLivroStatus(livroId);
+            }
+            promises.push(statusPromise);
 
             const [livroData, reviewsData, status] = await Promise.all(promises);
-
+            console.log(status)
             setLivro(livroData);
             setReviews(reviewsData || []);
             if (userId) setBibliotecaStatus(status);
@@ -113,7 +108,7 @@ export default function LivroPage() {
         } finally {
             setLoading(false);
         }
-    }, [livroId, userId, checkInitialStatus]);
+    }, [livroId, userId]);
 
     useEffect(() => {
         carregarDados();
@@ -131,8 +126,11 @@ export default function LivroPage() {
     const handleBookmarkClick = async (event) => {
         event.stopPropagation();
 
+        if (bibliotecaStatus === 'LIDO') return;
+
         if (!userId) {
             setToast({ show: true, message: 'Você precisa estar logado para adicionar livros à sua biblioteca.', type: 'danger' });
+            router.push('/login');
             return;
         }
 
@@ -149,6 +147,14 @@ export default function LivroPage() {
         } catch (error) {
             setToast({ show: true, message: error.message || 'Falha ao atualizar a biblioteca.', type: 'danger' });
         }
+    };
+
+    const handleCreateReviewClick = () => {
+        if (!userId) {
+            router.push('/login');
+            return;
+        }
+        setShowReviewModal(true);
     };
 
     const handleReviewSuccess = () => {
@@ -175,11 +181,23 @@ export default function LivroPage() {
         );
     }
 
-    const bookmarkButtonClass = bibliotecaStatus ? 'bi bi-bookmark-fill' : 'bi bi-bookmark';
+    // --- Lógica do Botão ---
+    const isLido = bibliotecaStatus === 'LIDO';
+    const isBookmarked = !!bibliotecaStatus;
 
-    const bookmarkTitle = bibliotecaStatus
-        ? `Status atual: ${bibliotecaStatus}. Clique para remover.`
-        : 'Adicionar à Biblioteca (Quero Ler)';
+    const bookmarkButtonClass = isBookmarked ? 'bi bi-bookmark-fill bookmark-icon' : 'bi bi-bookmark bookmark-icon';
+
+    const bookmarkColorClass = isLido
+        ? 'text-success'
+        : isBookmarked
+            ? 'text-dark-brown'
+            : 'text-muted';
+
+    const bookmarkTitle = isLido
+        ? `Status: Lido. Gerencie o status na sua estante.`
+        : bibliotecaStatus
+            ? `Status atual: ${bibliotecaStatus}. Clique para remover.`
+            : 'Adicionar à Biblioteca (Quero Ler)';
 
     return (
         <div className="book-page-wrapper" style={{ backgroundColor: '#fdfbf7', minHeight: '100vh', paddingTop: '80px' }}>
@@ -188,9 +206,8 @@ export default function LivroPage() {
             <ReviewModal
                 show={showReviewModal}
                 onHide={() => setShowReviewModal(false)}
-                livroId={livroId}
-                livroTitle={livro.titulo}
                 onSaveSuccess={handleReviewSuccess}
+                initialLivro={livro}
             />
 
             <div className="container mt-4">
@@ -209,12 +226,14 @@ export default function LivroPage() {
                     <div className="col-md-6 book-info ps-md-4">
                         <div className="d-flex align-items-center mb-1">
                             <h2 className="fw-bold text-dark mb-0 me-3">{livro.titulo}</h2>
+
                             {userId && (
                                 <button
-                                    className={`btn p-0 border-0 ${bibliotecaStatus ? 'text-dark-brown' : 'text-muted'}`}
+                                    className={`btn p-0 border-0 ${bookmarkColorClass}`}
                                     onClick={handleBookmarkClick}
                                     title={bookmarkTitle}
                                     style={{ fontSize: '2rem' }}
+                                    disabled={isLido}
                                 >
                                     <i className={bookmarkButtonClass}></i>
                                 </button>
@@ -244,7 +263,7 @@ export default function LivroPage() {
                     <div className="col-md-3 d-flex flex-column justify-content-start align-items-center pt-md-4">
                         <button
                             className="btn btn-review-dark-brown btn-lg w-100 shadow-sm"
-                            onClick={() => setShowReviewModal(true)}
+                            onClick={handleCreateReviewClick}
                         >
                             <i className="bi bi-feather me-2"></i>
                             Criar Review

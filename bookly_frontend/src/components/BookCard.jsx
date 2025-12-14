@@ -74,7 +74,7 @@ export default function BookCard({ item, type }) {
             )}
 
             {/* Mostra status se houver */}
-            {status && <small className="d-block text-muted mb-1">{status}</small>}
+
 
             <p className="book-title-small mb-0 fw-bold text-truncate" title={titulo}>
                 {titulo}

@@ -4,6 +4,7 @@ import com.br.edu.ufersa.pw.projeto.biblioteca.API.dto.InputBibliotecaDTO;
 import com.br.edu.ufersa.pw.projeto.biblioteca.API.dto.ReturnBibliotecaDTO;
 import com.br.edu.ufersa.pw.projeto.biblioteca.Service.BibliotecaService;
 import com.br.edu.ufersa.pw.projeto.user.API.dto.InputUpdateStatusDTO;
+import com.br.edu.ufersa.pw.projeto.user.Model.entity.Estado;
 import com.br.edu.ufersa.pw.projeto.user.Service.UserService;
 import com.br.edu.ufersa.pw.projeto.Security.CustomUserDetails;
 import jakarta.validation.Valid;
@@ -129,6 +130,23 @@ public class BibliotecaController {
         Page<ReturnBibliotecaDTO> estante = bibliotecaService.getEstanteComReview(userId, pageable);
         return ResponseEntity.ok(estante);
     }
+
+    @GetMapping("/{livroId}/status")
+    public ResponseEntity<Estado> getStatusLivro(
+            @AuthenticationPrincipal CustomUserDetails loggedInUser,
+            @PathVariable String livroId) {
+
+        if (loggedInUser == null || loggedInUser.getId() == null) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED);
+        }
+
+        Estado status = bibliotecaService.getStatusLivro(
+                loggedInUser.getId(), livroId
+        );
+
+        return ResponseEntity.ok(status);
+    }
+
 
     @PutMapping("/{livroId}/status")
     public ResponseEntity<ReturnBibliotecaDTO> updateLivroStatus(

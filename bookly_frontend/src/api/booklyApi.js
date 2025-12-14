@@ -24,10 +24,14 @@ function parseJwt(token) {
 
 // Gera os headers com o Token de Autenticação
 const getHeaders = () => {
-    const token = typeof window !== 'undefined' ? localStorage.getItem('jwtToken') : MOCK_JWT_TOKEN;
+    if (typeof window === 'undefined') {
+        return { 'Content-Type': 'application/json' };
+    }
+
+    const token = localStorage.getItem('jwtToken');
 
     if (!token) {
-        console.warn("Aviso: Requisição feita sem token de autenticação.");
+        return { 'Content-Type': 'application/json' };
     }
 
     return {
@@ -35,6 +39,7 @@ const getHeaders = () => {
         'Authorization': `Bearer ${token}`
     };
 };
+
 
 // ------------------------------------------------------------------
 // AUTENTICAÇÃO E USUÁRIO
@@ -53,12 +58,14 @@ const getLoggedInUserIdFromToken = (token) => {
 }
 
 export const getLoggedInUserId = () => {
-    if (typeof window === 'undefined') {
-        return getLoggedInUserIdFromToken(MOCK_JWT_TOKEN);
-    }
+    if (typeof window === 'undefined') return null;
+
     const token = localStorage.getItem('jwtToken');
-    return getLoggedInUserIdFromToken(token || MOCK_JWT_TOKEN);
+    if (!token) return null;
+
+    return getLoggedInUserIdFromToken(token);
 };
+
 
 export const loginUser = async (email, password) => {
     console.log(`🔵 Conectando em: ${API_BASE_URL}/auth/login`);
@@ -528,5 +535,74 @@ export const adicionarLivroFavoritoApi = async (livroId) => {
     }
     return response.text();
 };
+
+
+export const fetchPopularesSemana = async () => {
+    try {
+        const response = await fetch(`${API_BASE_URL}/home`, {
+            method: 'GET',
+            headers: getHeaders()
+        });
+
+        if (!response.ok) {
+            throw new Error(`Erro ao buscar populares da semana: ${response.status}`);
+        }
+
+        const data = await response.json();
+        return data.top_reviewed_livros_semana || [];
+    } catch (error) {
+        console.error("Erro ao buscar populares da semana:", error);
+        return [];
+    }
+};
+
+
+export const fetchFeedAmigos = async () => {
+    try {
+        const response = await fetch(`${API_BASE_URL}/feed`, {
+            method: 'GET',
+            headers: getHeaders()
+        });
+
+        if (!response.ok) {
+            if (response.status === 401) return [];
+            throw new Error(`Erro ao buscar feed dos amigos: ${response.status}`);
+        }
+
+        return await response.json();
+    } catch (error) {
+        console.error("Erro ao buscar feed dos amigos:", error);
+        return [];
+    }
+};
+
+export async function fetchLivroStatus(livroId) {
+    const token = localStorage.getItem("token");
+
+    if (!token) return null;
+
+    const response = await fetch(
+        `http://localhost:8081/api/v1/biblioteca/${livroId}/status`,
+        {
+            method: "GET",
+            headers: {
+                "Authorization": `Bearer ${token}`,
+                "Content-Type": "application/json"
+            }
+        }
+    );
+
+    if (response.status === 404) {
+        return null;
+    }
+
+    if (!response.ok) {
+        throw new Error("Erro ao buscar status do livro");
+    }
+
+    const data = await response.json();
+    return data.status;
+}
+
 
 export { MOCK_JWT_TOKEN };

@@ -1,7 +1,11 @@
 package com.br.edu.ufersa.pw.projeto.livro.API.dto;
 
+import com.br.edu.ufersa.pw.projeto.livro.Model.entity.Livro;
+import com.br.edu.ufersa.pw.projeto.user.Model.entity.Interesse;
+
 import java.time.LocalDateTime;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 // commit
 public class ReturnLivroDTO {
@@ -36,6 +40,25 @@ public class ReturnLivroDTO {
         this.urlCapa = urlCapa;
         this.ano = ano;
 
+    }
+
+    public ReturnLivroDTO(Livro livro) {
+        this.id = livro.getId();
+        this.titulo = livro.getTitulo();
+        this.autor = livro.getAutor();
+        this.descricao = livro.getDescricao();
+        this.dataCriacao = livro.getDataCriacao();
+        this.urlCapa = livro.getUrlCapa();
+        this.ano = livro.getAno();
+
+        if (livro.getInteresses() != null) {
+            this.interesses = livro.getInteresses()
+                    .stream()
+                    .map(Interesse::getNome)
+                    .collect(Collectors.toSet());
+        }
+
+        this.mediaAvaliacao = 0.0;
     }
 
     // --- GETTERS E SETTERS CORRIGIDOS ---

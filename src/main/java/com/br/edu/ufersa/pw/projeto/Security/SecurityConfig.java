@@ -38,6 +38,10 @@ public class SecurityConfig {
                         .requestMatchers("/api/v1/auth/**").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/v1/users").permitAll() // Criar conta
 
+                        // FEED
+                        .requestMatchers(HttpMethod.GET, "/api/v1/home").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/v1/feed").permitAll()
+
                         // --- INTERESSES (NOVO) ---
                         // GET: Permitir que qualquer um veja as tags (útil para busca/cadastro)
                         .requestMatchers(HttpMethod.GET, "/api/v1/interesses").permitAll()
@@ -50,10 +54,9 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/api/v1/livros/**").permitAll()
 
                         // Users
-                        .requestMatchers(HttpMethod.GET, "/api/v1/users").permitAll() // Listar users público
-                        .requestMatchers(HttpMethod.PUT, "/api/v1/users/**").authenticated() // Editar user requer token
-                        .requestMatchers(HttpMethod.GET, "/api/v1/users/**").authenticated() // Ver detalhes requer token (ou publico dependendo da regra)
-
+                        .requestMatchers(HttpMethod.GET, "/api/v1/users").permitAll()
+                        .requestMatchers(HttpMethod.PUT, "/api/v1/users/**").authenticated()
+                        .requestMatchers(HttpMethod.GET, "/api/v1/users/**").permitAll()
                         // Reviews - Leitura pública
                         .requestMatchers(HttpMethod.GET, "/api/v1/reviews").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/reviews/**").permitAll()
@@ -61,24 +64,26 @@ public class SecurityConfig {
                         // Biblioteca Pública (Estante de outros usuários)
                         .requestMatchers(HttpMethod.GET, "/api/v1/biblioteca/users/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/biblioteca").permitAll()
-
+                        .requestMatchers(HttpMethod.GET, "/api/v1/biblioteca/{livroId}/status").authenticated()
                         // --- Rotas Protegidas (USER ou ADMIN) ---
-                        .requestMatchers(HttpMethod.GET, "/feed/**").hasAnyRole("USER", "ADMIN")
 
                         // Favoritos
                         .requestMatchers(HttpMethod.POST, "/api/v1/users/favoritos/**").hasAnyRole("USER", "ADMIN")
                         .requestMatchers(HttpMethod.DELETE, "/api/v1/users/favoritos/**").hasAnyRole("USER", "ADMIN")
-                        .requestMatchers(HttpMethod.GET, "/api/v1/users/favoritos/**").hasAnyRole("USER", "ADMIN")
+                        .requestMatchers(HttpMethod.GET, "/api/v1/users/favoritos/**").permitAll()
 
                         // Reviews - Ações
                         .requestMatchers(HttpMethod.POST, "/api/v1/reviews/**").hasAnyRole("USER", "ADMIN")
                         .requestMatchers(HttpMethod.PUT, "/api/v1/reviews/**").hasAnyRole("USER", "ADMIN")
                         .requestMatchers(HttpMethod.DELETE, "/api/v1/reviews/**").hasAnyRole("USER", "ADMIN")
 
+
                         // Biblioteca Pessoal (Minha estante)
                         .requestMatchers(HttpMethod.POST, "/api/v1/biblioteca").hasAnyRole("USER", "ADMIN")
                         .requestMatchers(HttpMethod.DELETE, "/api/v1/biblioteca/**").hasAnyRole("USER", "ADMIN")
-                        .requestMatchers(HttpMethod.GET, "/api/v1/biblioteca/estante").hasAnyRole("USER", "ADMIN")
+                        .requestMatchers(HttpMethod.GET, "/api/v1/biblioteca/estante").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/v1/biblioteca/estante/users/**").permitAll()
+
 
                         // Social (Seguir/Deixar de seguir)
                         .requestMatchers(HttpMethod.POST, "/api/v1/users/seguir/**").hasAnyRole("USER", "ADMIN")

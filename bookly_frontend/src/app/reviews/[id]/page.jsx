@@ -5,11 +5,10 @@ import { useRouter, usePathname } from 'next/navigation';
 import Navbar from "../../../components/Navbar.jsx";
 import ReviewModal from "../../../components/ReviewModal.jsx";
 import { fetchReviews, updateReview, deleteReviewApi, getLoggedInUserId, getUserNameById } from "../../../api/booklyApi.js";
-import { displayStarRating, formatDate } from "../../../utils.jsx";
+import ReviewCard from "../../../components/ReviewCard.jsx";
 import { Modal, Button } from "react-bootstrap";
 
 
-// --- COMPONENTE TOAST DE CONFIRMAÇÃO ---
 const SuccessToast = ({ show, onClose, message, type = 'success' }) => {
     const bgColor = type === 'success' ? 'bg-success' : 'bg-danger';
 
@@ -43,7 +42,6 @@ const SuccessToast = ({ show, onClose, message, type = 'success' }) => {
         </div>
     );
 };
-// ----------------------------------------
 
 
 const StarRatingInput = ({ currentRating, onRate }) => {
@@ -91,7 +89,6 @@ const StarRatingInput = ({ currentRating, onRate }) => {
     );
 };
 
-// --- Funções de Ajuda (Helpers) ---
 const isAuthenticated = () => typeof window !== 'undefined' && !!localStorage.getItem('jwtToken');
 
 const getUserIdFromPathname = (pathname) => {
@@ -99,8 +96,6 @@ const getUserIdFromPathname = (pathname) => {
     return segments.length > 0 ? segments[segments.length - 1] : null;
 };
 
-
-// --- Componente Principal ---
 
 export default function ReviewsPage() {
     const router = useRouter();
@@ -117,19 +112,19 @@ export default function ReviewsPage() {
     const [searchTerm, setSearchTerm] = useState("");
     const [selectedReview, setSelectedReview] = useState(null);
     const [pageTitle, setPageTitle] = useState("Reviews");
-
     const [toast, setToast] = useState({ show: false, message: '', type: 'success' });
 
-    const isOwner = userIdToFetch === loggedInUserId;
+    // CORREÇÃO: isOwner só é true se estiver logado E os IDs coincidirem.
+    const isOwner = !!loggedInUserId && String(userIdToFetch) === String(loggedInUserId);
 
     useEffect(() => {
         setIsClient(true);
-        if (!isAuthenticated()) {
+        // Redireciona APENAS se for a página do dono E não estiver autenticado.
+        if (isOwner && !isAuthenticated()) {
             router.push('/login');
         }
-    }, [router]);
+    }, [router, isOwner]);
 
-    // Efeito para esconder o Toast automaticamente
     useEffect(() => {
         if (toast.show) {
             const timer = setTimeout(() => {
@@ -141,7 +136,10 @@ export default function ReviewsPage() {
 
 
     const fetchUserReviews = useCallback(async () => {
-        if (!isAuthenticated() || !userIdToFetch) return;
+        if (!userIdToFetch) {
+            setLoading(false);
+            return;
+        }
 
         setLoading(true);
         setError(null);
@@ -162,7 +160,8 @@ export default function ReviewsPage() {
             }
 
         } catch (err) {
-            if (String(err.message).includes('403') || String(err.message).includes('401')) {
+            // Se for dono e receber erro de autenticação, redireciona. Senão, mostra o erro.
+            if (isOwner && (String(err.message).includes('403') || String(err.message).includes('401'))) {
                 if (typeof window !== 'undefined') {
                     localStorage.removeItem('jwtToken');
                     localStorage.removeItem('userData');
@@ -178,10 +177,13 @@ export default function ReviewsPage() {
     }, [userIdToFetch, isOwner, router]);
 
     useEffect(() => {
-        if (isClient && isAuthenticated() && userIdToFetch) {
-            fetchUserReviews();
+        if (isClient && userIdToFetch) {
+            // Verifica a autenticação apenas para a busca, não para o redirecionamento inicial.
+            if (!isOwner || isAuthenticated()) {
+                fetchUserReviews();
+            }
         }
-    }, [isClient, fetchUserReviews, userIdToFetch]);
+    }, [isClient, fetchUserReviews, userIdToFetch, isOwner]);
 
     const filteredReviews = useMemo(() => {
         const term = searchTerm.toLowerCase();
@@ -208,7 +210,7 @@ export default function ReviewsPage() {
         try {
             await updateReview(id, payload);
             setSelectedReview(null);
-            await fetchUserReviews(); // Aguarda o recarregamento dos dados
+            await fetchUserReviews();
             setToast({ show: true, message: 'Review editada com sucesso!', type: 'success' });
         } catch (error) {
             console.error('Falha ao salvar edição:', error);
@@ -223,7 +225,7 @@ export default function ReviewsPage() {
         setLoading(true);
         try {
             await deleteReviewApi(id);
-            await fetchUserReviews(); // Aguarda o recarregamento dos dados
+            await fetchUserReviews();
             setToast({ show: true, message: 'Review deletada com sucesso!', type: 'success' });
         } catch (error) {
             console.error('Falha ao deletar review:', error);
@@ -251,128 +253,100 @@ export default function ReviewsPage() {
     return (
         <>
             <div style={{ backgroundColor: '#f5f4ed', minHeight: '100vh' }}>
-            <Navbar
-                onSearchChange={(e) => setSearchTerm(e.target.value)}
-                currentSearchTerm={searchTerm}
-            />
-
-            <div className="container" style={{ paddingTop: '100px' }}>
-                <h3 className="mb-4" style={{ color: '#594A47' }}>{pageTitle}</h3>
-
-                {loading && <p className="text-muted">Carregando reviews...</p>}
-                {error && <p className="text-danger">{error}</p>}
-
-                {!loading && !error && filteredReviews.length === 0 && <p className="text-muted" style={{ color: '#594A47' }}>Nenhuma review encontrada.</p>}
-
-                {(!loading && !error) && filteredReviews.map((review) => (
-                    <div key={review.id} className="border rounded p-3 mb-3">
-                        <div className="d-flex justify-content-between">
-                            <div className="flex-grow-1 me-3">
-                                <div className="d-flex align-items-center flex-wrap">
-                                    <h5 className="mb-0 me-3">{review.livro?.titulo}</h5>
-                                    <div className="mt-0">{displayStarRating(review.nota)}</div>
-                                </div>
-
-                                <div className="small text-muted mt-1 mb-2">
-                                    {review.autor} • {formatDate(review.data)}
-                                </div>
-
-                                <p className="mb-0">{review.review}</p>
-                            </div>
-
-                            {isOwner && (
-                                <div className="d-flex flex-column align-items-end flex-shrink-0">
-                                    <button
-                                        className="btn btn-sm btn-outline-secondary mb-2"
-                                        onClick={() => setSelectedReview(review)}
-                                    >
-                                        Editar
-                                    </button>
-
-                                    <button
-                                        className="btn btn-sm btn-outline-danger"
-                                        onClick={() => handleDelete(review.id)}
-                                    >
-                                        Excluir
-                                    </button>
-                                </div>
-                            )}
-                        </div>
-                    </div>
-                ))}
-            </div>
-
-            {/* O ReviewModal para ADICIONAR Review (se estiver no contexto do dono) */}
-            {isOwner && (
-                <ReviewModal
-                    show={false}
-                    onHide={() => {}}
-                    onSaveSuccess={handleReviewCreationSuccess} // <-- USANDO NOVO HANDLER
+                <Navbar
+                    onSearchChange={(e) => setSearchTerm(e.target.value)}
+                    currentSearchTerm={searchTerm}
                 />
-            )}
 
-            <Modal show={!!selectedReview} onHide={() => setSelectedReview(null)} centered>
-                <Modal.Header closeButton>
-                    <Modal.Title>Editar Review</Modal.Title>
-                </Modal.Header>
+                <div className="container" style={{ paddingTop: '100px' }}>
+                    <h3 className="mb-4" style={{ color: '#594A47' }}>{pageTitle}</h3>
 
-                <Modal.Body>
-                    {selectedReview && (
-                        <>
-                            <p className="text-muted">Livro: {selectedReview.livro?.titulo}</p>
+                    {loading && <p className="text-muted">Carregando reviews...</p>}
+                    {error && <p className="text-danger">{error}</p>}
 
-                            <div className="mb-3">
-                                <span className="form-label fw-bold">Nota:</span>
+                    {!loading && !error && filteredReviews.length === 0 && <p className="text-muted" style={{ color: '#594A47' }}>Nenhuma review encontrada.</p>}
 
-                                <div className="mt-2">
-                                    <StarRatingInput
-                                        currentRating={parseFloat(selectedReview.nota) || 0}
-                                        onRate={handleEditNotaChange}
-                                    />
+                    {(!loading && !error) && filteredReviews.map((review) => (
+                        <ReviewCard
+                            key={review.id}
+                            review={review}
+                            isOwner={isOwner}
+                            onEdit={() => setSelectedReview(review)}
+                            onDelete={handleDelete}
+                        />
+                    ))}
+
+                </div>
+
+                {isOwner && (
+                    <ReviewModal
+                        show={false}
+                        onHide={() => {}}
+                        onSaveSuccess={handleReviewCreationSuccess}
+                    />
+                )}
+
+                <Modal show={!!selectedReview} onHide={() => setSelectedReview(null)} centered>
+                    <Modal.Header closeButton>
+                        <Modal.Title>Editar Review</Modal.Title>
+                    </Modal.Header>
+
+                    <Modal.Body>
+                        {selectedReview && (
+                            <>
+                                <p className="text-muted">Livro: {selectedReview.livro?.titulo}</p>
+
+                                <div className="mb-3">
+                                    <span className="form-label fw-bold">Nota:</span>
+
+                                    <div className="mt-2">
+                                        <StarRatingInput
+                                            currentRating={parseFloat(selectedReview.nota) || 0}
+                                            onRate={handleEditNotaChange}
+                                        />
+                                    </div>
                                 </div>
-                            </div>
 
-                            <textarea
-                                className="form-control"
-                                rows="4"
-                                value={selectedReview.review || ""}
-                                onChange={(e) =>
-                                    setSelectedReview({
-                                        ...selectedReview,
-                                        review: e.target.value,
-                                    })
-                                }
-                            />
-                        </>
-                    )}
-                </Modal.Body>
+                                <textarea
+                                    className="form-control"
+                                    rows="4"
+                                    value={selectedReview.review || ""}
+                                    onChange={(e) =>
+                                        setSelectedReview({
+                                            ...selectedReview,
+                                            review: e.target.value,
+                                        })
+                                    }
+                                />
+                            </>
+                        )}
+                    </Modal.Body>
 
-                <Modal.Footer>
-                    <Button variant="secondary" onClick={() => setSelectedReview(null)}>
-                        Cancelar
-                    </Button>
-                    <Button
-                        variant="success"
-                        onClick={async () => {
-                            if (!selectedReview) return;
-                            await handleSaveEdit(selectedReview.id, {
-                                nota: selectedReview.nota,
-                                review: selectedReview.review,
-                            });
-                        }}
-                    >
-                        Salvar
-                    </Button>
-                </Modal.Footer>
-            </Modal>
+                    <Modal.Footer>
+                        <Button variant="secondary" onClick={() => setSelectedReview(null)}>
+                            Cancelar
+                        </Button>
+                        <Button
+                            variant="success"
+                            onClick={async () => {
+                                if (!selectedReview) return;
+                                await handleSaveEdit(selectedReview.id, {
+                                    nota: selectedReview.nota,
+                                    review: selectedReview.review,
+                                });
+                            }}
+                        >
+                            Salvar
+                        </Button>
+                    </Modal.Footer>
+                </Modal>
 
-            {/* RENDERIZAÇÃO DO TOAST */}
-            <SuccessToast
-                show={toast.show}
-                onClose={() => setToast({ show: false, message: '', type: 'success' })}
-                message={toast.message}
-                type={toast.type}
-            />
+                <SuccessToast
+                    show={toast.show}
+                    onClose={() => setToast({ show: false, message: '', type: 'success' })}
+                    message={toast.message}
+                    type={toast.type}
+                />
             </div></>
     );
 }

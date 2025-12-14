@@ -122,6 +122,14 @@ public class BibliotecaService {
         return new PageImpl<>(listaComReview, pageable, lidosPage.getTotalElements());
     }
 
+    public Estado getStatusLivro(Long userId, String livroId) {
+        return bibliotecaRepository
+                .findByUserIdAndLivroId(userId, livroId)
+                .map(Biblioteca::getStatus)
+                .orElse(null);
+    }
+
+
     @Transactional
     public boolean removerLivro(Long userId, String livroId) {
 

@@ -97,13 +97,14 @@
     background-color: var(--bookly-brown-mid);
     border: none;
     color: var(--cor-texto);
+}
 
 /* --- Botão Criar Review --- */
+/* Estilo Original (Apenas ajustado o nome da classe para ser genérico) */
 .btn-review-primary {
     background-color: var(--color-text-primary);
     border: 1px solid var(--color-text-primary);
     color: var(--color-background-light); /* Texto bege/creme */
-
     font-weight: bold;
     padding: 1rem 3rem;
     border-radius: 5px;
@@ -113,9 +114,7 @@
     transition: transform 0.2s;
 }
 
-.btn-locar-livro:hover {
-    transform: scale(1.05); /* Efeitinho de zoom */
-    background-color: rgba(89, 74, 71, 0.7);
+/* Estilo Original */
 .btn-review-primary:hover,
 .btn-review-primary:focus {
     background-color: var(--color-background-light); /* Fundo bege/creme */
@@ -151,9 +150,9 @@
     color: #4a3c39 !important;
 }
 
-
+/* CORREÇÃO DO ESTILO DO BOTÃO DE REVIEW */
 .btn-review-dark-brown {
-    /* Estado Normal: Fundo Marrom, Texto Branco */
+    /* Estado Normal: Fundo Marrom Escuro, Texto Branco/Bege (mantendo a cor original do seu componente) */
     background-color: #594A47 !important;
     border: 1px solid #594A47 !important;
     color: white !important;
@@ -162,11 +161,11 @@
 
 .btn-review-dark-brown:hover,
 .btn-review-dark-brown:focus {
-    /* Estado Hover: Fundo Branco (ou muito claro), Texto Marrom */
-    background-color: white !important;
+    /* Estado Hover: Fundo Bege Claro (#f5f4ed), Texto Marrom Escuro (#594A47) */
+    background-color: #f5f4ed !important;
     border: 1px solid #594A47 !important;
     color: #594A47 !important;
-    transform: translateY(-1px); /* Pequeno efeito de elevação */
+    transform: translateY(-1px);
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
 }
 
