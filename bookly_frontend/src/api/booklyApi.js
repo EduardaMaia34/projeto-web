@@ -6,7 +6,7 @@ const MOCK_JWT_TOKEN = 'eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIyIiwidXNlcm5hbWUiOiJtYXJ
 
 
 const getHeaders = () => {
-    const token = typeof window !== 'undefined' ? localStorage.getItem('jwtToken') : MOCK_JWT_TOKEN; // Usando MOCK_JWT_TOKEN no lado do servidor (se necessário)
+    const token = typeof window !== 'undefined' ? localStorage.getItem('jwtToken') : MOCK_JWT_TOKEN;
 
     if (!token) {
         console.error("Tentativa de requisição autenticada sem token.");
@@ -33,7 +33,7 @@ const getLoggedInUserIdFromToken = (token) => {
         const payloadJson = atob(base64);
         const payload = JSON.parse(payloadJson);
 
-        return payload.sub; // 'sub' é geralmente o ID do usuário
+        return payload.sub;
     } catch (e) {
         console.error("Falha ao decodificar token para obter ID do usuário:", e);
         return null;
@@ -47,7 +47,7 @@ export const getLoggedInUserId = () => {
 
     const token = localStorage.getItem('jwtToken');
 
-    if (!token) return getLoggedInUserIdFromToken(MOCK_JWT_TOKEN); // Fallback para mock se não houver token no localStorage
+    if (!token) return getLoggedInUserIdFromToken(MOCK_JWT_TOKEN);
 
     return getLoggedInUserIdFromToken(token);
 };
@@ -127,12 +127,6 @@ export const fetchEstanteData = async (type, userId = null, page = 0, size = 20)
     return response.json();
 };
 
-// --- NOVAS FUNÇÕES DE BIBLIOTECA/WATCHLIST ---
-
-/**
- * Adiciona um livro à biblioteca do usuário logado (geralmente com status QUERO_LER).
- * @param {object} payload - Deve conter { livroId: string, status: string (Ex: 'QUERO_LER') }
- */
 export const adicionarLivroApi = async (payload) => {
     const response = await fetch(`${API_BASE_URL}/biblioteca`, {
         method: 'POST',
@@ -147,10 +141,6 @@ export const adicionarLivroApi = async (payload) => {
     return response.json();
 };
 
-/**
- * Remove um livro da biblioteca do usuário logado.
- * @param {string} livroId - O ID do livro a ser removido.
- */
 export const removerLivroApi = async (livroId) => {
     const response = await fetch(`${API_BASE_URL}/biblioteca/${livroId}`, {
         method: 'DELETE',
@@ -161,11 +151,7 @@ export const removerLivroApi = async (livroId) => {
         const errorData = await response.json().catch(() => ({ message: 'Resposta do servidor inválida.' }));
         throw new Error(`Falha ao remover livro da biblioteca: ${response.status} - ${errorData.message}`);
     }
-    // 204 No Content para sucesso de deleção
 };
-
-// --- FIM NOVAS FUNÇÕES ---
-
 
 export const fetchReviews = async (userId) => {
     let url;
@@ -494,4 +480,38 @@ export const unfollowUser = async (seguidoId) => {
     return response.text();
 };
 
+// --- FUNÇÃO DE BUSCA DE FAVORITOS (NOVA) ---
+export const fetchFavoriteBooks = async (userId) => {
+    try {
+        const response = await fetch(`${API_BASE_URL}/users/${userId}/favoritos`, {
+            method: 'GET',
+            headers: getHeaders()
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({ message: 'Falha ao buscar favoritos.' }));
+            throw new Error(errorData.message || 'Erro ao listar livros favoritos.');
+        }
+
+        return await response.json();
+    } catch (error) {
+        console.error("Erro ao buscar livros favoritos:", error);
+        return []; // Retorna lista vazia em caso de falha de API ou conexão
+    }
+};
+
+export const adicionarLivroFavoritoApi = async (livroId) => {
+    const response = await fetch(`${API_BASE_URL}/users/favoritos/${livroId}`, {
+        method: 'POST',
+        headers: getHeaders()
+    });
+
+    if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ message: 'Falha ao adicionar livro aos favoritos.' }));
+        throw new Error(errorData.message || 'Erro ao adicionar livro aos favoritos.');
+    }
+    return response.text();
+};
+
 export { MOCK_JWT_TOKEN };
+

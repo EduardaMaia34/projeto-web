@@ -15,6 +15,7 @@ import com.br.edu.ufersa.pw.projeto.review.Model.entity.Review;
 import com.br.edu.ufersa.pw.projeto.user.API.dto.ReturnUserStatsDTO;
 import java.time.Year;
 
+import org.hibernate.validator.internal.util.stereotypes.Lazy;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.annotation.Propagation;
 

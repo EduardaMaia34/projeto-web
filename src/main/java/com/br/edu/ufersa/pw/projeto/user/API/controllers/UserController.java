@@ -2,6 +2,7 @@ package com.br.edu.ufersa.pw.projeto.user.API.controllers;
 
 import com.br.edu.ufersa.pw.projeto.Security.CustomUserDetails;
 import com.br.edu.ufersa.pw.projeto.Security.JwtTokenProvider;
+import com.br.edu.ufersa.pw.projeto.livro.API.dto.LivroCapaDTO;
 import com.br.edu.ufersa.pw.projeto.user.API.dto.InputUserDTO;
 import com.br.edu.ufersa.pw.projeto.user.API.dto.ReturnUserDTO;
 import com.br.edu.ufersa.pw.projeto.user.Model.entity.Seguindo;
@@ -16,6 +17,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
+import java.util.NoSuchElementException;
 import java.util.Optional;
 
 @CrossOrigin(origins = "*")
@@ -143,6 +145,50 @@ public class UserController {
     public ResponseEntity<ReturnUserDTO> updatePassword (@PathVariable String email)
     { return ResponseEntity.status(HttpStatus.METHOD_NOT_ALLOWED).build(); }
 
+    @PostMapping("/favoritos/{livroId}")
+    public ResponseEntity<String> adicionarFavorito(@PathVariable Long livroId, HttpServletRequest request) {
+        try {
+            Long userId = jwtTokenProvider.getUserIdFromToken(jwtTokenProvider.resolveToken(request));
+            if (userId == null) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Usuário não autenticado.");
+            }
+            service.adicionarLivroFavorito(userId, livroId);
+            return ResponseEntity.ok("Livro adicionado aos favoritos.");
+        } catch (NoSuchElementException e) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, e.getMessage());
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Erro ao adicionar favorito.");
+        }
+    }
+
+    @DeleteMapping("/favoritos/{livroId}")
+    public ResponseEntity<String> removerFavorito(@PathVariable Long livroId, HttpServletRequest request) {
+        try {
+            Long userId = jwtTokenProvider.getUserIdFromToken(jwtTokenProvider.resolveToken(request));
+            if (userId == null) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Usuário não autenticado.");
+            }
+            service.removerLivroFavorito(userId, livroId);
+            return ResponseEntity.noContent().build();
+        } catch (NoSuchElementException e) {
+
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, e.getMessage());
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Erro ao remover favorito.");
+        }
+    }
+
+    @GetMapping("/{userId}/favoritos")
+    public ResponseEntity<List<LivroCapaDTO>> listarFavoritos(@PathVariable Long userId) {
+        try {
+            List<LivroCapaDTO> favoritos = service.listarLivrosFavoritos(userId);
+            return ResponseEntity.ok(favoritos);
+        } catch (NoSuchElementException e) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, e.getMessage());
+        } catch (Exception e) {
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Erro ao listar favoritos: " + e.getMessage());
+        }
+    }
 
     @PostMapping("/seguir/{seguidoId}")
     public String seguirUsuario(@PathVariable Long seguidoId, HttpServletRequest request) {

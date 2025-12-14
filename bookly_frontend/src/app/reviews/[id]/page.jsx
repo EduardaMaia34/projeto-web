@@ -118,7 +118,6 @@ export default function ReviewsPage() {
     const [selectedReview, setSelectedReview] = useState(null);
     const [pageTitle, setPageTitle] = useState("Reviews");
 
-    // [NOVO] Estado para o Toast
     const [toast, setToast] = useState({ show: false, message: '', type: 'success' });
 
     const isOwner = userIdToFetch === loggedInUserId;
@@ -204,7 +203,6 @@ export default function ReviewsPage() {
         });
     }, [reviews, searchTerm]);
 
-    // [ATUALIZADO] Handler para Salvar Edição
     const handleSaveEdit = async (id, payload) => {
         setLoading(true);
         try {
@@ -220,7 +218,6 @@ export default function ReviewsPage() {
         }
     };
 
-    // [ATUALIZADO] Handler para Deletar
     const handleDelete = async (id) => {
         if (!confirm("Excluir esta review?")) return;
         setLoading(true);
@@ -236,7 +233,6 @@ export default function ReviewsPage() {
         }
     };
 
-    // [NOVO] Handler de Sucesso de Criação (para ser passado ao ReviewModal)
     const handleReviewCreationSuccess = () => {
         fetchUserReviews();
         setToast({ show: true, message: 'Review criada com sucesso!', type: 'success' });
@@ -254,6 +250,7 @@ export default function ReviewsPage() {
 
     return (
         <>
+            <div style={{ backgroundColor: '#f5f4ed', minHeight: '100vh' }}>
             <Navbar
                 onSearchChange={(e) => setSearchTerm(e.target.value)}
                 currentSearchTerm={searchTerm}
@@ -376,6 +373,6 @@ export default function ReviewsPage() {
                 message={toast.message}
                 type={toast.type}
             />
-        </>
+            </div></>
     );
 }

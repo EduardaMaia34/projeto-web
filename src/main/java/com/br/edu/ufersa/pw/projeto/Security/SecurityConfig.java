@@ -92,6 +92,15 @@ public class SecurityConfig {
                         .requestMatchers(
                                 org.springframework.http.HttpMethod.GET, "/api/v1/biblioteca"
                         ).permitAll()
+                        .requestMatchers(
+                                org.springframework.http.HttpMethod.POST, "/api/v1/users/favoritos/**"
+                        ).hasAnyRole("USER", "ADMIN")
+                        .requestMatchers(
+                                org.springframework.http.HttpMethod.DELETE, "/api/v1/users/favoritos/**"
+                        ).hasAnyRole("USER", "ADMIN")
+                        .requestMatchers(
+                                org.springframework.http.HttpMethod.GET, "/api/v1/users/favoritos/**"
+                        ).hasAnyRole("USER", "ADMIN")
 
 
                         .anyRequest().authenticated()

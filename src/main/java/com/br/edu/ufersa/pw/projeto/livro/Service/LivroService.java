@@ -8,7 +8,7 @@ import com.br.edu.ufersa.pw.projeto.livro.Model.repository.LivroRepository;
 import com.br.edu.ufersa.pw.projeto.review.Model.repository.ReviewRepository;
 import com.br.edu.ufersa.pw.projeto.user.Model.entity.Interesse;
 import com.br.edu.ufersa.pw.projeto.user.Model.repository.InteresseRepository;
-
+import com.br.edu.ufersa.pw.projeto.review.Service.ReviewService; // NOVO IMPORT
 import com.br.edu.ufersa.pw.projeto.user.Service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -16,6 +16,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.*;
 import java.util.stream.Collectors;
+import java.util.NoSuchElementException; // Import para orElseThrow
 //commit
 @Service
 public class LivroService {
@@ -25,14 +26,18 @@ public class LivroService {
     private final ReviewRepository reviewRepository;
     private final BibliotecaRepository bibliotecaRepository;
     private final UserService userService;
+    private final ReviewService reviewService; // NOVO CAMPO
 
     @Autowired
-    public LivroService(LivroRepository livroRepository, InteresseRepository interesseRepository, ReviewRepository reviewRepository, BibliotecaRepository bibliotecaRepository,  UserService userService) {
+    public LivroService(LivroRepository livroRepository, InteresseRepository interesseRepository,
+                        ReviewRepository reviewRepository, BibliotecaRepository bibliotecaRepository,
+                        UserService userService, ReviewService reviewService) { // CONSTRUTOR ATUALIZADO
         this.livroRepository = livroRepository;
         this.interesseRepository = interesseRepository;
         this.reviewRepository = reviewRepository;
         this.bibliotecaRepository = bibliotecaRepository;
         this.userService = userService;
+        this.reviewService = reviewService; // NOVO: INJEÇÃO DO SERVIÇO
     }
 
     public ReturnLivroDTO toReturnLivroDTO(Livro livro) {
@@ -68,7 +73,7 @@ public class LivroService {
     @Transactional
     public Livro criarLivroComInteresses(InputLivroDTO dto) {
 
-        Livro novoLivro = new Livro(dto.getTitulo(), dto.getAutor(), dto.getDescricao()); // Construtor com 3 argumentos
+        Livro novoLivro = new Livro(dto.getTitulo(), dto.getAutor(), dto.getDescricao());
 
         novoLivro.setUrlCapa(dto.getUrlCapa());
         novoLivro.setAno(dto.getAno());
@@ -92,7 +97,7 @@ public class LivroService {
         livroExistente.setTitulo(dto.getTitulo());
         livroExistente.setAutor(dto.getAutor());
         livroExistente.setDescricao(dto.getDescricao());
-        livroExistente.setAno(dto.getAno()); // Adicionado o mapeamento para ano
+        livroExistente.setAno(dto.getAno());
 
         livroExistente.setUrlCapa(dto.getUrlCapa());
 
@@ -147,22 +152,31 @@ public class LivroService {
         List<Long> idsDosAmigos = userService.getIdsDosSeguidos(userIdLogado);
 
         if (idsDosAmigos.isEmpty()) {
-            return List.of(); // Sem amigos para seguir, retorna vazio
+            return List.of();
         }
 
-        // 2. Coleta IDs de Livros únicos dos amigos (exemplo com reviews e biblioteca)
         Set<Long> livroIdsPopularesEntreAmigos = new HashSet<>();
 
         for (Long amigoId : idsDosAmigos) {
 
             List<Livro> todosLivros = livroRepository.findAll();
-            // Adiciona IDs dos primeiros 5 livros para simular popularidade
             todosLivros.stream().limit(5).map(Livro::getId).forEach(livroIdsPopularesEntreAmigos::add);
         }
 
-        // 3. Busca as entidades Livro reais a partir dos IDs únicos
         return livroRepository.findAllById(livroIdsPopularesEntreAmigos);
     }
 
-}
+    public ReturnLivroDTO getDetalhesLivro(Long livroId) {
+        Livro livro = livroRepository.findById(livroId)
+                .orElseThrow(() -> new NoSuchElementException("Livro com ID " + livroId + " não encontrado."));
 
+        ReturnLivroDTO dto = toReturnLivroDTO(livro);
+
+        Double media = reviewService.getMediaAvaliacaoLivro(livroId);
+
+        dto.setMediaAvaliacao(media);
+
+        return dto;
+    }
+
+}

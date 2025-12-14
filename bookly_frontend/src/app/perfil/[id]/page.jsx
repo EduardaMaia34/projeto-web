@@ -4,18 +4,39 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useParams } from 'next/navigation';
 import Navbar from '../../../components/Navbar';
 import ReviewModal from '../../../components/ReviewModal.jsx';
-import { getUserById, getUserStats, followUser, unfollowUser, getFollowStatus } from '../../../api/booklyApi';
+import AddBookSearchModal from '../../../components/AddBookModal.jsx';
+import BookCard from '../../../components/BookCard.jsx';
+import {
+    getUserById,
+    getUserStats,
+    followUser,
+    unfollowUser,
+    getFollowStatus,
+    fetchInteresses,
+    fetchFavoriteBooks
+} from '../../../api/booklyApi';
 
 import './perfilDetails.css';
 
-const BookGridItem = ({ src, title, rating }) => (
+
+const AddBookSlot = ({ onClick }) => (
     <div className="col-6 col-md-3 mb-4 text-center">
-        <img
-            src={src || "https://via.placeholder.com/150x225?text=Capa"}
-            className="book-cover-profile mb-1"
-            alt={title}
-        />
-        {rating && <span className="star-rating-static">★ {rating}</span>}
+        <button
+            onClick={onClick}
+            className="btn btn-outline-secondary d-flex justify-content-center align-items-center mx-auto"
+            style={{
+                width: '100%',
+                maxWidth: '150px',
+                height: '225px',
+                borderWidth: '2px',
+                borderStyle: 'dashed',
+                color: '#387638',
+                borderColor: '#387638',
+                backgroundColor: 'transparent'
+            }}
+        >
+            <i className="bi bi-plus-lg" style={{ fontSize: '2rem' }}></i>
+        </button>
     </div>
 );
 
@@ -61,6 +82,9 @@ export default function PerfilDinamicoPage() {
     const [loading, setLoading] = useState(true);
     const [loggedInUserId, setLoggedInUserId] = useState(null);
 
+    const [interessesMap, setInteressesMap] = useState({});
+    const [favoritos, setFavoritos] = useState([]);
+
     const [stats, setStats] = useState({
         totalLidos: 0,
         lidosEsteAno: 0,
@@ -68,6 +92,7 @@ export default function PerfilDinamicoPage() {
     });
 
     const [openAddModal, setOpenAddModal] = useState(false);
+    const [openSearchModal, setOpenSearchModal] = useState(false);
     const [toast, setToast] = useState({ show: false, message: '' });
     const [isFollowing, setIsFollowing] = useState(false);
 
@@ -77,11 +102,28 @@ export default function PerfilDinamicoPage() {
         if (storedUser) {
             try {
                 const meuUsuario = JSON.parse(storedUser);
-                setLoggedInUserId(meuUsuario.id);
+                if (meuUsuario && (typeof meuUsuario.id === 'string' || typeof meuUsuario.id === 'number')) {
+                    setLoggedInUserId(meuUsuario.id);
+                }
             } catch (e) {
                 setLoggedInUserId(null);
             }
         }
+
+        const loadInteresses = async () => {
+            try {
+                const interessesList = await fetchInteresses();
+                const map = {};
+                interessesList.forEach(interesse => {
+                    map[interesse.id] = interesse.nome;
+                });
+                setInteressesMap(map);
+            } catch (error) {
+                console.error("Erro ao carregar lista de interesses:", error);
+            }
+        };
+
+        loadInteresses();
     }, []);
 
 
@@ -93,16 +135,19 @@ export default function PerfilDinamicoPage() {
 
         setLoading(true);
         try {
-            const dadosUsuario = await getUserById(id);
+            const [dadosUsuario, dadosStats, dadosFavoritos] = await Promise.all([
+                getUserById(id),
+                getUserStats(id),
+                fetchFavoriteBooks(id)
+            ]);
+
             setPerfil(dadosUsuario);
+            setStats(dadosStats);
+            setFavoritos(dadosFavoritos);
 
             const loggedUserId = loggedInUserId;
-
             const isCurrentUsersProfile = String(id) === String(loggedUserId);
             setIsMeuPerfil(isCurrentUsersProfile);
-
-            const dadosStats = await getUserStats(id);
-            setStats(dadosStats);
 
             if (!isCurrentUsersProfile && loggedUserId) {
                 const status = await getFollowStatus(id);
@@ -114,6 +159,7 @@ export default function PerfilDinamicoPage() {
         } catch (error) {
             console.error("Erro ao carregar perfil:", error);
             setPerfil(null);
+            setFavoritos([]);
         } finally {
             setLoading(false);
         }
@@ -142,8 +188,8 @@ export default function PerfilDinamicoPage() {
     }, [toast.show]);
 
 
-    const handleAddBookClick = useCallback(() => {
-        setOpenAddModal(true);
+    const handleOpenAddBookModal = useCallback(() => {
+        setOpenSearchModal(true);
     }, []);
 
     const handleFollowClick = async () => {
@@ -190,13 +236,21 @@ export default function PerfilDinamicoPage() {
     const followButtonText = isFollowing ? "Seguindo" : "Seguir";
     const followButtonStyle = isFollowing ? { backgroundColor: '#387638', borderColor: '#387638', color: 'white' } : {};
 
+    const userInteresses = perfil.interessesIds
+        ? perfil.interessesIds
+            .map(id => interessesMap[id])
+            .filter(name => name)
+        : [];
+
+    const MAX_FAVORITES = 4;
+    const canAddFavorite = isMeuPerfil && favoritos.length < MAX_FAVORITES;
+
 
     return (
-        <div className="perfil-page-container" style={{ paddingTop: '100px' }}>
-            <Navbar onAddBookClick={handleAddBookClick} />
+        <div className="perfil-page-container" style={{  paddingTop: '100px' }}>
+            <Navbar />
 
             <div className="container mt-4">
-
                 <div className="row">
 
                     <div className="col-lg-8 pe-lg-5">
@@ -238,8 +292,15 @@ export default function PerfilDinamicoPage() {
                                 </p>
 
                                 <div className="d-flex mt-2 mb-4 flex-wrap gap-2">
-                                    <span className="interest-tag">Romance</span>
-                                    <span className="interest-tag">Ficção</span>
+                                    {userInteresses.length > 0 ? (
+                                        userInteresses.map(interesseNome => (
+                                            <span key={interesseNome} className="interest-tag">
+                                                {interesseNome}
+                                            </span>
+                                        ))
+                                    ) : (
+                                        <span className="text-muted small">Nenhum interesse listado.</span>
+                                    )}
                                 </div>
                             </div>
 
@@ -261,10 +322,32 @@ export default function PerfilDinamicoPage() {
 
                         <h5 className="mb-4 fw-bold text-uppercase ls-1">Favoritos</h5>
                         <div className="row mb-5 gx-3 gy-4">
-                            <BookGridItem src="https://i.imgur.com/k9b8f2G.png" title="Livro 1" rating="★★★★☆" />
-                            <BookGridItem src="https://i.imgur.com/eBv6d1P.png" title="Livro 2" rating="★★★★☆" />
-                            <BookGridItem src="https://i.imgur.com/pY40i0A.png" title="Livro 3" rating="★★★☆☆" />
-                            <BookGridItem src="https://i.imgur.com/j4C6s9x.png" title="Livro 4" rating="★★★☆☆" />
+                            {favoritos.length > 0 ? (
+                                favoritos.map(livro => (
+                                    <div key={livro.id} className="col-6 col-md-3 mb-4 text-center">
+                                        {/* SUBSTITUIÇÃO: Usando BookCard para renderizar */}
+                                        <BookCard item={livro} type="favorite" />
+                                    </div>
+                                ))
+                            ) : (
+                                !canAddFavorite && !isMeuPerfil && (
+                                    <div className="col-12">
+                                        <p className="text-muted">
+                                            {perfil.nome} ainda não adicionou livros favoritos.
+                                        </p>
+                                    </div>
+                                )
+                            )}
+
+                            {/* Slot de adição: aparece se puder adicionar (é o próprio perfil e não atingiu o limite) */}
+                            {canAddFavorite && (
+                                <AddBookSlot onClick={handleOpenAddBookModal} />
+                            )}
+
+                            {/* Caso a lista esteja vazia E seja o perfil logado */}
+                            {isMeuPerfil && favoritos.length === 0 && (
+                                <AddBookSlot onClick={handleOpenAddBookModal} />
+                            )}
                         </div>
 
                     </div>
@@ -278,7 +361,7 @@ export default function PerfilDinamicoPage() {
                                         <span className="sidebar-icon bi bi-bookmarks-fill"></span> Minha Biblioteca
                                     </a>
                                     <a href={`/estante/${id}`} className="sidebar-link">
-                                        <span className="sidebar-icon bi bi-book-fill"></span> Meus Lidos
+                                        <span className="sidebar-icon bi bi-book-fill"></span> Minha Estante
                                     </a>
                                     <a href={`/reviews/${id}`} className="sidebar-link">
                                         <span className="sidebar-icon bi bi-pencil-square"></span> Minhas Reviews
@@ -312,6 +395,15 @@ export default function PerfilDinamicoPage() {
                 show={openAddModal}
                 onHide={() => setOpenAddModal(false)}
                 onSaveSuccess={handleSaveSuccess}
+            />
+
+            <AddBookSearchModal
+                show={openSearchModal}
+                onHide={() => setOpenSearchModal(false)}
+                currentUserId={loggedInUserId}
+                onBookAdded={handleSaveSuccess}
+                currentFavoritesCount={favoritos.length}
+                maxFavorites={MAX_FAVORITES}
             />
 
             <SuccessToast

@@ -19,6 +19,7 @@ public class ReturnLivroDTO {
     private Set<String> interesses;
     private int ano;
 
+    private Double mediaAvaliacao;
 
     // --- CONSTRUTORES ---
 
@@ -79,7 +80,6 @@ public class ReturnLivroDTO {
         this.dataCriacao = dataCriacao;
     }
 
-    // Método removido: getEstadoNome() - Não se aplica a Livros
      public Set<String> getInteresses() {
         return interesses;
      }
@@ -96,11 +96,18 @@ public class ReturnLivroDTO {
         this.urlCapa = urlCapa;
     }
 
-
     public int getAno() {
         return ano;
     }
     public void setAno(int ano) {
         this.ano = ano;
+    }
+
+    public Double getMediaAvaliacao() {
+        return mediaAvaliacao;
+    }
+
+    public void setMediaAvaliacao(Double mediaAvaliacao) {
+        this.mediaAvaliacao = mediaAvaliacao;
     }
 }

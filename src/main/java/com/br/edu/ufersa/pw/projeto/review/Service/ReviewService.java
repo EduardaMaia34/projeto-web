@@ -12,12 +12,14 @@ import com.br.edu.ufersa.pw.projeto.user.Model.entity.Estado;
 import com.br.edu.ufersa.pw.projeto.user.Model.entity.User;
 import com.br.edu.ufersa.pw.projeto.user.Model.repository.UserRepository;
 import jakarta.transaction.Transactional;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
+import java.util.OptionalDouble;
 
 @Service
 public class ReviewService {
@@ -32,6 +34,7 @@ public class ReviewService {
     private LivroRepository livroRepository;
 
     @Autowired
+    @Lazy
     private BibliotecaService bibliotecaService;
 
     @Transactional
@@ -117,6 +120,20 @@ public class ReviewService {
         }
 
         reviewRepository.delete(review);
+    }
+
+    public Double getMediaAvaliacaoLivro(Long livroId) {
+        List<Review> reviews = reviewRepository.findByLivroId(livroId);
+
+        if (reviews.isEmpty()) {
+            return 0.0;
+        }
+
+        OptionalDouble media = reviews.stream()
+                .mapToDouble(Review::getNota)
+                .average();
+
+        return media.orElse(0.0);
     }
 
     public List<Review> listarFeed(List<Long> userIds) {

@@ -4,7 +4,7 @@
 
 :root {
     /* Cor de fundo da página (Bege claro) */
-    --color-background-light: #f5f4ed;
+    --color-background-light: #f5f4ed;;
     /* Cor principal da barra de navegação e rodapés de modal (Bege escuro) */
     --color-background-dark: #DED2C2;
     /* Cor principal do texto e ícones (Marrom/Cáqui) */
