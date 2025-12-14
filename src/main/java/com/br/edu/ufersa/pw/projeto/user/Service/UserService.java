@@ -24,6 +24,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.HashSet; // Import Necessário
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Optional;
@@ -37,7 +38,7 @@ public class UserService implements UserDetailsService {
     private final PasswordEncoder passwordEncoder;
     private final ReviewRepository reviewRepository;
     private final BibliotecaRepository bibliotecaRepository;
-    private final SeguindoRepository seguindoRepository; // Removi o @Autowired do campo e coloquei no construtor para consistência
+    private final SeguindoRepository seguindoRepository;
     private final LivroService livroService;
 
     @Autowired
@@ -67,10 +68,6 @@ public class UserService implements UserDetailsService {
         return repository.findById(userId);
     }
 
-    /**
-     * Busca o usuário por ID e mapeia diretamente para o DTO de Retorno.
-     * Utilizado pelo UserController para GET /me e GET /{userId}
-     */
     public Optional<ReturnUserDTO> buscarDTOporId(Long userId) {
         return repository.findById(userId)
                 .map(ReturnUserDTO::new);
@@ -94,13 +91,10 @@ public class UserService implements UserDetailsService {
         String normalizedUrl = url;
 
         if (normalizedUrl.contains("imgur.com")) {
-            // Extrai o hash da imagem
             String hash = normalizedUrl.replaceAll("^.*[i\\.]?imgur\\.com/+(a/)?", "").replaceAll("(\\..*|\\?.*)$", "");
-
             if (hash.isEmpty()) {
                 return normalizedUrl;
             }
-            // Constrói a URL usando o formato imgur.com/HASH.png
             String format = "https://imgur.com/%s.png";
             return String.format(format, hash);
         }
@@ -115,22 +109,26 @@ public class UserService implements UserDetailsService {
 
         User user = new User(dto);
 
-        // Lógica simples de Admin
         user.setRole("admin@bookly.com".equalsIgnoreCase(dto.getEmail()) ? Role.ROLE_ADMIN : Role.ROLE_USER);
         user.setSenha(passwordEncoder.encode(dto.getSenha()));
         user.setBio(dto.getBio());
         user.setFotoPerfil(normalizeImgurUrl(dto.getFotoPerfil()));
 
+        // --- LÓGICA DE INTERESSES (SAVE) ---
         if (dto.getInteressesIds() != null && !dto.getInteressesIds().isEmpty()) {
-            if (dto.getInteressesIds().size() > 3) {
-                throw new IllegalStateException("O usuário só pode escolher até 3 interesses.");
+            // VALIDAÇÃO: Limite atualizado para 5
+            if (dto.getInteressesIds().size() > 5) {
+                throw new IllegalStateException("O usuário só pode escolher até 5 interesses.");
             }
 
-            List<Interesse> interesses = interesseRepository.findAllById(dto.getInteressesIds());
-            if (interesses.size() != dto.getInteressesIds().size()) {
+            List<Interesse> interessesList = interesseRepository.findAllById(dto.getInteressesIds());
+
+            if (interessesList.size() != dto.getInteressesIds().size()) {
                 throw new NoSuchElementException("Um ou mais IDs de interesse não são válidos.");
             }
-            user.setInteresses(interesses);
+
+            // CONVERSÃO: List -> Set (HashSet)
+            user.setInteresses(new HashSet<>(interessesList));
         }
 
         User savedUser = repository.save(user);
@@ -142,31 +140,33 @@ public class UserService implements UserDetailsService {
         User user = repository.findById(userId)
                 .orElseThrow(() -> new NoSuchElementException("Usuário com ID " + userId + " não encontrado."));
 
-        // 1. Atualizar Nome
         if (dto.getNome() != null) {
             user.setNome(dto.getNome());
         }
 
-        // 2. Atualizar Bio
         if (dto.getBio() != null) {
             user.setBio(dto.getBio());
         }
 
-        // 3. Atualizar Foto (com normalização)
         if (dto.getFotoPerfil() != null) {
             user.setFotoPerfil(normalizeImgurUrl(dto.getFotoPerfil()));
         }
 
-        // 4. Atualizar Interesses
+        // --- LÓGICA DE INTERESSES (UPDATE) ---
         if (dto.getInteressesIds() != null) {
-            if (dto.getInteressesIds().size() > 3) {
-                throw new IllegalStateException("O usuário só pode escolher até 3 interesses.");
+            // VALIDAÇÃO: Limite atualizado para 5
+            if (dto.getInteressesIds().size() > 5) {
+                throw new IllegalStateException("O usuário só pode escolher até 5 interesses.");
             }
-            List<Interesse> interesses = interesseRepository.findAllById(dto.getInteressesIds());
-            if (interesses.size() != dto.getInteressesIds().size()) {
+
+            List<Interesse> interessesList = interesseRepository.findAllById(dto.getInteressesIds());
+
+            if (interessesList.size() != dto.getInteressesIds().size()) {
                 throw new NoSuchElementException("Um ou mais IDs de interesse não são válidos.");
             }
-            user.setInteresses(interesses);
+
+            // CONVERSÃO: List -> Set (HashSet)
+            user.setInteresses(new HashSet<>(interessesList));
         }
 
         User updatedUser = repository.save(user);
@@ -225,7 +225,7 @@ public class UserService implements UserDetailsService {
         if (user.getInteresses() != null) {
             user.getInteresses().clear();
         }
-        repository.save(user); // Salva para remover relacionamentos de interesses antes de deletar
+        repository.save(user);
         repository.deleteById(userId);
     }
 

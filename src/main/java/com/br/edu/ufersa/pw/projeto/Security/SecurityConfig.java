@@ -37,15 +37,22 @@ public class SecurityConfig {
                         .requestMatchers("/").permitAll()
                         .requestMatchers("/api/v1/auth/**").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/v1/users").permitAll() // Criar conta
-                        .requestMatchers(HttpMethod.GET, "/api/v1/users").permitAll()  // Listar users (se for público)
+
+                        // --- INTERESSES (NOVO) ---
+                        // GET: Permitir que qualquer um veja as tags (útil para busca/cadastro)
+                        .requestMatchers(HttpMethod.GET, "/api/v1/interesses").permitAll()
+                        // POST: Apenas usuários logados podem criar tags
+                        .requestMatchers(HttpMethod.POST, "/api/v1/interesses").authenticated()
+                        // -------------------------
 
                         // Livros - Leitura pública
                         .requestMatchers(HttpMethod.GET, "/api/v1/livros").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/livros/**").permitAll()
 
-                        //update user
-                        .requestMatchers(HttpMethod.PUT, "/api/v1/users/**").authenticated() // <--- 2. Permitir PUT se tiver token
-                        .requestMatchers(HttpMethod.GET, "/api/v1/users/**").authenticated()
+                        // Users
+                        .requestMatchers(HttpMethod.GET, "/api/v1/users").permitAll() // Listar users público
+                        .requestMatchers(HttpMethod.PUT, "/api/v1/users/**").authenticated() // Editar user requer token
+                        .requestMatchers(HttpMethod.GET, "/api/v1/users/**").authenticated() // Ver detalhes requer token (ou publico dependendo da regra)
 
                         // Reviews - Leitura pública
                         .requestMatchers(HttpMethod.GET, "/api/v1/reviews").permitAll()
@@ -53,26 +60,15 @@ public class SecurityConfig {
 
                         // Biblioteca Pública (Estante de outros usuários)
                         .requestMatchers(HttpMethod.GET, "/api/v1/biblioteca/users/**").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/api/v1/biblioteca").permitAll() // Se listar geral for público
+                        .requestMatchers(HttpMethod.GET, "/api/v1/biblioteca").permitAll()
 
                         // --- Rotas Protegidas (USER ou ADMIN) ---
-                        .requestMatchers(HttpMethod.GET, "/feed").hasAnyRole("USER", "ADMIN")
                         .requestMatchers(HttpMethod.GET, "/feed/**").hasAnyRole("USER", "ADMIN")
-                        .requestMatchers(
-                                org.springframework.http.HttpMethod.GET, "/feed/**"
-                        ).hasAnyRole("USER", "ADMIN")
-                        .requestMatchers(
-                                org.springframework.http.HttpMethod.GET, "/api/v1/biblioteca"
-                        ).permitAll()
-                        .requestMatchers(
-                                org.springframework.http.HttpMethod.POST, "/api/v1/users/favoritos/**"
-                        ).hasAnyRole("USER", "ADMIN")
-                        .requestMatchers(
-                                org.springframework.http.HttpMethod.DELETE, "/api/v1/users/favoritos/**"
-                        ).hasAnyRole("USER", "ADMIN")
-                        .requestMatchers(
-                                org.springframework.http.HttpMethod.GET, "/api/v1/users/favoritos/**"
-                        ).hasAnyRole("USER", "ADMIN")
+
+                        // Favoritos
+                        .requestMatchers(HttpMethod.POST, "/api/v1/users/favoritos/**").hasAnyRole("USER", "ADMIN")
+                        .requestMatchers(HttpMethod.DELETE, "/api/v1/users/favoritos/**").hasAnyRole("USER", "ADMIN")
+                        .requestMatchers(HttpMethod.GET, "/api/v1/users/favoritos/**").hasAnyRole("USER", "ADMIN")
 
                         // Reviews - Ações
                         .requestMatchers(HttpMethod.POST, "/api/v1/reviews/**").hasAnyRole("USER", "ADMIN")
@@ -81,7 +77,7 @@ public class SecurityConfig {
 
                         // Biblioteca Pessoal (Minha estante)
                         .requestMatchers(HttpMethod.POST, "/api/v1/biblioteca").hasAnyRole("USER", "ADMIN")
-                        .requestMatchers(HttpMethod.DELETE, "/api/v1/biblioteca/**").hasAnyRole("USER", "ADMIN") // Corrigido para exigir auth
+                        .requestMatchers(HttpMethod.DELETE, "/api/v1/biblioteca/**").hasAnyRole("USER", "ADMIN")
                         .requestMatchers(HttpMethod.GET, "/api/v1/biblioteca/estante").hasAnyRole("USER", "ADMIN")
 
                         // Social (Seguir/Deixar de seguir)
@@ -90,7 +86,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/api/v1/users/seguindo").hasAnyRole("USER", "ADMIN")
                         .requestMatchers(HttpMethod.GET, "/api/v1/users/seguidores").hasAnyRole("USER", "ADMIN")
 
-                        // User self-delete (Cuidado: talvez o usuário só possa deletar a si mesmo, verifique a lógica no controller)
+                        // Delete User
                         .requestMatchers(HttpMethod.DELETE, "/api/v1/users/**").hasAnyRole("USER", "ADMIN")
 
                         // --- Rotas de ADMIN ---
@@ -110,23 +106,15 @@ public class SecurityConfig {
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
 
-        // 🎯 AQUI ESTÁ A CORREÇÃO PRINCIPAL PARA O SEU ERRO DE FETCH
         configuration.setAllowedOrigins(Arrays.asList(
-                "http://localhost:3000",       // Next.js padrão
-                "http://127.0.0.1:3000",       // Node.js as vezes resolve para IP
-                "https://SEU-FRONTEND-DOMINIO.koyeb.app" // Produção
+                "http://localhost:3000",
+                "http://127.0.0.1:3000",
+                "https://SEU-FRONTEND-DOMINIO.koyeb.app" // Ajuste para produção se necessário
         ));
 
-        // Métodos permitidos
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"));
-
-        // Headers permitidos (Use "*" para evitar erros de headers faltantes no preflight)
         configuration.setAllowedHeaders(List.of("*"));
-
-        // Expor headers (útil se você retornar o token no header e não no body)
         configuration.setExposedHeaders(Arrays.asList("Authorization"));
-
-        // Importante para Cookies ou Auth Headers
         configuration.setAllowCredentials(true);
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();

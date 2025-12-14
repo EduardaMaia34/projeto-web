@@ -3,7 +3,8 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Navbar from '../../components/Navbar';
-import { getUserById, updateUser } from '../../api/booklyApi';
+// 1. IMPORTANTE: Adicione fetchInteresses aqui
+import { getUserById, updateUser, fetchInteresses } from '../../api/booklyApi';
 import './editar.css';
 import 'bootstrap/dist/css/bootstrap.min.css';
 
@@ -13,40 +14,54 @@ export default function EditarPerfilPage() {
     const [saving, setSaving] = useState(false);
     const [userId, setUserId] = useState(null);
 
-    // Estado do Formulário
+    // 2. NOVOS ESTADOS para os interesses
+    const [interessesDisponiveis, setInteressesDisponiveis] = useState([]);
+    const [interessesSelecionados, setInteressesSelecionados] = useState([]);
+
     const [formData, setFormData] = useState({
         nome: '',
         bio: '',
-        fotoPerfil: '', // URL da imagem
-        generoPreferido: '' // Exemplo de campo extra
+        fotoPerfil: '',
+        generoPreferido: ''
     });
 
     useEffect(() => {
-        carregarDadosUsuario();
+        carregarDadosIniciais();
     }, []);
 
-    const carregarDadosUsuario = async () => {
-        // 1. Pega o ID do LocalStorage (já que é o PERFIL DO USUÁRIO LOGADO)
+    const carregarDadosIniciais = async () => {
         const storedUser = localStorage.getItem('userData');
         if (!storedUser) {
             router.push('/login');
             return;
         }
 
-        const user = JSON.parse(storedUser);
-        setUserId(user.id);
+        const userLocal = JSON.parse(storedUser);
+        setUserId(userLocal.id);
 
         try {
-            // 2. Busca os dados mais recentes da API
-            const dadosAtualizados = await getUserById(user.id);
+            // 3. Carrega Usuário E Lista de Interesses ao mesmo tempo
+            const [listaInteresses, dadosUsuario] = await Promise.all([
+                fetchInteresses(),
+                getUserById(userLocal.id)
+            ]);
 
-            // 3. Preenche o formulário
+            setInteressesDisponiveis(listaInteresses);
+
             setFormData({
-                nome: dadosAtualizados.nome || '',
-                bio: dadosAtualizados.bio || '',
-                fotoPerfil: dadosAtualizados.fotoPerfil || '',
-                generoPreferido: dadosAtualizados.generoPreferido || ''
+                nome: dadosUsuario.nome || '',
+                bio: dadosUsuario.bio || '',
+                fotoPerfil: dadosUsuario.fotoPerfil || '',
+                generoPreferido: dadosUsuario.generoPreferido || ''
             });
+
+            // 4. Preenche os interesses que o usuário já tem
+            // O backend agora retorna objetos {id, nome}, precisamos extrair apenas os IDs
+            if (dadosUsuario.interesses && Array.isArray(dadosUsuario.interesses)) {
+                const ids = dadosUsuario.interesses.map(i => i.id);
+                setInteressesSelecionados(ids);
+            }
+
         } catch (error) {
             console.error("Erro ao carregar dados:", error);
             alert("Erro ao carregar seus dados.");
@@ -63,27 +78,49 @@ export default function EditarPerfilPage() {
         }));
     };
 
+    // 5. Lógica para selecionar/deselecionar com LIMITE DE 5
+    const toggleInteresse = (id) => {
+        setInteressesSelecionados(prev => {
+            if (prev.includes(id)) {
+                // Se já tem, remove
+                return prev.filter(item => item !== id);
+            } else {
+                // Se não tem, verifica o limite
+                if (prev.length >= 5) {
+                    alert("Você só pode selecionar até 5 interesses.");
+                    return prev;
+                }
+                // Adiciona
+                return [...prev, id];
+            }
+        });
+    };
+
     const handleSave = async (e) => {
         e.preventDefault();
         setSaving(true);
 
         try {
-            // 1. Envia para o Backend
-            const usuarioAtualizado = await updateUser(userId, formData);
+            // 6. Monta o payload incluindo a lista de IDs
+            const payload = {
+                ...formData,
+                interessesIds: interessesSelecionados // Envia [1, 5, 8...]
+            };
 
-            // 2. Atualiza o LocalStorage (para o Navbar atualizar o nome/foto na hora)
-            // Mantemos o ID e o Token, atualizamos o resto
+            const usuarioAtualizado = await updateUser(userId, payload);
+
+            // Atualiza LocalStorage
             const oldData = JSON.parse(localStorage.getItem('userData'));
+            // Atualiza os dados mantendo o token
             const newData = { ...oldData, ...usuarioAtualizado };
             localStorage.setItem('userData', JSON.stringify(newData));
 
             alert("Perfil atualizado com sucesso!");
-
-            // 3. Volta para a página de perfil
             router.push(`/perfil/${userId}`);
 
         } catch (error) {
-            alert("Erro ao atualizar perfil. Tente novamente.");
+            console.error(error);
+            alert("Erro ao atualizar perfil: " + (error.message || "Tente novamente."));
         } finally {
             setSaving(false);
         }
@@ -95,7 +132,7 @@ export default function EditarPerfilPage() {
         <div className="edit-page-container">
             <Navbar />
 
-            <div className="container mt-4">
+            <div className="container mt-4 mb-5">
                 <div className="row justify-content-center">
                     <div className="col-md-8 col-lg-6">
 
@@ -104,7 +141,7 @@ export default function EditarPerfilPage() {
 
                             <form onSubmit={handleSave}>
 
-                                {/* FOTO DE PERFIL (URL) */}
+                                {/* FOTO DE PERFIL */}
                                 <div className="text-center mb-4">
                                     <img
                                         src={formData.fotoPerfil || "https://i.imgur.com/i4m4D7y.png"}
@@ -117,13 +154,10 @@ export default function EditarPerfilPage() {
                                             type="text"
                                             name="fotoPerfil"
                                             className="form-control-custom"
-                                            placeholder="Cole o link da sua imagem aqui..."
+                                            placeholder="Link da imagem (ex: Imgur)"
                                             value={formData.fotoPerfil}
                                             onChange={handleChange}
                                         />
-                                        <small className="text-muted d-block" style={{marginTop: '-10px', marginBottom: '15px'}}>
-                                            Dica: Use links do Imgur ou similar.
-                                        </small>
                                     </div>
                                 </div>
 
@@ -147,10 +181,49 @@ export default function EditarPerfilPage() {
                                         name="bio"
                                         rows="3"
                                         className="form-control-custom"
-                                        placeholder="Conte um pouco sobre você e seus livros favoritos..."
+                                        placeholder="Conte sobre você..."
                                         value={formData.bio}
                                         onChange={handleChange}
                                     ></textarea>
+                                </div>
+
+                                {/* 7. UI DE INTERESSES (TAGS) */}
+                                <div className="mt-4">
+                                    <label className="form-label-custom mb-2">
+                                        Seus Interesses <small className="text-muted">(Máximo 5)</small>
+                                    </label>
+
+                                    <div className="d-flex flex-wrap gap-2 p-3 rounded" style={{ backgroundColor: '#f8f9fa', border: '1px solid #e9ecef' }}>
+                                        {interessesDisponiveis.length > 0 ? (
+                                            interessesDisponiveis.map((interesse) => {
+                                                const isSelected = interessesSelecionados.includes(interesse.id);
+                                                return (
+                                                    <span
+                                                        key={interesse.id}
+                                                        onClick={() => toggleInteresse(interesse.id)}
+                                                        style={{
+                                                            cursor: 'pointer',
+                                                            padding: '6px 14px',
+                                                            borderRadius: '20px',
+                                                            fontSize: '0.9rem',
+                                                            transition: 'all 0.2s',
+                                                            // Lógica visual: Marrom se selecionado, Branco se não
+                                                            backgroundColor: isSelected ? '#594A47' : '#fff',
+                                                            color: isSelected ? '#fff' : '#594A47',
+                                                            border: '1px solid #594A47',
+                                                            fontWeight: isSelected ? '600' : '400',
+                                                            boxShadow: isSelected ? '0 2px 4px rgba(0,0,0,0.1)' : 'none'
+                                                        }}
+                                                    >
+                                                        {interesse.nome}
+                                                        {isSelected && <i className="bi bi-check ms-1"></i>}
+                                                    </span>
+                                                );
+                                            })
+                                        ) : (
+                                            <span className="text-muted small">Carregando interesses...</span>
+                                        )}
+                                    </div>
                                 </div>
 
                                 {/* BOTÕES */}
@@ -158,7 +231,7 @@ export default function EditarPerfilPage() {
                                     <button
                                         type="button"
                                         className="btn-cancel"
-                                        onClick={() => router.back()} // Volta para a página anterior
+                                        onClick={() => router.back()}
                                     >
                                         Cancelar
                                     </button>

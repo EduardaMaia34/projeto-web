@@ -10,7 +10,7 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/v1/interesses")
-@CrossOrigin(origins = "*") // Permite acesso do frontend
+@CrossOrigin(origins = "*")
 public class InteresseController {
 
     private final InteresseRepository repository;
@@ -20,6 +20,14 @@ public class InteresseController {
         this.repository = repository;
     }
 
+    // --- ESTE ERA O MÉTODO QUE FALTAVA ---
+    @PostMapping
+    public ResponseEntity<Interesse> criar(@RequestBody Interesse interesse) {
+        // Salva o novo interesse no banco
+        Interesse salvo = repository.save(interesse);
+        return ResponseEntity.ok(salvo);
+    }
+    // -------------------------------------
 
     @GetMapping
     public ResponseEntity<List<Interesse>> listAll() {
