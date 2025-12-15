@@ -11,6 +11,7 @@ export default function Navbar({ onAddBookClick }) {
     const [isLoggedIn, setIsLoggedIn] = useState(false);
     const [userData, setUserData] = useState({ name: "", photo: "" });
     const [userId, setUserId] = useState(null);
+    const [isAdmin, setIsAdmin] = useState(false);
     const [openSearchModal, setOpenSearchModal] = useState(false);
     const [isLoadingUser, setIsLoadingUser] = useState(true);
 
@@ -25,8 +26,9 @@ export default function Navbar({ onAddBookClick }) {
 
             if (token) {
                 try {
-                    // Tenta ler userData
-                    user = JSON.parse(localStorage.getItem("userData") || "{}");
+                    const userStr = localStorage.getItem("userData");
+                    user = JSON.parse(userStr || "{}");
+
                     setUserData({
                         name: user.nome || user.name || "Usuário",
                         photo: user.fotoPerfil || user.photo || "",
@@ -36,10 +38,17 @@ export default function Navbar({ onAddBookClick }) {
                         setUserId(user.id);
                     }
 
+                    // Verificação Robusta
+                    const role = user.role || user.perfil || user.roles;
+                    const isAdminCheck = role === 'ROLE_ADMIN' || (Array.isArray(role) && role.includes('ROLE_ADMIN'));
+
+                    setIsAdmin(isAdminCheck);
+
                 } catch (e) {
                     console.error("Erro ao parsear userData:", e);
                     setUserData({ name: "Usuário", photo: "" });
                     setUserId(null);
+                    setIsAdmin(false);
                 }
             }
             setIsLoadingUser(false);
@@ -56,8 +65,9 @@ export default function Navbar({ onAddBookClick }) {
         if (typeof window !== "undefined") {
             localStorage.removeItem("jwtToken");
             localStorage.removeItem("userData");
-            router.push("/");
-            window.location.reload();
+            setIsLoggedIn(false);
+            setIsAdmin(false);
+            router.push("/login");
         }
     };
 
@@ -82,8 +92,6 @@ export default function Navbar({ onAddBookClick }) {
                 </Link>
 
                 <div className="d-flex align-items-center ms-auto">
-
-                    {/* Botão de lupa para abrir o modal de busca */}
                     <button
                         className="btn btn-link text-dark me-3"
                         onClick={() => setOpenSearchModal(true)}
@@ -95,13 +103,11 @@ export default function Navbar({ onAddBookClick }) {
                     <div id="profileGroupNavbar" className="d-flex align-items-center">
                         {isLoggedIn ? (
                             <>
-                                {/* Link do Perfil: Dinâmico usando o componente Link */}
                                 <Link
                                     href={userId ? `/perfil/${userId}` : '/perfil'}
                                     className="d-flex align-items-center me-3 text-decoration-none text-dark"
                                     title={userData.name}
                                 >
-                                    {/* LÓGICA DE FALLBACK */}
                                     {useIconFallback ? (
                                         <i
                                             className="bi bi-person-circle"
@@ -116,6 +122,19 @@ export default function Navbar({ onAddBookClick }) {
                                         />
                                     )}
                                 </Link>
+
+                                {/* Botão visível APENAS para ROLE_ADMIN */}
+                                {isAdmin && (
+                                    <Link
+                                        href="/admin/cadastrar-livro"
+                                        /* Usamos apenas 'btn' e aplicamos o estilo manual para o azul escuro */
+                                        className="btn me-3 fw-bold"
+                                        style={{ backgroundColor: "#003366", color: "#fff", borderColor: "#003366" }}
+                                        title="Área Administrativa"
+                                    >
+                                        Cadastrar Livros
+                                    </Link>
+                                )}
 
                                 <button
                                     className="btn btn-success me-3 d-flex align-items-center"
