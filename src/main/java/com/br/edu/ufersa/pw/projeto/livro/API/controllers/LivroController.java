@@ -4,8 +4,6 @@ import com.br.edu.ufersa.pw.projeto.livro.API.dto.InputLivroDTO;
 import com.br.edu.ufersa.pw.projeto.livro.API.dto.ReturnLivroDTO;
 import com.br.edu.ufersa.pw.projeto.livro.Service.LivroService;
 import com.br.edu.ufersa.pw.projeto.livro.Model.entity.Livro;
-import com.br.edu.ufersa.pw.projeto.review.Service.ReviewService;
-import com.br.edu.ufersa.pw.projeto.user.Model.entity.Interesse;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -14,46 +12,41 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 import java.util.NoSuchElementException;
-import java.util.Optional;
 import java.util.stream.Collectors;
-import java.util.Set;
-//commit
+
 @RestController
 @RequestMapping("/api/v1/livros")
 public class LivroController {
 
     private final LivroService service;
-    private final ReviewService reviewService;
 
     @Autowired
-    public LivroController(LivroService service, ReviewService reviewService){
+    public LivroController(LivroService service){
         this.service = service;
-        this.reviewService = reviewService;
     }
 
-
-    @GetMapping()
-    public ResponseEntity<List<ReturnLivroDTO>> list(
-            @RequestParam(required = false) String termo) {
-
+    @GetMapping
+    public ResponseEntity<List<ReturnLivroDTO>> list(@RequestParam(required = false) String titulo) {
         List<Livro> livros;
 
-        if (termo != null && !termo.trim().isEmpty()) {
-            livros = service.buscarPorTermo(termo);
+        if (titulo != null && !titulo.trim().isEmpty()) {
+            livros = service.buscarPorTitulo(titulo);
         } else {
             livros = service.buscarTodos();
         }
 
+        // Usa o conversor do Service para evitar código duplicado
         List<ReturnLivroDTO> responseDTOs = livros.stream()
-                .map(this::toReturnDTO)
+                .map(service::toReturnLivroDTO)
                 .collect(Collectors.toList());
 
-        return new ResponseEntity<>(responseDTOs, HttpStatus.OK);
+        return ResponseEntity.ok(responseDTOs);
     }
 
     @GetMapping("/{id}")
     public ResponseEntity<ReturnLivroDTO> getById(@PathVariable Long id) {
         try {
+            // getDetalhesLivro já busca a média de avaliações e converte DTO
             ReturnLivroDTO dto = service.getDetalhesLivro(id);
             return ResponseEntity.ok(dto);
         } catch (NoSuchElementException e) {
@@ -61,86 +54,39 @@ public class LivroController {
         }
     }
 
-
-    @PostMapping()
-    public ResponseEntity<ReturnLivroDTO> create(@Valid @RequestBody InputLivroDTO livroDTO){
+    @PostMapping
+    public ResponseEntity<?> create(@Valid @RequestBody InputLivroDTO livroDTO){
         try {
-
             Livro livroSalvo = service.criarLivroComInteresses(livroDTO);
-
-            return new ResponseEntity<>(toReturnDTO(livroSalvo), HttpStatus.CREATED);
-
+            return new ResponseEntity<>(service.toReturnLivroDTO(livroSalvo), HttpStatus.CREATED);
         } catch (IllegalArgumentException e) {
-            return new ResponseEntity(e.getMessage(), HttpStatus.BAD_REQUEST);
+            return ResponseEntity.badRequest().body(e.getMessage());
         }
     }
 
+    @PutMapping("/{id}")
+    public ResponseEntity<?> update(@PathVariable Long id, @Valid @RequestBody InputLivroDTO livroDTO) {
+        try {
+            // Chama o método do service que lida com a atualização dos dados e dos interesses
+            Livro livroAtualizado = service.atualizarLivroComInteresses(id, livroDTO);
+
+            return ResponseEntity.ok(service.toReturnLivroDTO(livroAtualizado));
+
+        } catch (IllegalArgumentException e) {
+            // Se o ID não for encontrado ou dados inválidos
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Erro ao atualizar livro.");
+        }
+    }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity removeById(@PathVariable Long id) {
+    public ResponseEntity<?> removeById(@PathVariable Long id) {
         try {
             service.deletarLivro(id);
             return ResponseEntity.noContent().build();
         } catch (IllegalArgumentException e) {
-            return new ResponseEntity(e.getMessage(), HttpStatus.NOT_FOUND);
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
         }
     }
-
-    // ----------------------------------------------------------------------
-    // PUT: Atualizar livro completo - CORRIGIDO para usar o DTO
-    // ----------------------------------------------------------------------
-    @PutMapping("/{id}")
-    public ResponseEntity<ReturnLivroDTO> update (@PathVariable Long id, @Valid @RequestBody InputLivroDTO livroDTO) {
-        // Verifica se o livro a ser atualizado existe
-        if (service.buscarPorId(id).isEmpty()) {
-            return ResponseEntity.notFound().build();
-        }
-
-        try {
-            Livro resultado = service.atualizarLivroComInteresses(id, livroDTO);
-
-            return new ResponseEntity<>(toReturnDTO(resultado), HttpStatus.OK);
-
-        } catch (IllegalArgumentException e) {
-            return new ResponseEntity(e.getMessage(), HttpStatus.BAD_REQUEST);
-        }
-    }
-
-
-    // ----------------------------------------------------------------------
-    // MÉTODOS DE MAPEAMENTO (DTO <-> ENTITY)
-    // ----------------------------------------------------------------------
-
-    // Mapeia InputLivroDTO para Livro Entity - MÉTODO REMOVIDO/INUTILIZADO
-    private Livro toEntity(InputLivroDTO dto) {
-        Livro livro = new Livro(dto.getTitulo(), dto.getAutor(), dto.getDescricao());
-        return livro;
-    }
-
-    // Mapeia Livro Entity para ReturnLivroDTO
-    private ReturnLivroDTO toReturnDTO(Livro livro) {
-        ReturnLivroDTO dto = new ReturnLivroDTO();
-        dto.setId(livro.getId());
-        dto.setTitulo(livro.getTitulo());
-        dto.setAutor(livro.getAutor());
-        dto.setDescricao(livro.getDescricao());
-        dto.setAno(livro.getAno());
-        dto.setDataCriacao(livro.getDataCriacao());
-        dto.setUrlCapa(livro.getUrlCapa());
-
-        dto.setMediaAvaliacao(0.0);
-
-        Set<Interesse> interesses = livro.getInteresses();
-        if (interesses != null && !interesses.isEmpty()) {
-            Set<String> nomesInteresses = interesses.stream()
-                    .map(Interesse::getNome)
-                    .collect(Collectors.toSet());
-            dto.setInteresses(nomesInteresses);
-        } else {
-            dto.setInteresses(Set.of());
-        }
-
-        return dto;
-    }
-
 }

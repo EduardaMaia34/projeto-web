@@ -8,7 +8,7 @@ import com.br.edu.ufersa.pw.projeto.livro.Model.repository.LivroRepository;
 import com.br.edu.ufersa.pw.projeto.review.Model.repository.ReviewRepository;
 import com.br.edu.ufersa.pw.projeto.user.Model.entity.Interesse;
 import com.br.edu.ufersa.pw.projeto.user.Model.repository.InteresseRepository;
-import com.br.edu.ufersa.pw.projeto.review.Service.ReviewService; // NOVO IMPORT
+import com.br.edu.ufersa.pw.projeto.review.Service.ReviewService;
 import com.br.edu.ufersa.pw.projeto.user.Service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -16,8 +16,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.*;
 import java.util.stream.Collectors;
-import java.util.NoSuchElementException; // Import para orElseThrow
-//commit
+import java.util.NoSuchElementException;
+
 @Service
 public class LivroService {
 
@@ -26,18 +26,18 @@ public class LivroService {
     private final ReviewRepository reviewRepository;
     private final BibliotecaRepository bibliotecaRepository;
     private final UserService userService;
-    private final ReviewService reviewService; // NOVO CAMPO
+    private final ReviewService reviewService;
 
     @Autowired
     public LivroService(LivroRepository livroRepository, InteresseRepository interesseRepository,
                         ReviewRepository reviewRepository, BibliotecaRepository bibliotecaRepository,
-                        UserService userService, ReviewService reviewService) { // CONSTRUTOR ATUALIZADO
+                        UserService userService, ReviewService reviewService) {
         this.livroRepository = livroRepository;
         this.interesseRepository = interesseRepository;
         this.reviewRepository = reviewRepository;
         this.bibliotecaRepository = bibliotecaRepository;
         this.userService = userService;
-        this.reviewService = reviewService; // NOVO: INJEÇÃO DO SERVIÇO
+        this.reviewService = reviewService;
     }
 
     public ReturnLivroDTO toReturnLivroDTO(Livro livro) {
@@ -72,17 +72,15 @@ public class LivroService {
 
     @Transactional
     public Livro criarLivroComInteresses(InputLivroDTO dto) {
-
         Livro novoLivro = new Livro(dto.getTitulo(), dto.getAutor(), dto.getDescricao());
 
+        // Atenção: Certifique-se que o construtor do Livro ou estes setters funcionam
         novoLivro.setUrlCapa(dto.getUrlCapa());
         novoLivro.setAno(dto.getAno());
-
 
         if (dto.getInteressesIds() != null && dto.getInteressesIds().length > 0) {
             List<Long> idsList = Arrays.asList(dto.getInteressesIds());
             List<Interesse> interessesEncontrados = interesseRepository.findAllById(idsList);
-
             novoLivro.setInteresses(interessesEncontrados.stream().collect(Collectors.toSet()));
         }
 
@@ -98,7 +96,6 @@ public class LivroService {
         livroExistente.setAutor(dto.getAutor());
         livroExistente.setDescricao(dto.getDescricao());
         livroExistente.setAno(dto.getAno());
-
         livroExistente.setUrlCapa(dto.getUrlCapa());
 
         livroExistente.getInteresses().clear();
@@ -106,7 +103,6 @@ public class LivroService {
         if (dto.getInteressesIds() != null && dto.getInteressesIds().length > 0) {
             List<Long> idsList = Arrays.asList(dto.getInteressesIds());
             List<Interesse> novosInteresses = interesseRepository.findAllById(idsList);
-
             livroExistente.getInteresses().addAll(novosInteresses);
         }
 
@@ -141,9 +137,14 @@ public class LivroService {
         if (!livroRepository.existsById(id)) {
             throw new IllegalArgumentException("Livro com o ID " + id + " não encontrado para exclusão.");
         }
+
+        // Remove reviews associadas
         reviewRepository.deleteByLivroId(id);
-        String livroIdString = String.valueOf(id);
-        bibliotecaRepository.deleteByLivroId(livroIdString);
+
+        // --- CORREÇÃO: Passando Long diretamente ---
+        bibliotecaRepository.deleteByLivroId(id);
+        // ------------------------------------------
+
         livroRepository.deleteById(id);
     }
 
@@ -157,8 +158,8 @@ public class LivroService {
 
         Set<Long> livroIdsPopularesEntreAmigos = new HashSet<>();
 
+        // Lógica simplificada (ajuste conforme sua regra de negócio real se necessário)
         for (Long amigoId : idsDosAmigos) {
-
             List<Livro> todosLivros = livroRepository.findAll();
             todosLivros.stream().limit(5).map(Livro::getId).forEach(livroIdsPopularesEntreAmigos::add);
         }
@@ -172,11 +173,10 @@ public class LivroService {
 
         ReturnLivroDTO dto = toReturnLivroDTO(livro);
 
+        // Calcula média de avaliações
         Double media = reviewService.getMediaAvaliacaoLivro(livroId);
-
         dto.setMediaAvaliacao(media);
 
         return dto;
     }
-
 }

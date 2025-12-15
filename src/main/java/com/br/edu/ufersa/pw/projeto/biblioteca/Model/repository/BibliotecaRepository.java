@@ -6,29 +6,25 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Optional;
 
 @Repository
 public interface BibliotecaRepository extends JpaRepository<Biblioteca, Long> {
 
-    Optional<Biblioteca> findByUserIdAndLivroId(Long userId, String livroId);
+    Optional<Biblioteca> findByUserIdAndLivroId(Long userId, Long livroId);
 
-    Page<Biblioteca> findByUserIdOrderByAddedAtDesc(Long userId, Pageable pageable);
+    // --- ADICIONE ESTES DOIS MÉTODOS QUE FALTAVAM ---
+    void deleteByUserIdAndLivroId(Long userId, Long livroId);
+
+    void deleteByUserId(Long userId); // Usado pelo UserService
+
+    void deleteByLivroId(Long livroId); // Usado pelo LivroService
+    // ------------------------------------------------
+
+    boolean existsByUserIdAndLivroId(Long userId, Long livroId);
 
     Page<Biblioteca> findByUserIdAndStatusOrderByAddedAtDesc(Long userId, Estado status, Pageable pageable);
 
-    void deleteByUserIdAndLivroId(Long userId, String livroId);
-
-    @Transactional
-    void deleteByUserId(Long userId);
-
-    @Transactional
-    void deleteByLivroId(String livroId);
-
-    long countByUserId(Long userId);
-
     long countByUserIdAndStatus(Long userId, Estado status);
-
 }

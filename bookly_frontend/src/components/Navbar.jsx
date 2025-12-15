@@ -126,13 +126,13 @@ export default function Navbar({ onAddBookClick }) {
                                 {/* Botão visível APENAS para ROLE_ADMIN */}
                                 {isAdmin && (
                                     <Link
-                                        href="/admin/cadastrar-livro"
+                                        href="/admin/modo-admin"
                                         /* Usamos apenas 'btn' e aplicamos o estilo manual para o azul escuro */
                                         className="btn me-3 fw-bold"
                                         style={{ backgroundColor: "#003366", color: "#fff", borderColor: "#003366" }}
                                         title="Área Administrativa"
                                     >
-                                        Cadastrar Livros
+                                        Modo Admin
                                     </Link>
                                 )}
 

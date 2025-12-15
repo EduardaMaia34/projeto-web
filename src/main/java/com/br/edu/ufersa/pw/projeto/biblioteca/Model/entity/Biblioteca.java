@@ -21,12 +21,13 @@ public class Biblioteca {
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
-    @Column(name = "livro_id", nullable = false)
-    private String livroId;
-
+    // --- CORREÇÃO AQUI ---
+    // Removida a String livroId duplicada.
+    // O objeto Livro agora é o dono da coluna 'livro_id'.
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "livro_id", referencedColumnName = "id", insertable = false, updatable = false)
+    @JoinColumn(name = "livro_id", nullable = false)
     private Livro livro;
+    // ---------------------
 
     @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false)
@@ -42,50 +43,49 @@ public class Biblioteca {
 
     public Biblioteca() {}
 
-    public Biblioteca(User user, String livroId) {
+    // Construtor atualizado para receber o Objeto Livro, não uma String
+    public Biblioteca(User user, Livro livro) {
         this.user = user;
-        this.livroId = livroId;
+        this.livro = livro;
         this.status = Estado.QUERO_LER;
     }
 
+    // Getters e Setters
+
     public Long getId() {
         return id;
-    }
-
-    public User getUser() {
-        return user;
-    }
-
-    public String getLivroId() {
-        return livroId;
-    }
-
-    public Livro getLivro() {
-        return livro;
-    }
-
-    public Estado getStatus() {
-        return status;
-    }
-
-    public LocalDateTime getAddedAt() {
-        return addedAt;
     }
 
     public void setId(Long id) {
         this.id = id;
     }
 
+    public User getUser() {
+        return user;
+    }
+
     public void setUser(User user) {
         this.user = user;
     }
 
-    public void setLivroId(String livroId) {
-        this.livroId = livroId;
+    public Livro getLivro() {
+        return livro;
+    }
+
+    public void setLivro(Livro livro) {
+        this.livro = livro;
+    }
+
+    public Estado getStatus() {
+        return status;
     }
 
     public void setStatus(Estado status) {
         this.status = status;
+    }
+
+    public LocalDateTime getAddedAt() {
+        return addedAt;
     }
 
     public void setAddedAt(LocalDateTime addedAt) {
