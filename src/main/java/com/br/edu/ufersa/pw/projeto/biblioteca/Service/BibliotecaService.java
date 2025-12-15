@@ -111,7 +111,7 @@ public class BibliotecaService {
         return new PageImpl<>(listaComReview, pageable, lidosPage.getTotalElements());
     }
 
-    public Estado getStatusLivro(Long userId, String livroId) {
+    public Estado getStatusLivro(Long userId, Long livroId) {
         return bibliotecaRepository
                 .findByUserIdAndLivroId(userId, livroId)
                 .map(Biblioteca::getStatus)

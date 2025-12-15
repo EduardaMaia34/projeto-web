@@ -134,7 +134,7 @@ public class BibliotecaController {
     @GetMapping("/{livroId}/status")
     public ResponseEntity<Estado> getStatusLivro(
             @AuthenticationPrincipal CustomUserDetails loggedInUser,
-            @PathVariable String livroId) {
+            @PathVariable Long livroId) {
 
         if (loggedInUser == null || loggedInUser.getId() == null) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED);

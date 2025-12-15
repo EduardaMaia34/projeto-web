@@ -74,7 +74,6 @@ public class LivroService {
     public Livro criarLivroComInteresses(InputLivroDTO dto) {
         Livro novoLivro = new Livro(dto.getTitulo(), dto.getAutor(), dto.getDescricao());
 
-        // Atenção: Certifique-se que o construtor do Livro ou estes setters funcionam
         novoLivro.setUrlCapa(dto.getUrlCapa());
         novoLivro.setAno(dto.getAno());
 
@@ -138,12 +137,9 @@ public class LivroService {
             throw new IllegalArgumentException("Livro com o ID " + id + " não encontrado para exclusão.");
         }
 
-        // Remove reviews associadas
         reviewRepository.deleteByLivroId(id);
 
-        // --- CORREÇÃO: Passando Long diretamente ---
         bibliotecaRepository.deleteByLivroId(id);
-        // ------------------------------------------
 
         livroRepository.deleteById(id);
     }
@@ -158,7 +154,6 @@ public class LivroService {
 
         Set<Long> livroIdsPopularesEntreAmigos = new HashSet<>();
 
-        // Lógica simplificada (ajuste conforme sua regra de negócio real se necessário)
         for (Long amigoId : idsDosAmigos) {
             List<Livro> todosLivros = livroRepository.findAll();
             todosLivros.stream().limit(5).map(Livro::getId).forEach(livroIdsPopularesEntreAmigos::add);
@@ -173,7 +168,6 @@ public class LivroService {
 
         ReturnLivroDTO dto = toReturnLivroDTO(livro);
 
-        // Calcula média de avaliações
         Double media = reviewService.getMediaAvaliacaoLivro(livroId);
         dto.setMediaAvaliacao(media);
 

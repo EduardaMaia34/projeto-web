@@ -26,27 +26,25 @@ public class LivroController {
     }
 
     @GetMapping
-    public ResponseEntity<List<ReturnLivroDTO>> list(@RequestParam(required = false) String titulo) {
-        List<Livro> livros;
+    public ResponseEntity<List<ReturnLivroDTO>> list(
+            @RequestParam(required = false) String termo) {
 
-        if (titulo != null && !titulo.trim().isEmpty()) {
-            livros = service.buscarPorTitulo(titulo);
-        } else {
-            livros = service.buscarTodos();
+        if (termo == null || termo.trim().isEmpty()) {
+            return ResponseEntity.ok(List.of());
         }
 
-        // Usa o conversor do Service para evitar código duplicado
-        List<ReturnLivroDTO> responseDTOs = livros.stream()
+        List<ReturnLivroDTO> response = service.buscarPorTermo(termo)
+                .stream()
                 .map(service::toReturnLivroDTO)
-                .collect(Collectors.toList());
+                .toList();
 
-        return ResponseEntity.ok(responseDTOs);
+        return ResponseEntity.ok(response);
     }
+
 
     @GetMapping("/{id}")
     public ResponseEntity<ReturnLivroDTO> getById(@PathVariable Long id) {
         try {
-            // getDetalhesLivro já busca a média de avaliações e converte DTO
             ReturnLivroDTO dto = service.getDetalhesLivro(id);
             return ResponseEntity.ok(dto);
         } catch (NoSuchElementException e) {
@@ -67,13 +65,11 @@ public class LivroController {
     @PutMapping("/{id}")
     public ResponseEntity<?> update(@PathVariable Long id, @Valid @RequestBody InputLivroDTO livroDTO) {
         try {
-            // Chama o método do service que lida com a atualização dos dados e dos interesses
             Livro livroAtualizado = service.atualizarLivroComInteresses(id, livroDTO);
 
             return ResponseEntity.ok(service.toReturnLivroDTO(livroAtualizado));
 
         } catch (IllegalArgumentException e) {
-            // Se o ID não for encontrado ou dados inválidos
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Erro ao atualizar livro.");

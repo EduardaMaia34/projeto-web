@@ -10,9 +10,14 @@
     /* Cor principal do texto e ícones (Marrom/Cáqui) */
     --color-text-primary: #594A47;
     /* Cor do botão de sucesso / ação principal (Verde escuro) */
-    --color-button-success: #385d38;
+    --color-button-success: #198754; /* Alterado para o verde padrão do Bootstrap/Navbar */
     /* Cor dos links e elementos em ouro (Estrelas) */
     --color-rating-gold: gold;
+
+    /* Novas variáveis para Admin */
+    --color-admin-action-edit: #594A47; /* Marrom Escuro (Editar) */
+    --color-admin-action-delete: #A0522D; /* Marrom Escuro Avermelhado (Deletar) */
+    --color-admin-link: #198754; /* Verde para link/botão principal Admin */
 }
 
 body {
@@ -306,4 +311,135 @@ h1, h2, h3, h4, h5, h6, a {
     height: 100%;
     background-color: rgba(0, 0, 0, 0.5);
     z-index: 1040;
+}
+
+/* ========================================================================= */
+/* 6. Estilos da Página de Administração (ModoAdmin.jsx) */
+/* ========================================================================= */
+
+.admin-title {
+    font-family: 'Georgia', serif;
+    color: var(--color-text-primary);
+    font-weight: bold;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+.btn-green-bookly {
+    background-color: var(--color-admin-link); /* Verde */
+    border-color: var(--color-admin-link);
+    color: white;
+    padding: 12px 25px;
+    border-radius: 30px;
+    text-decoration: none;
+    font-weight: bold;
+    display: inline-flex;
+    align-items: center;
+    transition: background 0.3s;
+    border: none;
+}
+.btn-green-bookly:hover {
+    background-color: #156d47;
+    color: white;
+}
+
+/* Layout dos Cards de Livro na Administração */
+.book-card-admin{
+    background: white;
+    border-radius: 8px;
+    padding: 20px;
+    margin-bottom: 20px;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.02);
+    border: 1px solid #eee;
+    transition: transform 0.2s;
+    width: 100%;
+    display: flex; /* Garante layout horizontal */
+}
+.book-card-admin:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 15px rgba(0,0,0,0.05);
+}
+.book-cover {
+    width: 80px;
+    height: 120px;
+    object-fit: cover;
+    border-radius: 4px;
+    background-color: #ddd;
+    flex-shrink: 0; /* Impede que a capa encolha */
+}
+.book-info h4 {
+    font-family: 'Georgia', serif;
+    color: #333;
+    margin-bottom: 5px;
+    font-size: 1.2rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+
+}
+.book-meta {
+    color: #666;
+    font-size: 0.9rem;
+    margin-bottom: 8px;
+}
+.tag-pill {
+    background-color: #f0f0f0;
+    color: #555;
+    padding: 4px 10px;
+    border-radius: 12px;
+    font-size: 0.75rem;
+    margin-right: 5px;
+    display: inline-block;
+    margin-bottom: 4px;
+}
+
+/* Botões de Ação (Marrom Escuro) */
+.action-btn {
+    border: none;
+    background: none;
+    cursor: pointer;
+    font-size: 1.3rem;
+    margin-left: 15px;
+    transition: color 0.2s, transform 0.2s;
+    padding: 0;
+}
+.action-btn:hover {
+    transform: scale(1.1);
+}
+.btn-edit {
+    color: var(--color-admin-action-edit); /* Marrom Escuro */
+}
+.btn-edit:hover {
+    color: #796660;
+}
+.btn-delete {
+    color: var(--color-admin-action-delete); /* Marrom Escuro Avermelhado */
+}
+.btn-delete:hover {
+    color: #c46b3f;
+}
+
+/* Estilos da Busca Toggle */
+.search-toggle-wrapper {
+    transition: max-height 0.3s ease-in-out, opacity 0.3s ease-in-out;
+    max-height: 0;
+    opacity: 0;
+    overflow: hidden;
+    padding-bottom: 0 !important;
+}
+.search-toggle-wrapper.visible {
+    max-height: 100px;
+    opacity: 1;
+    padding-bottom: 20px !important;
+}
+.search-input {
+    width: 100%;
+    padding: 12px 20px;
+    border-radius: 30px;
+    border: 2px solid #ddd;
+    outline: none;
+    transition: border-color 0.3s;
+    font-family: Arial, sans-serif;
+}
+.search-input:focus {
+    border-color: var(--color-text-primary);
 }

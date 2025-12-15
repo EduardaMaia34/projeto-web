@@ -58,7 +58,7 @@ export default function Navbar({ onAddBookClick }) {
     }, []);
 
     const handleLogin = () => {
-        router.push("/");
+        router.push("/login");
     };
 
     const handleLogout = () => {

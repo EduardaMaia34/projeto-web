@@ -303,11 +303,12 @@ export async function searchLivrosApi(termo) {
 
     try {
         const response = await fetch(
-            // Nota: Verifique se seu backend espera 'termo' ou 'titulo'
             `${API_BASE_URL}/livros?termo=${encodeURIComponent(termo)}`,
             {
                 method: "GET",
-                headers: getHeaders()
+                headers: {
+                    "Content-Type": "application/json",
+                },
             }
         );
 
@@ -317,6 +318,7 @@ export async function searchLivrosApi(termo) {
         }
 
         const data = await response.json();
+
         return Array.isArray(data) ? data : [];
 
     } catch (error) {
@@ -324,6 +326,8 @@ export async function searchLivrosApi(termo) {
         return [];
     }
 }
+
+
 
 export const fetchInteresses = async () => {
     try {
