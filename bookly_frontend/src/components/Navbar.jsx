@@ -58,7 +58,7 @@ export default function Navbar({ onAddBookClick }) {
     }, []);
 
     const handleLogin = () => {
-        router.push("/login");
+        router.push("/");
     };
 
     const handleLogout = () => {
@@ -67,7 +67,7 @@ export default function Navbar({ onAddBookClick }) {
             localStorage.removeItem("userData");
             setIsLoggedIn(false);
             setIsAdmin(false);
-            router.push("/login");
+            router.push("/");
         }
     };
 

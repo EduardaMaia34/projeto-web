@@ -1,12 +1,19 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import Navbar from '../../components/Navbar';
-// 1. IMPORTANTE: Adicione fetchInteresses aqui
-import { getUserById, updateUser, fetchInteresses } from '../../api/booklyApi';
+import AddBookModal from '../../components/AddBookModal.jsx'; // Importa o modal fornecido
+import {
+    getUserById,
+    updateUser,
+    fetchInteresses,
+    fetchFavoriteBooks,
+    removerLivroFavoritoApi
+} from '../../api/booklyApi';
 import './editar.css';
 import 'bootstrap/dist/css/bootstrap.min.css';
+
 
 export default function EditarPerfilPage() {
     const router = useRouter();
@@ -14,9 +21,13 @@ export default function EditarPerfilPage() {
     const [saving, setSaving] = useState(false);
     const [userId, setUserId] = useState(null);
 
-    // 2. NOVOS ESTADOS para os interesses
     const [interessesDisponiveis, setInteressesDisponiveis] = useState([]);
     const [interessesSelecionados, setInteressesSelecionados] = useState([]);
+
+    // Estados para Livros Favoritos
+    const [livrosFavoritos, setLivrosFavoritos] = useState([]);
+    const [isSearchModalOpen, setIsSearchModalOpen] = useState(false);
+    const MAX_FAVORITES = 4;
 
     const [formData, setFormData] = useState({
         nome: '',
@@ -24,6 +35,18 @@ export default function EditarPerfilPage() {
         fotoPerfil: '',
         generoPreferido: ''
     });
+
+    // Função unificada para carregar favoritos
+    const carregarFavoritos = useCallback(async (id) => {
+        if (!id) return;
+        try {
+            const dadosFavoritos = await fetchFavoriteBooks(id);
+            setLivrosFavoritos(dadosFavoritos);
+        } catch (error) {
+            console.error("Erro ao carregar favoritos:", error);
+            setLivrosFavoritos([]);
+        }
+    }, []);
 
     useEffect(() => {
         carregarDadosIniciais();
@@ -37,13 +60,13 @@ export default function EditarPerfilPage() {
         }
 
         const userLocal = JSON.parse(storedUser);
-        setUserId(userLocal.id);
+        const currentUserId = userLocal.id;
+        setUserId(currentUserId);
 
         try {
-            // 3. Carrega Usuário E Lista de Interesses ao mesmo tempo
             const [listaInteresses, dadosUsuario] = await Promise.all([
                 fetchInteresses(),
-                getUserById(userLocal.id)
+                getUserById(currentUserId)
             ]);
 
             setInteressesDisponiveis(listaInteresses);
@@ -55,12 +78,13 @@ export default function EditarPerfilPage() {
                 generoPreferido: dadosUsuario.generoPreferido || ''
             });
 
-            // 4. Preenche os interesses que o usuário já tem
-            // O backend agora retorna objetos {id, nome}, precisamos extrair apenas os IDs
             if (dadosUsuario.interesses && Array.isArray(dadosUsuario.interesses)) {
                 const ids = dadosUsuario.interesses.map(i => i.id);
                 setInteressesSelecionados(ids);
             }
+
+            // Carrega os Livros Favoritos
+            await carregarFavoritos(currentUserId);
 
         } catch (error) {
             console.error("Erro ao carregar dados:", error);
@@ -78,22 +102,37 @@ export default function EditarPerfilPage() {
         }));
     };
 
-    // 5. Lógica para selecionar/deselecionar com LIMITE DE 5
     const toggleInteresse = (id) => {
         setInteressesSelecionados(prev => {
             if (prev.includes(id)) {
-                // Se já tem, remove
                 return prev.filter(item => item !== id);
             } else {
-                // Se não tem, verifica o limite
                 if (prev.length >= 5) {
                     alert("Você só pode selecionar até 5 interesses.");
                     return prev;
                 }
-                // Adiciona
                 return [...prev, id];
             }
         });
+    };
+
+    // Função de callback para recarregar a lista após o modal adicionar um livro
+    const handleBookAddedSuccess = async () => {
+        await carregarFavoritos(userId);
+    };
+
+    // Lógica para remover Livro Favorito
+    const handleRemoveFavorite = async (livroId, livroTitulo) => {
+        if (confirm(`Tem certeza que deseja remover "${livroTitulo}" dos seus favoritos?`)) {
+            try {
+                await removerLivroFavoritoApi(livroId);
+                await carregarFavoritos(userId);
+                alert(`${livroTitulo} removido dos favoritos.`);
+            } catch (error) {
+                console.error("Erro ao remover favorito:", error);
+                alert("Erro ao remover livro dos favoritos: " + (error.message || "Tente novamente."));
+            }
+        }
     };
 
     const handleSave = async (e) => {
@@ -101,17 +140,14 @@ export default function EditarPerfilPage() {
         setSaving(true);
 
         try {
-            // 6. Monta o payload incluindo a lista de IDs
             const payload = {
                 ...formData,
-                interessesIds: interessesSelecionados // Envia [1, 5, 8...]
+                interessesIds: interessesSelecionados
             };
 
             const usuarioAtualizado = await updateUser(userId, payload);
 
-            // Atualiza LocalStorage
             const oldData = JSON.parse(localStorage.getItem('userData'));
-            // Atualiza os dados mantendo o token
             const newData = { ...oldData, ...usuarioAtualizado };
             localStorage.setItem('userData', JSON.stringify(newData));
 
@@ -127,6 +163,78 @@ export default function EditarPerfilPage() {
     };
 
     if (loading) return <div className="text-center mt-5">Carregando...</div>;
+
+    const renderInteresseTags = (items, selectedIds, toggleFunction) => {
+        return (
+            <div className="d-flex flex-wrap gap-2 p-3 rounded" style={{ backgroundColor: '#f8f9fa', border: '1px solid #e9ecef' }}>
+                {items.length > 0 ? (
+                    items.map((item) => {
+                        const isSelected = selectedIds.includes(item.id);
+                        return (
+                            <span
+                                key={item.id}
+                                onClick={() => toggleFunction(item.id)}
+                                style={{
+                                    cursor: 'pointer',
+                                    padding: '6px 14px',
+                                    borderRadius: '20px',
+                                    fontSize: '0.9rem',
+                                    transition: 'all 0.2s',
+                                    backgroundColor: isSelected ? '#594A47' : '#fff',
+                                    color: isSelected ? '#fff' : '#594A47',
+                                    border: '1px solid #594A47',
+                                    fontWeight: isSelected ? '600' : '400',
+                                    boxShadow: isSelected ? '0 2px 4px rgba(0,0,0,0.1)' : 'none'
+                                }}
+                            >
+                                {item.nome}
+                                {isSelected && <i className="bi bi-check ms-1"></i>}
+                            </span>
+                        );
+                    })
+                ) : (
+                    <span className="text-muted small">Carregando interesses...</span>
+                )}
+            </div>
+        );
+    };
+
+    // Auxiliar para renderizar Livros Favoritos (Centralizado e com botão de remover)
+    const renderFavoriteBooks = () => {
+        return (
+            <div className="d-flex justify-content-center gap-3 p-3 rounded" style={{ backgroundColor: '#f8f9fa', border: '1px solid #e9ecef' }}>
+                {livrosFavoritos.map(livro => (
+                    <div key={livro.id} className="text-center position-relative d-flex flex-column align-items-center" style={{ width: '80px' }}>
+                        <img
+                            src={livro.urlCapa}
+                            alt={livro.titulo}
+                            style={{ width: '80px', height: '120px', objectFit: 'cover', borderRadius: '4px' }}
+                            className="shadow-sm"
+                        />
+                        <button
+                            type="button"
+                            className="btn btn-sm btn-danger rounded-circle position-absolute"
+                            aria-label="Remover"
+                            onClick={() => handleRemoveFavorite(livro.id, livro.titulo)}
+                            style={{ width: '24px', height: '24px', padding: 0, lineHeight: 1, fontSize: '0.8rem', top: '-10px', right: '-10px' }}
+                        >
+                            X
+                        </button>
+                        <small className="d-block text-truncate mt-1" style={{ fontSize: '0.75rem' }}>{livro.titulo}</small>
+                    </div>
+                ))}
+
+                {/* Slot para adicionar novo favorito */}
+                {livrosFavoritos.length < MAX_FAVORITES && (
+                    <div className="text-center d-flex justify-content-center align-items-center" style={{ width: '80px', height: '120px', border: '2px dashed #ccc', borderRadius: '4px', cursor: 'pointer' }}
+                         onClick={() => setIsSearchModalOpen(true)}>
+                        <i className="bi bi-plus-lg text-muted" style={{ fontSize: '1.5rem' }}></i>
+                    </div>
+                )}
+            </div>
+        );
+    };
+
 
     return (
         <div className="edit-page-container">
@@ -163,7 +271,7 @@ export default function EditarPerfilPage() {
 
                                 {/* NOME */}
                                 <div>
-                                    <label className="form-label-custom">Nome de Exibição</label>
+                                    <label className="form-label-custom">Nome</label>
                                     <input
                                         type="text"
                                         name="nome"
@@ -192,39 +300,17 @@ export default function EditarPerfilPage() {
                                     <label className="form-label-custom mb-2">
                                         Seus Interesses <small className="text-muted">(Máximo 5)</small>
                                     </label>
-
-                                    <div className="d-flex flex-wrap gap-2 p-3 rounded" style={{ backgroundColor: '#f8f9fa', border: '1px solid #e9ecef' }}>
-                                        {interessesDisponiveis.length > 0 ? (
-                                            interessesDisponiveis.map((interesse) => {
-                                                const isSelected = interessesSelecionados.includes(interesse.id);
-                                                return (
-                                                    <span
-                                                        key={interesse.id}
-                                                        onClick={() => toggleInteresse(interesse.id)}
-                                                        style={{
-                                                            cursor: 'pointer',
-                                                            padding: '6px 14px',
-                                                            borderRadius: '20px',
-                                                            fontSize: '0.9rem',
-                                                            transition: 'all 0.2s',
-                                                            // Lógica visual: Marrom se selecionado, Branco se não
-                                                            backgroundColor: isSelected ? '#594A47' : '#fff',
-                                                            color: isSelected ? '#fff' : '#594A47',
-                                                            border: '1px solid #594A47',
-                                                            fontWeight: isSelected ? '600' : '400',
-                                                            boxShadow: isSelected ? '0 2px 4px rgba(0,0,0,0.1)' : 'none'
-                                                        }}
-                                                    >
-                                                        {interesse.nome}
-                                                        {isSelected && <i className="bi bi-check ms-1"></i>}
-                                                    </span>
-                                                );
-                                            })
-                                        ) : (
-                                            <span className="text-muted small">Carregando interesses...</span>
-                                        )}
-                                    </div>
+                                    {renderInteresseTags(interessesDisponiveis, interessesSelecionados, toggleInteresse)}
                                 </div>
+
+                                {/* UI DE LIVROS FAVORITOS */}
+                                <div className="mt-4">
+                                    <label className="form-label-custom mb-2">
+                                        Livros Favoritos <small className="text-muted">(Máximo {MAX_FAVORITES})</small>
+                                    </label>
+                                    {renderFavoriteBooks()}
+                                </div>
+
 
                                 {/* BOTÕES */}
                                 <div className="d-flex justify-content-end mt-4">
@@ -251,6 +337,16 @@ export default function EditarPerfilPage() {
                     </div>
                 </div>
             </div>
+
+            {/* O MODAL DE BUSCA AGORA USA O COMPONENTE AddBookModal.jsx FORNECIDO */}
+            <AddBookModal
+                show={isSearchModalOpen}
+                onHide={() => setIsSearchModalOpen(false)}
+                onBookAdded={handleBookAddedSuccess}
+                currentUserId={userId}
+                currentFavoritesCount={livrosFavoritos.length}
+                maxFavorites={MAX_FAVORITES}
+            />
         </div>
     );
 }

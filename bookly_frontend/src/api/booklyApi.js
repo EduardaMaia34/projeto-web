@@ -605,4 +605,17 @@ export async function fetchLivroStatus(livroId) {
 }
 
 
+export const removerLivroFavoritoApi = async (livroId) => {
+    const response = await fetch(`${API_BASE_URL}/users/favoritos/${livroId}`, {
+        method: 'DELETE',
+        headers: getHeaders()
+    });
+
+    if (response.status !== 204 && !response.ok) {
+        const errorData = await response.json().catch(() => ({ message: 'Falha ao remover livro dos favoritos.' }));
+        throw new Error(errorData.message || 'Erro ao remover livro dos favoritos.');
+    }
+    return response.text();
+};
+
 export { MOCK_JWT_TOKEN };
