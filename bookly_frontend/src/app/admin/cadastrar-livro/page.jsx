@@ -94,7 +94,7 @@ export default function CadastrarLivro() {
 
             if (response.ok) {
                 setMessage({ type: "success", text: "Livro cadastrado com sucesso!" });
-                setTimeout(() => router.push("/biblioteca"), 2000);
+                setTimeout(() => router.push("/admin/modo-admin"), 2000);
             } else {
                 let errorMsg = "Falha ao cadastrar";
                 try {

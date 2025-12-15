@@ -15,10 +15,8 @@ import com.br.edu.ufersa.pw.projeto.review.Model.entity.Review;
 import com.br.edu.ufersa.pw.projeto.user.API.dto.ReturnUserStatsDTO;
 import java.time.Year;
 
-import org.hibernate.validator.internal.util.stereotypes.Lazy;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.annotation.Propagation;
-
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
@@ -27,7 +25,6 @@ import org.springframework.stereotype.Service;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
-import java.util.NoSuchElementException;
 
 @Service
 public class BibliotecaService {
@@ -47,25 +44,17 @@ public class BibliotecaService {
     private ReturnBibliotecaDTO mapToReturnDTO(Biblioteca biblioteca) {
         ReturnBibliotecaDTO dto = new ReturnBibliotecaDTO(biblioteca);
 
-        try {
-            Long livroId = Long.valueOf(biblioteca.getLivroId());
-
-            // 1. Mapeia Livro (para título/capa)
-            Livro livroEntity = livroService.findLivroEntityById(livroId);
+        if (biblioteca.getLivro() != null) {
+            Livro livroEntity = biblioteca.getLivro();
             ReturnLivroDTO livroDTO = livroService.toReturnLivroDTO(livroEntity);
             dto.setLivro(livroDTO);
 
-            // 2. Mapeia a Nota da Review
-            Optional<Review> review = reviewRepository.findByUserIdAndLivroId(biblioteca.getUser().getId(), livroId);
+            Optional<Review> review = reviewRepository.findByUserIdAndLivroId(
+                    biblioteca.getUser().getId(),
+                    livroEntity.getId()
+            );
 
-            review.ifPresent(r -> {
-                dto.setNota(r.getNota());
-            });
-
-        } catch (NoSuchElementException e) {
-            System.err.println("Livro com ID " + biblioteca.getLivroId() + " referenciado na biblioteca, mas não encontrado.");
-        } catch (NumberFormatException e) {
-            System.err.println("livroId inválido: " + biblioteca.getLivroId());
+            review.ifPresent(r -> dto.setNota(r.getNota()));
         }
 
         return dto;
@@ -73,18 +62,23 @@ public class BibliotecaService {
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public ReturnBibliotecaDTO adicionarLivro(Long userId, InputBibliotecaDTO inputDTO) {
-
-        String livroId = inputDTO.getLivroId();
-
-        Optional<Biblioteca> existingEntry = bibliotecaRepository.findByUserIdAndLivroId(userId, livroId);
-        if (existingEntry.isPresent()) {
-            throw new IllegalStateException("O filme com ID " + livroId + " já está na sua biblioteca (watchlist).");
-        }
+        // Converte String do DTO para Long
+        Long livroId = Long.parseLong(inputDTO.getLivroId());
 
         User user = userService.findById(userId)
                 .orElseThrow(() -> new IllegalStateException("Usuário não encontrado."));
 
-        Biblioteca novaEntrada = new Biblioteca(user, livroId);
+        // Busca o objeto Livro completo
+        Livro livro = livroService.findLivroEntityById(livroId);
+
+        Optional<Biblioteca> existingEntry = bibliotecaRepository.findByUserIdAndLivroId(userId, livroId);
+
+        if (existingEntry.isPresent()) {
+            throw new IllegalStateException("O livro '" + livro.getTitulo() + "' já está na sua biblioteca.");
+        }
+
+        Biblioteca novaEntrada = new Biblioteca(user, livro);
+
         if (inputDTO.getStatus() != null) {
             novaEntrada.setStatus(inputDTO.getStatus());
         }
@@ -101,15 +95,10 @@ public class BibliotecaService {
 
         List<ReturnBibliotecaDTO> listaComReview = lidosPage.stream()
                 .map(biblioteca -> {
+                    if (biblioteca.getLivro() == null) return null;
 
-                    Long livroIdLong;
-                    try {
-                        livroIdLong = Long.valueOf(biblioteca.getLivroId());
-                    } catch (NumberFormatException e) {
-                        return null;
-                    }
-
-                    boolean hasReview = reviewRepository.existsByUserIdAndLivroId(userId, livroIdLong);
+                    Long livroId = biblioteca.getLivro().getId();
+                    boolean hasReview = reviewRepository.existsByUserIdAndLivroId(userId, livroId);
 
                     if (hasReview) {
                         return mapToReturnDTO(biblioteca);
@@ -123,52 +112,55 @@ public class BibliotecaService {
     }
 
     @Transactional
-    public boolean removerLivro(Long userId, String livroId) {
+    public boolean removerLivro(Long userId, String livroIdStr) {
+        try {
+            Long livroId = Long.parseLong(livroIdStr);
+            Optional<Biblioteca> entry = bibliotecaRepository.findByUserIdAndLivroId(userId, livroId);
 
-        Optional<Biblioteca> entry = bibliotecaRepository.findByUserIdAndLivroId(userId, livroId);
-
-        if (entry.isPresent()) {
-            bibliotecaRepository.deleteByUserIdAndLivroId(userId, livroId);
-            return true;
+            if (entry.isPresent()) {
+                bibliotecaRepository.deleteByUserIdAndLivroId(userId, livroId);
+                return true;
+            }
+            return false;
+        } catch (NumberFormatException e) {
+            return false;
         }
-
-        return false;
     }
 
     public Page<ReturnBibliotecaDTO> getWatchlistPorUsuario(Long userId, Pageable pageable) {
-        // Altera a chamada do repositório para buscar pelo Status = PARA_LER
         Page<Biblioteca> bibliotecaPage = bibliotecaRepository.findByUserIdAndStatusOrderByAddedAtDesc(
                 userId,
                 Estado.QUERO_LER,
                 pageable
         );
-
         return bibliotecaPage.map(this::mapToReturnDTO);
     }
 
-    public Optional<ReturnBibliotecaDTO> findEntryByUserIdAndLivroId(Long userId, String livroId) {
-        return bibliotecaRepository.findByUserIdAndLivroId(userId, livroId)
-                .map(this::mapToReturnDTO);
+    public Optional<ReturnBibliotecaDTO> findEntryByUserIdAndLivroId(Long userId, String livroIdStr) {
+        try {
+            Long livroId = Long.parseLong(livroIdStr);
+            return bibliotecaRepository.findByUserIdAndLivroId(userId, livroId)
+                    .map(this::mapToReturnDTO);
+        } catch (NumberFormatException e) {
+            return Optional.empty();
+        }
     }
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)
-    public ReturnBibliotecaDTO updateLivroStatus(Long userId, String livroId, Estado newStatus) {
+    public ReturnBibliotecaDTO updateLivroStatus(Long userId, String livroIdStr, Estado newStatus) {
+        Long livroId = Long.parseLong(livroIdStr);
 
         Biblioteca biblioteca = bibliotecaRepository.findByUserIdAndLivroId(userId, livroId)
                 .orElseThrow(() -> new IllegalStateException("Livro não encontrado na sua biblioteca."));
 
-
         biblioteca.setStatus(newStatus);
-
         Biblioteca updatedEntrada = bibliotecaRepository.save(biblioteca);
 
         return mapToReturnDTO(updatedEntrada);
     }
 
     public ReturnUserStatsDTO calculateUserStatistics(Long userId) {
-
         long totalSalvos = bibliotecaRepository.countByUserIdAndStatus(userId, Estado.QUERO_LER);
-
         long totalLidos = bibliotecaRepository.countByUserIdAndStatus(userId, Estado.LIDO);
 
         List<Review> reviewsDoUsuario = reviewRepository.findByUserId(userId);

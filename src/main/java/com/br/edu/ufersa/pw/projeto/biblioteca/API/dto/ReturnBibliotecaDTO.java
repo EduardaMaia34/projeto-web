@@ -4,37 +4,35 @@ import com.br.edu.ufersa.pw.projeto.biblioteca.Model.entity.Biblioteca;
 import com.br.edu.ufersa.pw.projeto.user.Model.entity.Estado;
 import com.br.edu.ufersa.pw.projeto.livro.API.dto.ReturnLivroDTO;
 
-import java.time.LocalDateTime;
-
 public class ReturnBibliotecaDTO {
 
     private Long id;
-    private Long userId;
-    private String livroId;
-    private LocalDateTime addedAt;
+    private String livroId; // Mantemos como String no DTO para o Frontend, se preferir
     private Estado status;
     private ReturnLivroDTO livro;
     private Double nota;
 
-    public ReturnBibliotecaDTO() {}
-
     public ReturnBibliotecaDTO(Biblioteca biblioteca) {
         this.id = biblioteca.getId();
-        this.userId = biblioteca.getUser().getId();
-        this.livroId = biblioteca.getLivroId();
-        this.addedAt = biblioteca.getAddedAt();
-        this.status = biblioteca.getStatus();
 
+        // --- CORREÇÃO AQUI ---
+        // Antes: this.livroId = biblioteca.getLivroId();
+        // Agora: Pegamos do objeto Livro aninhado
+        if (biblioteca.getLivro() != null) {
+            this.livroId = String.valueOf(biblioteca.getLivro().getId());
+        }
+        // ---------------------
+
+        this.status = biblioteca.getStatus();
     }
 
+    // Getters e Setters...
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
-    public Long getUserId() { return userId; }
-    public void setUserId(Long userId) { this.userId = userId; }
+
     public String getLivroId() { return livroId; }
     public void setLivroId(String livroId) { this.livroId = livroId; }
-    public LocalDateTime getAddedAt() { return addedAt; }
-    public void setAddedAt(LocalDateTime addedAt) { this.addedAt = addedAt; }
+
     public Estado getStatus() { return status; }
     public void setStatus(Estado status) { this.status = status; }
 
