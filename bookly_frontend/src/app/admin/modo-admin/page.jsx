@@ -6,39 +6,39 @@ import Link from "next/link";
 import Navbar from "@/components/Navbar";
 import EditBookModal from "@/components/EditBookModal";
 import DeleteBookModal from "@/components/DeleteBookModal";
-import "../../layout.jsx"; // Assumindo o caminho do CSS global
+import "../../layout.jsx";
 
 export default function ModoAdmin() {
     const router = useRouter();
 
-    // --- ESTADOS DE DADOS ---
     const [books, setBooks] = useState([]);
     const [filteredBooks, setFilteredBooks] = useState([]);
     const [searchTerm, setSearchTerm] = useState("");
     const [loading, setLoading] = useState(true);
     const [token, setToken] = useState("");
 
-    // --- ESTADO PARA PESQUISA TOGGLE ---
     const [isSearchVisible, setIsSearchVisible] = useState(false);
-
-    // --- ESTADOS DO MODAL DE EDIÇÃO ---
     const [showEditModal, setShowEditModal] = useState(false);
     const [editingBook, setEditingBook] = useState(null);
-
-    // --- ESTADOS DO MODAL DE DELEÇÃO ---
     const [showDeleteModal, setShowDeleteModal] = useState(false);
     const [bookToDelete, setBookToDelete] = useState(null);
     const [isDeleting, setIsDeleting] = useState(false);
 
-    // --- VERIFICAÇÃO INICIAL ---
+    // 1. Verificação de Admin e Token
     useEffect(() => {
         const storedToken = typeof window !== "undefined" ? localStorage.getItem("jwtToken") : null;
         const userData = JSON.parse(localStorage.getItem("userData") || "{}");
 
+        // Verifica permissões de forma mais flexível
         const role = userData.role || userData.perfil || userData.roles;
-        const isAdmin = role === 'ROLE_ADMIN' || (Array.isArray(role) && role.includes('ROLE_ADMIN'));
+        // Ajuste: verifica se role existe e contém ADMIN (seja string ou array)
+        const isAdmin = role && (
+            role === 'ROLE_ADMIN' ||
+            (Array.isArray(role) && role.includes('ROLE_ADMIN'))
+        );
 
         if (!storedToken || !isAdmin) {
+            console.warn("Acesso negado: Usuário não é admin ou sem token.");
             router.push("/login");
             return;
         }
@@ -47,42 +47,63 @@ export default function ModoAdmin() {
         fetchBooks(storedToken);
     }, [router]);
 
-    // --- BUSCAR LIVROS ---
+    // 2. Busca de Livros (Corrigida e com Logs)
     const fetchBooks = async (authToken) => {
         setLoading(true);
         try {
-            const url = `http://localhost:8081/api/v1/livros`;
+            const url = `http://localhost:8081/api/v1/livros`; // Confirme se a rota é esta mesma
+            console.log("Buscando livros em:", url);
 
             const response = await fetch(url, {
-                headers: { Authorization: `Bearer ${authToken}` },
+                headers: {
+                    "Authorization": `Bearer ${authToken}`,
+                    "Content-Type": "application/json"
+                },
             });
 
             if (response.ok) {
                 const data = await response.json();
-                const lista = Array.isArray(data) ? data : (data.content || []);
+                console.log("Dados recebidos da API:", data); // Olhe seu console (F12)
+
+                // Lógica robusta para extrair a lista, seja Array puro ou Pageable (Spring)
+                let lista = [];
+                if (Array.isArray(data)) {
+                    lista = data;
+                } else if (data.content && Array.isArray(data.content)) {
+                    lista = data.content;
+                }
+
                 setBooks(lista);
-                setFilteredBooks(lista);
+                setFilteredBooks(lista); // Inicializa os filtrados com a lista completa
+            } else {
+                console.error("Erro na resposta da API:", response.status);
             }
         } catch (err) {
-            console.error(err);
+            console.error("Erro ao buscar livros:", err);
         } finally {
             setLoading(false);
         }
     };
 
-    // --- FILTRO ---
+    // 3. Filtro de Pesquisa (Blindado contra Null)
     useEffect(() => {
+        if (!books) return;
+
         const term = searchTerm.toLowerCase();
-        const results = books.filter(book =>
-            book.titulo.toLowerCase().includes(term) ||
-            book.autor.toLowerCase().includes(term) ||
-            String(book.id).includes(term)
-        );
+
+        const results = books.filter(book => {
+            // Usa encadeamento opcional (?.) e valores padrão ("") para evitar erro se for null
+            const titulo = (book.titulo || "").toLowerCase();
+            const autor = (book.autor || "").toLowerCase();
+            const id = String(book.id || "");
+
+            return titulo.includes(term) || autor.includes(term) || id.includes(term);
+        });
+
         setFilteredBooks(results);
     }, [searchTerm, books]);
 
-
-    // --- LÓGICA DE EXCLUSÃO ---
+    // --- FUNÇÕES DE AÇÃO (Deletar/Editar) ---
     const handleDeleteClick = (book) => {
         setBookToDelete(book);
         setShowDeleteModal(true);
@@ -99,78 +120,79 @@ export default function ModoAdmin() {
             });
 
             if (response.status === 204 || response.ok) {
-                setBooks(prev => prev.filter(b => b.id !== bookToDelete.id));
+                // Remove da lista local para não precisar recarregar tudo
+                const novaLista = books.filter(b => b.id !== bookToDelete.id);
+                setBooks(novaLista);
+                // O useEffect do filtro atualizará o filteredBooks automaticamente
+
                 setShowDeleteModal(false);
                 setBookToDelete(null);
-            } else if (response.status === 403) {
-                alert("Acesso negado. Você não tem permissão de ADMIN para deletar.");
             } else {
-                alert("Erro ao excluir. O livro pode ter vínculos com reviews ou usuários.");
+                alert("Erro ao excluir. Verifique se o livro possui vínculos.");
             }
         } catch (error) {
-            console.error("Erro de conexão", error);
-            alert("Erro de conexão ao tentar excluir.");
+            console.error("Erro ao excluir", error);
         } finally {
             setIsDeleting(false);
         }
     };
 
-
-    // --- LÓGICA DE EDIÇÃO ---
     const handleEditClick = (book) => {
         setEditingBook(book);
         setShowEditModal(true);
     };
 
     const handleUpdateSuccess = (updatedBook) => {
+        // Atualiza a lista local com o livro editado
         const updatedList = books.map(b => b.id === updatedBook.id ? updatedBook : b);
         setBooks(updatedList);
-        setFilteredBooks(prev => prev.map(b => b.id === updatedBook.id ? updatedBook : b));
+        setFilteredBooks(updatedList); // Reseta o filtro momentaneamente ou aplica logica
         alert("Livro atualizado com sucesso!");
+        setShowEditModal(false);
     };
 
+    // --- RENDERIZAÇÃO ---
     return (
         <div style={{ backgroundColor: "#f4f1ea", minHeight: "100vh" }}>
             <Navbar />
 
             <div className="container" style={{ paddingTop: "120px", paddingBottom: "60px" }}>
 
-                {/* --- CABEÇALHO E BOTÕES --- */}
                 <div className="row align-items-center mb-4">
                     <div className="col-md-6">
-                        <h2 className="admin-title m-0">Modo Admin</h2>
+                        <h2 className="m-0" style={{ fontFamily: "'Georgia', serif", color: "#594A47", fontWeight: "bold" }}>
+                            Modo Admin
+                        </h2>
                         <small className="text-muted">Gerenciamento de {books.length} Livros</small>
                     </div>
 
                     <div className="col-md-6 text-md-end d-flex justify-content-end align-items-center">
-
-                        {/* Botão de Pesquisa (Toggle) */}
                         <button
                             className="btn btn-link text-dark me-3"
                             onClick={() => setIsSearchVisible(!isSearchVisible)}
-                            title="Alternar Barra de Pesquisa"
+                            title="Alternar Pesquisa"
                         >
-                            <i className="bi bi-search" style={{ fontSize: '1.2rem', color: 'var(--color-text-primary)' }}></i>
+                            <i className="bi bi-search" style={{ fontSize: '1.2rem' }}></i>
                         </button>
 
-                        {/* Botão ADICIONAR LIVRO (Verde) */}
-                        <Link href="/admin/cadastrar-livro" className="btn-green-bookly shadow-sm">
+                        <Link href="/admin/cadastrar-livro" className="btn btn-success shadow-sm" style={{ backgroundColor: "#198754", border: "none" }}>
                             <i className="bi bi-plus-lg me-2"></i> Adicionar Livro
                         </Link>
                     </div>
                 </div>
 
-                {/* --- BARRA DE PESQUISA TOGGLE --- */}
-                <div className={`search-toggle-wrapper mb-4 ${isSearchVisible ? 'visible' : ''}`}>
-                    <input
-                        type="text"
-                        className="search-input"
-                        placeholder="Pesquisar por título, autor ou ID..."
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                    />
-                </div>
-
+                {isSearchVisible && (
+                    <div className="mb-4">
+                        <input
+                            type="text"
+                            className="form-control p-3"
+                            placeholder="Pesquisar por título, autor ou ID..."
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                            style={{ borderRadius: '8px', border: '1px solid #ddd' }}
+                        />
+                    </div>
+                )}
 
                 {loading ? (
                     <div className="text-center py-5">
@@ -181,80 +203,71 @@ export default function ModoAdmin() {
                     <div className="row">
                         {filteredBooks.length > 0 ? (
                             filteredBooks.map((book) => (
-                                <div key={book.id} className="col-12">
-                                    <div className="book-card-admin d-flex align-items-center">
+                                <div key={book.id} className="col-12 mb-3">
+                                    <div className="card shadow-sm border-0">
+                                        <div className="card-body d-flex align-items-center p-3">
 
-                                        {/* LAYOUT: Capa e Info Lado a Lado (Esquerda) */}
-                                        <img
-                                            src={book.urlCapa || "https://via.placeholder.com/150"}
-                                            alt={book.titulo}
-                                            className="book-cover flex-shrink-0"
-                                            onError={(e) => e.target.src = "https://via.placeholder.com/80x120?text=Sem+Capa"}
-                                        />
-
-                                        <div className="book-info ms-4 flex-grow-1" style={{ minWidth: 0 }}>
-                                            <h4>{book.titulo}</h4>
-
-                                            <div className="book-meta">
-                                                <i className="bi bi-person-fill me-1"></i> {book.autor}
-                                                <span className="mx-2 text-muted">|</span>
-                                                <i className="bi bi-calendar-event me-1"></i> {book.ano}
-                                                <span className="mx-2 text-muted">|</span>
-                                                <i className="bi bi-hash me-1"></i> ID: {book.id}
+                                            {/* Imagem */}
+                                            <div style={{ width: "60px", height: "90px", backgroundColor: "#eee", flexShrink: 0, overflow: "hidden", borderRadius: "4px" }}>
+                                                <img
+                                                    src={book.urlCapa || ""}
+                                                    alt={book.titulo}
+                                                    style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                                                    onError={(e) => e.target.style.display = "none"}
+                                                />
                                             </div>
 
-                                            <p className="text-muted small mb-2 d-none d-md-block" style={{
-                                                lineHeight: '1.4',
-                                                maxHeight: '2.8em',
-                                                overflow: 'hidden',
-                                                textOverflow: 'ellipsis'
-                                            }}>
-                                                {book.descricao}
-                                            </p>
-
-                                            <div className="mt-2">
-                                                {book.interesses && Array.isArray(book.interesses) && book.interesses.map((tag, index) => (
-                                                    <span key={tag.id || index} className="tag-pill">{tag.nome || tag}</span>
-                                                ))}
+                                            {/* Informações */}
+                                            <div className="ms-3 flex-grow-1">
+                                                <h5 className="mb-1" style={{ color: "#594A47", fontWeight: "bold" }}>
+                                                    {book.titulo}
+                                                </h5>
+                                                <p className="mb-1 text-muted small">
+                                                    {book.autor} • {book.ano} • ID: {book.id}
+                                                </p>
+                                                {/* Tags */}
+                                                <div>
+                                                    {book.interesses && Array.isArray(book.interesses) && book.interesses.map((tag, idx) => (
+                                                        <span key={idx} className="badge bg-light text-dark border me-1 fw-normal">
+                                                            {tag.nome || tag}
+                                                        </span>
+                                                    ))}
+                                                </div>
                                             </div>
+
+                                            {/* Botões */}
+                                            <div className="d-flex gap-2">
+                                                <button
+                                                    className="btn btn-outline-secondary btn-sm"
+                                                    onClick={() => handleEditClick(book)}
+                                                    title="Editar"
+                                                >
+                                                    <i className="bi bi-pencil-square"></i>
+                                                </button>
+                                                <button
+                                                    className="btn btn-outline-danger btn-sm"
+                                                    onClick={() => handleDeleteClick(book)}
+                                                    title="Excluir"
+                                                >
+                                                    <i className="bi bi-trash-fill"></i>
+                                                </button>
+                                            </div>
+
                                         </div>
-
-                                        {/* BOTÕES DE AÇÃO (Direita) */}
-                                        <div className="d-flex ms-3 align-items-center flex-shrink-0">
-
-                                            {/* Botão EDITAR (Marrom Escuro) */}
-                                            <button
-                                                className="action-btn btn-edit"
-                                                onClick={() => handleEditClick(book)}
-                                                title="Editar"
-                                            >
-                                                <i className="bi bi-pencil-square"></i>
-                                            </button>
-
-                                            {/* Botão DELETAR (Marrom Escuro) */}
-                                            <button
-                                                className="action-btn btn-delete"
-                                                title="Excluir"
-                                                onClick={() => handleDeleteClick(book)}
-                                            >
-                                                <i className="bi bi-trash-fill"></i>
-                                            </button>
-                                        </div>
-
                                     </div>
                                 </div>
                             ))
                         ) : (
-                            <div className="col-12 text-center py-5 opacity-50">
-                                <i className="bi bi-emoji-frown fs-1 mb-3 d-block"></i>
-                                <h5>Nenhum livro encontrado.</h5>
+                            <div className="col-12 text-center py-5">
+                                <i className="bi bi-journal-x fs-1 text-muted mb-3 d-block"></i>
+                                <h5 className="text-muted">Nenhum livro encontrado.</h5>
+                                {searchTerm && <p className="small text-muted">Tente buscar por outro termo.</p>}
                             </div>
                         )}
                     </div>
                 )}
             </div>
 
-            {/* MODAL DE EDIÇÃO */}
             <EditBookModal
                 show={showEditModal}
                 onHide={() => setShowEditModal(false)}
@@ -262,7 +275,6 @@ export default function ModoAdmin() {
                 onUpdateSuccess={handleUpdateSuccess}
             />
 
-            {/* MODAL DE EXCLUSÃO */}
             <DeleteBookModal
                 show={showDeleteModal}
                 onHide={() => setShowDeleteModal(false)}
@@ -270,7 +282,6 @@ export default function ModoAdmin() {
                 onConfirm={confirmDelete}
                 loading={isDeleting}
             />
-
         </div>
     );
 }

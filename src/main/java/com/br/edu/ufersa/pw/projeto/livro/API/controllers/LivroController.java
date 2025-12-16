@@ -29,14 +29,18 @@ public class LivroController {
     public ResponseEntity<List<ReturnLivroDTO>> list(
             @RequestParam(required = false) String termo) {
 
+        List<Livro> livrosEncontrados;
+
         if (termo == null || termo.trim().isEmpty()) {
-            return ResponseEntity.ok(List.of());
+            livrosEncontrados = service.buscarTodos();
+        } else {
+
+            livrosEncontrados = service.buscarPorTermo(termo);
         }
 
-        List<ReturnLivroDTO> response = service.buscarPorTermo(termo)
-                .stream()
+        List<ReturnLivroDTO> response = livrosEncontrados.stream()
                 .map(service::toReturnLivroDTO)
-                .toList();
+                .collect(Collectors.toList());
 
         return ResponseEntity.ok(response);
     }

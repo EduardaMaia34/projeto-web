@@ -5,21 +5,24 @@ import React, { useState, useEffect } from "react";
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import SearchModal from "./SearchModal";
+import ReviewModal from "./ReviewModal"; // 1. IMPORTAR O MODAL
 
-export default function Navbar({ onAddBookClick }) {
+export default function Navbar({ onAddBookClick }) { // onAddBookClick fica opcional agora
     const router = useRouter();
     const [isLoggedIn, setIsLoggedIn] = useState(false);
     const [userData, setUserData] = useState({ name: "", photo: "" });
     const [userId, setUserId] = useState(null);
     const [isAdmin, setIsAdmin] = useState(false);
-    const [openSearchModal, setOpenSearchModal] = useState(false);
     const [isLoadingUser, setIsLoadingUser] = useState(true);
+
+    // ESTADOS DOS MODAIS
+    const [openSearchModal, setOpenSearchModal] = useState(false);
+    const [openReviewModal, setOpenReviewModal] = useState(false); // 2. NOVO ESTADO
 
     useEffect(() => {
         let user;
         let token;
 
-        // Atrasar um pouco para garantir que o localStorage seja resolvido no cliente
         const timer = setTimeout(() => {
             token = typeof window !== "undefined" && localStorage.getItem("jwtToken");
             setIsLoggedIn(!!token);
@@ -38,7 +41,6 @@ export default function Navbar({ onAddBookClick }) {
                         setUserId(user.id);
                     }
 
-                    // Verificação Robusta
                     const role = user.role || user.perfil || user.roles;
                     const isAdminCheck = role === 'ROLE_ADMIN' || (Array.isArray(role) && role.includes('ROLE_ADMIN'));
 
@@ -52,7 +54,7 @@ export default function Navbar({ onAddBookClick }) {
                 }
             }
             setIsLoadingUser(false);
-        }, 50); // Pequeno delay de 50ms
+        }, 50);
 
         return () => clearTimeout(timer);
     }, []);
@@ -69,6 +71,11 @@ export default function Navbar({ onAddBookClick }) {
             setIsAdmin(false);
             router.push("/");
         }
+    };
+
+    // Callback para quando salvar o review com sucesso (opcional: recarregar página)
+    const handleReviewSuccess = () => {
+        window.location.reload();
     };
 
     const useIconFallback = !userData.photo || userData.photo === "https://imgur.com/pcf2EUA.png";
@@ -123,11 +130,9 @@ export default function Navbar({ onAddBookClick }) {
                                     )}
                                 </Link>
 
-                                {/* Botão visível APENAS para ROLE_ADMIN */}
                                 {isAdmin && (
                                     <Link
                                         href="/admin/modo-admin"
-                                        /* Usamos apenas 'btn' e aplicamos o estilo manual para o azul escuro */
                                         className="btn me-3 fw-bold"
                                         style={{ backgroundColor: "#003366", color: "#fff", borderColor: "#003366" }}
                                         title="Área Administrativa"
@@ -136,9 +141,10 @@ export default function Navbar({ onAddBookClick }) {
                                     </Link>
                                 )}
 
+                                {/* 3. BOTÃO AGORA ABRE O MODAL */}
                                 <button
                                     className="btn btn-success me-3 d-flex align-items-center"
-                                    onClick={() => onAddBookClick && onAddBookClick()}
+                                    onClick={() => setOpenReviewModal(true)}
                                 >
                                     <span style={{ fontSize: '1.2rem', lineHeight: 1, marginRight: 4 }}>+</span> Livro
                                 </button>
@@ -156,9 +162,17 @@ export default function Navbar({ onAddBookClick }) {
                 </div>
             </nav>
 
+            {/* MODAL DE PESQUISA */}
             <SearchModal
                 show={openSearchModal}
                 onHide={() => setOpenSearchModal(false)}
+            />
+
+            {/* 4. MODAL DE REVIEW ADICIONADO AQUI */}
+            <ReviewModal
+                show={openReviewModal}
+                onHide={() => setOpenReviewModal(false)}
+                onSaveSuccess={handleReviewSuccess}
             />
         </>
     );
