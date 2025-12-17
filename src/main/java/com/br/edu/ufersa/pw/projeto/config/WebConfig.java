@@ -5,15 +5,15 @@ import org.springframework.web.servlet.config.annotation.CorsRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
 @Configuration
-// @EnableWebMvc  <-- REMOVA OU COMENTE ESTA LINHA
 public class WebConfig implements WebMvcConfigurer {
 
     @Override
     public void addCorsMappings(CorsRegistry registry) {
+        // CORREÇÃO: Combinando as allowedOrigins em uma única chamada
         registry.addMapping("/**")
-                .allowedOrigins("http://localhost:3000") // Garanta que seu front roda aqui
+                .allowedOrigins("http://localhost:3000", "http://localhost:5173") // Desenvolvimento local
                 .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS", "HEAD", "TRACE", "CONNECT")
                 .allowedHeaders("*");
-        // .allowCredentials(false) <-- Pode deixar padrão ou true se precisar de cookies
     }
+
 }
