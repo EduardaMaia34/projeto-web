@@ -229,7 +229,6 @@ export async function searchUsersApi(name) {
 
 export const fetchEstanteData = async (type, userId = null, page = 0, size = 20) => {
     let url;
-    // Ajuste aqui se sua API usa /biblioteca/estante ou apenas /biblioteca
     let endpoint = type === 'estante' ? '/biblioteca/estante' : '/biblioteca';
 
     if (type === 'estante' && userId) {
