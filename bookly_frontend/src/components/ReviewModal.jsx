@@ -1,11 +1,10 @@
-"use client";
-
 import React, { useState, useEffect } from "react";
 import { Modal } from "react-bootstrap";
+// Certifique-se que o caminho da API está correto
 import { saveReviewApi } from "../api/booklyApi";
-import ReviewSearchModal from "./ReviewSearchModal"; // <--- Certifique-se que o arquivo existe nessa pasta
+import ReviewSearchModal from "./ReviewSearchModal";
 
-/** Componente de Estrelas */
+/** Componente de Estrelas Interno */
 const StarRatingInput = ({ currentRating, onRate }) => {
     const stars = [1, 2, 3, 4, 5];
     const handleClick = (starValue) => {
@@ -18,14 +17,26 @@ const StarRatingInput = ({ currentRating, onRate }) => {
     };
 
     return (
-        <div className="star-rating mt-2">
+        <div className="star-rating mt-2 d-flex justify-content-center">
             {stars.map((starValue) => {
                 let iconClass = "bi-star";
-                let color = "#e0e0e0";
-                if (starValue <= currentRating) { iconClass = "bi-star-fill"; color = "gold"; }
-                else if (starValue - 0.5 <= currentRating) { iconClass = "bi-star-half"; color = "gold"; }
+                let color = "#e0e0e0"; // Cinza claro
+
+                if (starValue <= currentRating) {
+                    iconClass = "bi-star-fill";
+                    color = "gold";
+                } else if (starValue - 0.5 <= currentRating) {
+                    iconClass = "bi-star-half";
+                    color = "gold";
+                }
+
                 return (
-                    <i key={starValue} className={`bi ${iconClass}`} style={{ fontSize: "1.6rem", color: color, cursor: "pointer", margin: "0 4px" }} onClick={() => handleClick(starValue)} />
+                    <i
+                        key={starValue}
+                        className={`bi ${iconClass}`}
+                        style={{ fontSize: "1.6rem", color: color, cursor: "pointer", margin: "0 4px" }}
+                        onClick={() => handleClick(starValue)}
+                    />
                 );
             })}
         </div>
@@ -40,6 +51,7 @@ export default function ReviewModal({ show, onHide, onSaveSuccess, initialLivro 
 
     // Estado para controlar o SEGUNDO modal (de busca)
     const [showSearchModal, setShowSearchModal] = useState(false);
+    const [loading, setLoading] = useState(false);
 
     // Inicialização
     useEffect(() => {
@@ -55,20 +67,21 @@ export default function ReviewModal({ show, onHide, onSaveSuccess, initialLivro 
 
     // Função chamada quando o ReviewSearchModal devolve um livro
     const handleBookSelected = (livro) => {
-        console.log("Livro recebido da busca:", livro); // Debug para confirmar
         setSelectedLivro(livro);
         setShowSearchModal(false); // Fecha o modal de busca
     };
 
     const handleSave = async () => {
         if (!selectedLivro) {
-            alert("Selecione um livro.");
+            alert("Por favor, selecione um livro clicando no sinal de '+'.");
             return;
         }
         if (!nota || nota === 0) {
-            alert("Atribua uma nota.");
+            alert("Por favor, atribua uma nota para o livro.");
             return;
         }
+
+        setLoading(true);
 
         const payload = {
             livroId: selectedLivro.id,
@@ -84,6 +97,8 @@ export default function ReviewModal({ show, onHide, onSaveSuccess, initialLivro 
         } catch (err) {
             console.error(err);
             alert("Erro ao salvar review: " + err.message);
+        } finally {
+            setLoading(false);
         }
     };
 
@@ -97,10 +112,10 @@ export default function ReviewModal({ show, onHide, onSaveSuccess, initialLivro 
                 size="lg"
                 contentClassName="border-0 bg-transparent"
             >
-                <div className="modal-content" style={{ backgroundColor: '#f5f4ed', color: '#594A47', borderRadius: '10px', border: 'none' }}>
+                <div className="modal-content shadow-lg" style={{ backgroundColor: '#f5f4ed', color: '#594A47', borderRadius: '10px', border: 'none' }}>
 
                     <div className="modal-header border-0 pb-0">
-                        <h5 className="modal-title fw-bold" style={{ fontSize: '1.5rem' }}>eu li...</h5>
+                        <h5 className="modal-title fw-bold" style={{ fontSize: '1.5rem', fontFamily: 'Georgia, serif' }}>eu li...</h5>
                         <button type="button" className="btn-close" onClick={onHide} aria-label="Close"></button>
                     </div>
 
@@ -111,25 +126,25 @@ export default function ReviewModal({ show, onHide, onSaveSuccess, initialLivro 
 
                         <div className="row">
                             {/* COLUNA DA ESQUERDA: CAPA E NOTA */}
-                            <div className="col-4 d-flex flex-column align-items-center">
+                            <div className="col-md-4 d-flex flex-column align-items-center mb-3 mb-md-0">
 
                                 {selectedLivro && (
-                                    <h6 className="text-center fw-bold mb-2 small">{selectedLivro.titulo}</h6>
+                                    <h6 className="text-center fw-bold mb-2 small px-2 text-truncate w-100">{selectedLivro.titulo}</h6>
                                 )}
-                                
 
-                                {/* --- AQUI ESTÁ O "CARDZINHO" CLICÁVEL --- */}
+                                {/* --- CARD CLICÁVEL --- */}
                                 <div
-                                    onClick={() => setShowSearchModal(true)} // Abre o modal de busca
-                                    style={{ cursor: 'pointer' }}
+                                    onClick={() => setShowSearchModal(true)}
+                                    style={{ cursor: 'pointer', position: 'relative' }}
                                     title="Clique para selecionar um livro"
                                 >
                                     {selectedLivro ? (
                                         <img
-                                            src={selectedLivro.urlCapa || selectedLivro.capa || "https://via.placeholder.com/150x225"}
+                                            src={selectedLivro.urlCapa || "https://placehold.co/120x180?text=Capa"}
                                             alt={selectedLivro.titulo}
                                             className="shadow-sm rounded mb-2"
                                             style={{ width: '120px', height: '180px', objectFit: 'cover' }}
+                                            onError={(e) => e.target.src = "https://placehold.co/120x180?text=Capa"}
                                         />
                                     ) : (
                                         // O CARD VAZIO COM "+"
@@ -144,21 +159,21 @@ export default function ReviewModal({ show, onHide, onSaveSuccess, initialLivro 
                                 </div>
 
                                 {!selectedLivro && (
-                                    <small className="text-muted mt-1" style={{cursor: 'pointer'}} onClick={() => setShowSearchModal(true)}>
+                                    <small className="text-muted mt-1 text-decoration-underline" style={{cursor: 'pointer'}} onClick={() => setShowSearchModal(true)}>
                                         Selecionar Livro
                                     </small>
                                 )}
 
-                                <small className="d-block text-center mt-3 text-muted">Sua nota:</small>
+                                <small className="d-block text-center mt-3 text-muted fw-bold">Sua nota:</small>
                                 <StarRatingInput currentRating={nota} onRate={setNota} />
                             </div>
 
                             {/* COLUNA DA DIREITA: TEXTO */}
-                            <div className="col-8">
+                            <div className="col-md-8">
                                 <textarea
-                                    className="form-control"
+                                    className="form-control h-100"
                                     rows="8"
-                                    placeholder={selectedLivro ? `O que achou de ${selectedLivro.titulo}?` : "Selecione um livro clicando na imagem ao lado..."}
+                                    placeholder={selectedLivro ? `O que você achou de "${selectedLivro.titulo}"? Escreva sua resenha aqui...` : "Selecione um livro clicando na imagem ao lado para começar a escrever..."}
                                     style={{ resize: 'none', backgroundColor: 'white', border: '1px solid #DED2C2', color: '#594A47' }}
                                     value={reviewText}
                                     onChange={(e) => setReviewText(e.target.value)}
@@ -173,13 +188,15 @@ export default function ReviewModal({ show, onHide, onSaveSuccess, initialLivro 
                             className="btn fw-bold text-white shadow-sm"
                             style={{ backgroundColor: '#7AA27D', borderColor: '#7AA27D', padding: '10px 40px' }}
                             onClick={handleSave}
+                            disabled={loading}
                         >
-                            Salvar
+                            {loading ? <span className="spinner-border spinner-border-sm me-2"></span> : "Salvar Review"}
                         </button>
                     </div>
                 </div>
             </Modal>
 
+            {/* O modal de busca precisa estar aqui */}
             <ReviewSearchModal
                 show={showSearchModal}
                 onHide={() => setShowSearchModal(false)}

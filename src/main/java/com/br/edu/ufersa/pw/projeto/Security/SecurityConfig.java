@@ -114,7 +114,8 @@ public class SecurityConfig {
         configuration.setAllowedOrigins(Arrays.asList(
                 "http://localhost:3000",
                 "http://127.0.0.1:3000",
-                "https://SEU-FRONTEND-DOMINIO.koyeb.app" // Ajuste para produção se necessário
+                "http://localhost:5173",
+                "https://medieval-sophi-eduarda-99a77f98.koyeb.app/"
         ));
 
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"));

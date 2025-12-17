@@ -1,8 +1,7 @@
-'use client';
-
 import React, { useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { loginUser, getLoggedInUserId } from '../../api/booklyApi.js';
+import { useNavigate, Link } from 'react-router-dom';
+// Certifique-se de que o caminho da API está correto
+import { getLoggedInUserId, loginUser } from '../api/booklyApi.js';
 
 const LoginPage = () => {
     const [email, setEmail] = useState('');
@@ -10,7 +9,7 @@ const LoginPage = () => {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
 
-    const router = useRouter();
+    const navigate = useNavigate();
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -18,34 +17,31 @@ const LoginPage = () => {
         setError(null);
 
         try {
-            // 🔹 Faz login (token já é salvo no localStorage aqui)
+            // 🔹 Faz login (token é salvo no localStorage pela função loginUser)
             await loginUser(email, password);
 
-            // 🔹 ID vem do JWT (100% confiável)
+            // 🔹 ID vem do JWT decodificado
             const userId = getLoggedInUserId();
 
             if (!userId) {
                 throw new Error('ID do usuário não encontrado após login.');
             }
 
-            router.push(`/`);
+            // Redireciona para a Home após sucesso
+            // Se preferir recarregar a página para atualizar a Navbar imediatamente,
+            // você pode usar window.location.href = '/';
+            navigate('/home');
 
         } catch (err) {
             console.error("Erro no submit:", err);
             setError(err.message || 'Credenciais inválidas ou erro de conexão.');
 
-            if (typeof window !== 'undefined') {
-                localStorage.removeItem('jwtToken');
-                localStorage.removeItem('userData');
-            }
+            // Limpa dados antigos em caso de erro
+            localStorage.removeItem('jwtToken');
+            localStorage.removeItem('userData');
         } finally {
             setLoading(false);
         }
-    };
-
-    const handleRegisterClick = (e) => {
-        e.preventDefault();
-        router.push("/register");
     };
 
     return (
@@ -168,9 +164,8 @@ const LoginPage = () => {
                             Esqueci a senha
                         </a>
 
-                        <a
-                            href="/register"
-                            onClick={handleRegisterClick}
+                        <Link
+                            to="/register"
                             style={{
                                 color: '#594A47',
                                 fontWeight: 'bold',
@@ -180,7 +175,7 @@ const LoginPage = () => {
                             }}
                         >
                             Criar Conta
-                        </a>
+                        </Link>
                     </div>
                 </form>
             </div>

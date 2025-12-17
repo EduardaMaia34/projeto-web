@@ -1,7 +1,6 @@
-// src/components/InteressesSelector.jsx
-
 import React, { useState, useEffect } from 'react';
-import { fetchInteresses } from '../api/booklyApi.js'; // Importa a nova função de API
+// Certifique-se de que o caminho da API está correto
+import { fetchInteresses } from '../api/booklyApi.js';
 
 export default function InteressesSelector({ selectedIds, onSelect }) {
     const [availableInteresses, setAvailableInteresses] = useState([]);
@@ -12,7 +11,8 @@ export default function InteressesSelector({ selectedIds, onSelect }) {
         const loadInteresses = async () => {
             try {
                 const data = await fetchInteresses();
-                setAvailableInteresses(data);
+                // Garante que seja um array para evitar erro no .map
+                setAvailableInteresses(Array.isArray(data) ? data : []);
             } catch (error) {
                 console.error("Não foi possível carregar a lista de interesses.", error);
                 setAvailableInteresses([]);
@@ -24,43 +24,60 @@ export default function InteressesSelector({ selectedIds, onSelect }) {
     }, []);
 
     const handleToggle = (id) => {
-        const newIds = selectedIds.includes(id)
-            ? selectedIds.filter(i => i !== id) // Remove se já estiver selecionado
-            : [...selectedIds, id]; // Adiciona se não estiver
+        const isSelected = selectedIds.includes(id);
 
-        if (newIds.length <= 3) {
-            onSelect(newIds);
+        if (isSelected) {
+            // Se já selecionado, remove
+            onSelect(selectedIds.filter(i => i !== id));
         } else {
-            alert("Você pode escolher no máximo 3 interesses.");
+            // Se não selecionado, verifica o limite de 3
+            if (selectedIds.length < 3) {
+                onSelect([...selectedIds, id]);
+            } else {
+                alert("Você pode escolher no máximo 3 interesses.");
+            }
         }
     };
 
     if (loading) {
-        return <p className="text-muted">Carregando interesses...</p>;
+        return (
+            <div className="d-flex align-items-center text-muted">
+                <span className="spinner-border spinner-border-sm me-2"></span>
+                Carregando interesses...
+            </div>
+        );
     }
 
     if (availableInteresses.length === 0) {
-        return <p className="text-danger">Nenhum interesse disponível.</p>;
+        return <p className="text-danger">Nenhum interesse disponível ou erro de conexão.</p>;
     }
+
+    // Cores de fallback caso as variáveis CSS não existam
+    const primaryColor = 'var(--color-text-primary, #594A47)';
+    const lightColor = 'var(--color-background-light, #ffffff)';
 
     return (
         <div className="d-flex flex-wrap gap-2">
-            {availableInteresses.map(interesse => (
-                <button
-                    key={interesse.id}
-                    type="button"
-                    className={`btn btn-sm ${selectedIds.includes(interesse.id) ? 'btn-selected-interesse' : 'btn-outline-secondary'}`}
-                    onClick={() => handleToggle(interesse.id)}
-                    style={{
-                        backgroundColor: selectedIds.includes(interesse.id) ? 'var(--color-text-primary)' : 'transparent',
-                        color: selectedIds.includes(interesse.id) ? 'var(--color-background-light)' : 'var(--color-text-primary)',
-                        borderColor: 'var(--color-text-primary)',
-                        fontFamily: 'Arial, sans-serif'
-                    }}
-                >
-                    {interesse.nome}
-                </button>
-            ))}
+            {availableInteresses.map(interesse => {
+                const isSelected = selectedIds.includes(interesse.id);
+                return (
+                    <button
+                        key={interesse.id}
+                        type="button"
+                        className={`btn btn-sm ${isSelected ? 'fw-bold shadow-sm' : 'btn-outline-secondary'}`}
+                        onClick={() => handleToggle(interesse.id)}
+                        style={{
+                            backgroundColor: isSelected ? primaryColor : 'transparent',
+                            color: isSelected ? lightColor : primaryColor,
+                            borderColor: primaryColor,
+                            fontFamily: 'Georgia, serif', // Ajustado para combinar com o resto do site
+                            transition: 'all 0.2s'
+                        }}
+                    >
+                        {interesse.nome}
+                    </button>
+                );
+            })}
         </div>
     );
 }

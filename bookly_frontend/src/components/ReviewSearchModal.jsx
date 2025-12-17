@@ -1,11 +1,8 @@
-// ARQUIVO: src/components/ReviewSearchModal.jsx
-"use client";
-
 import React, { useState, useEffect } from "react";
-import { Modal } from "react-bootstrap"; // <--- O IMPORT DO MODAL ESTÁ AQUI
+import { Modal } from "react-bootstrap";
 import { useDebounce } from "../hooks/useDebounce";
 import { searchLivrosApi } from "../api/booklyApi";
-import ReviewSearchBar from "./ReviewSearchBar"; // Importa a sua barra
+import ReviewSearchBar from "./ReviewSearchBar";
 
 export default function ReviewSearchModal({ show, onHide, onSelectBook }) {
     const [searchTerm, setSearchTerm] = useState("");
@@ -23,7 +20,7 @@ export default function ReviewSearchModal({ show, onHide, onSelectBook }) {
 
         setLoading(true);
         searchLivrosApi(debouncedSearch)
-            .then(data => setResults(data || []))
+            .then(data => setResults(Array.isArray(data) ? data : [])) // Garante que é array
             .catch(err => console.error(err))
             .finally(() => setLoading(false));
     }, [debouncedSearch]);
@@ -42,7 +39,7 @@ export default function ReviewSearchModal({ show, onHide, onSelectBook }) {
             onHide={onHide}
             centered
             size="lg"
-            // --- AQUI ESTÁ A CORREÇÃO DO Z-INDEX PARA APARECER NA FRENTE ---
+            // Z-Index alto para garantir que apareça sobre o modal de criar review
             style={{ zIndex: 1060 }}
         >
             <Modal.Header closeButton className="border-0">
@@ -52,7 +49,6 @@ export default function ReviewSearchModal({ show, onHide, onSelectBook }) {
             </Modal.Header>
 
             <Modal.Body>
-                {/* Aqui usamos o seu componente ReviewSearchBar */}
                 <div className="mb-4">
                     <ReviewSearchBar
                         searchTerm={searchTerm}
@@ -61,8 +57,12 @@ export default function ReviewSearchModal({ show, onHide, onSelectBook }) {
                     />
                 </div>
 
-                {/* Lista de Resultados */}
-                {loading && <p className="text-muted text-center">Buscando...</p>}
+                {loading && (
+                    <div className="text-center text-muted my-3">
+                        <span className="spinner-border spinner-border-sm me-2"></span>
+                        Buscando...
+                    </div>
+                )}
 
                 {!loading && results.length > 0 && (
                     <div className="list-group">
@@ -71,13 +71,14 @@ export default function ReviewSearchModal({ show, onHide, onSelectBook }) {
                                 key={livro.id}
                                 type="button"
                                 className="list-group-item list-group-item-action d-flex align-items-center p-3 border-0 mb-2 shadow-sm rounded"
-                                onClick={() => onSelectBook(livro)} // Devolve o livro ao clicar
-                                style={{ backgroundColor: '#f9f9f9' }}
+                                onClick={() => onSelectBook(livro)}
+                                style={{ backgroundColor: '#f9f9f9', cursor: 'pointer' }}
                             >
                                 <img
-                                    src={livro.urlCapa || "https://via.placeholder.com/40x60"}
+                                    src={livro.urlCapa || "https://placehold.co/40x60?text=Capa"}
                                     alt={livro.titulo}
                                     style={{ width: '40px', height: '60px', objectFit: 'cover', marginRight: '15px', borderRadius: '4px' }}
+                                    onError={(e) => e.target.src = "https://placehold.co/40x60?text=Erro"}
                                 />
                                 <div>
                                     <h6 className="mb-0 fw-bold" style={{ color: '#594A47' }}>{livro.titulo}</h6>
@@ -90,7 +91,7 @@ export default function ReviewSearchModal({ show, onHide, onSelectBook }) {
 
                 {!loading && searchTerm && results.length === 0 && (
                     <div className="text-center text-muted mt-3">
-                        Nenhum livro encontrado.
+                        Nenhum livro encontrado para "{searchTerm}".
                     </div>
                 )}
             </Modal.Body>

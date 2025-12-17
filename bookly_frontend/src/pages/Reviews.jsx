@@ -1,11 +1,11 @@
-"use client";
-
 import React, { useState, useEffect, useCallback, useMemo } from "react";
-import { useRouter, usePathname } from 'next/navigation';
-import Navbar from "../../../components/Navbar.jsx";
-import ReviewModal from "../../../components/ReviewModal.jsx";
-import { fetchReviews, updateReview, deleteReviewApi, getLoggedInUserId, getUserNameById } from "../../../api/booklyApi.js";
-import ReviewCard from "../../../components/ReviewCard.jsx";
+// MUDANÇA 1: Hooks do React Router Dom
+import { useNavigate, useParams } from 'react-router-dom';
+
+import Navbar from "../components/Navbar.jsx";
+import ReviewModal from "../components/ReviewModal.jsx";
+import { fetchReviews, updateReview, deleteReviewApi, getLoggedInUserId, getUserNameById } from "../api/booklyApi.js";
+import ReviewCard from "../components/ReviewCard.jsx";
 import { Modal, Button } from "react-bootstrap";
 
 
@@ -91,19 +91,15 @@ const StarRatingInput = ({ currentRating, onRate }) => {
 
 const isAuthenticated = () => typeof window !== 'undefined' && !!localStorage.getItem('jwtToken');
 
-const getUserIdFromPathname = (pathname) => {
-    const segments = pathname.split('/').filter(Boolean);
-    return segments.length > 0 ? segments[segments.length - 1] : null;
-};
-
-
 export default function ReviewsPage() {
-    const router = useRouter();
-    const pathname = usePathname();
+    // MUDANÇA 2: useParams pega o ID da rota (ex: /reviews/:id)
+    const { id } = useParams();
+    const navigate = useNavigate();
 
-    const urlUserId = getUserIdFromPathname(pathname);
     const loggedInUserId = useMemo(() => getLoggedInUserId(), []);
-    const userIdToFetch = urlUserId && urlUserId !== 'reviews' ? urlUserId : loggedInUserId;
+
+    // Lógica de ID simplificada
+    const userIdToFetch = id || loggedInUserId;
 
     const [isClient, setIsClient] = useState(false);
     const [reviews, setReviews] = useState([]);
@@ -114,16 +110,16 @@ export default function ReviewsPage() {
     const [pageTitle, setPageTitle] = useState("Reviews");
     const [toast, setToast] = useState({ show: false, message: '', type: 'success' });
 
-    // CORREÇÃO: isOwner só é true se estiver logado E os IDs coincidirem.
+    // Verificação de dono (converte para string para garantir comparação correta)
     const isOwner = !!loggedInUserId && String(userIdToFetch) === String(loggedInUserId);
 
     useEffect(() => {
         setIsClient(true);
         // Redireciona APENAS se for a página do dono E não estiver autenticado.
         if (isOwner && !isAuthenticated()) {
-            router.push('/login');
+            navigate('/login');
         }
-    }, [router, isOwner]);
+    }, [navigate, isOwner]);
 
     useEffect(() => {
         if (toast.show) {
@@ -160,13 +156,14 @@ export default function ReviewsPage() {
             }
 
         } catch (err) {
+            const errorMsg = String(err.message);
             // Se for dono e receber erro de autenticação, redireciona. Senão, mostra o erro.
-            if (isOwner && (String(err.message).includes('403') || String(err.message).includes('401'))) {
+            if (isOwner && (errorMsg.includes('403') || errorMsg.includes('401'))) {
                 if (typeof window !== 'undefined') {
                     localStorage.removeItem('jwtToken');
                     localStorage.removeItem('userData');
                 }
-                router.push('/login');
+                navigate('/login');
                 return;
             }
             setError(err.message || 'Falha ao carregar reviews.');
@@ -174,7 +171,7 @@ export default function ReviewsPage() {
         } finally {
             setLoading(false);
         }
-    }, [userIdToFetch, isOwner, router]);
+    }, [userIdToFetch, isOwner, navigate]);
 
     useEffect(() => {
         if (isClient && userIdToFetch) {
@@ -251,102 +248,101 @@ export default function ReviewsPage() {
     if (!isClient) return null;
 
     return (
-        <>
-            <div style={{ backgroundColor: '#f5f4ed', minHeight: '100vh' }}>
-                <Navbar
-                    onSearchChange={(e) => setSearchTerm(e.target.value)}
-                    currentSearchTerm={searchTerm}
-                />
+        <div style={{ backgroundColor: '#f5f4ed', minHeight: '100vh' }}>
+            <Navbar
+                onSearchChange={(e) => setSearchTerm(e.target.value)}
+                currentSearchTerm={searchTerm}
+            />
 
-                <div className="container" style={{ paddingTop: '100px' }}>
-                    <h3 className="mb-4" style={{ color: '#594A47' }}>{pageTitle}</h3>
+            <div className="container" style={{ paddingTop: '100px' }}>
+                <h3 className="mb-4" style={{ color: '#594A47' }}>{pageTitle}</h3>
 
-                    {loading && <p className="text-muted">Carregando reviews...</p>}
-                    {error && <p className="text-danger">{error}</p>}
+                {loading && <p className="text-muted">Carregando reviews...</p>}
+                {error && <p className="text-danger">{error}</p>}
 
-                    {!loading && !error && filteredReviews.length === 0 && <p className="text-muted" style={{ color: '#594A47' }}>Nenhuma review encontrada.</p>}
+                {!loading && !error && filteredReviews.length === 0 && <p className="text-muted" style={{ color: '#594A47' }}>Nenhuma review encontrada.</p>}
 
-                    {(!loading && !error) && filteredReviews.map((review) => (
-                        <ReviewCard
-                            key={review.id}
-                            review={review}
-                            isOwner={isOwner}
-                            onEdit={() => setSelectedReview(review)}
-                            onDelete={handleDelete}
-                        />
-                    ))}
-
-                </div>
-
-                {isOwner && (
-                    <ReviewModal
-                        show={false}
-                        onHide={() => {}}
-                        onSaveSuccess={handleReviewCreationSuccess}
+                {(!loading && !error) && filteredReviews.map((review) => (
+                    <ReviewCard
+                        key={review.id}
+                        review={review}
+                        isOwner={isOwner}
+                        onEdit={() => setSelectedReview(review)}
+                        onDelete={handleDelete}
                     />
-                )}
+                ))}
 
-                <Modal show={!!selectedReview} onHide={() => setSelectedReview(null)} centered>
-                    <Modal.Header closeButton>
-                        <Modal.Title>Editar Review</Modal.Title>
-                    </Modal.Header>
+            </div>
 
-                    <Modal.Body>
-                        {selectedReview && (
-                            <>
-                                <p className="text-muted">Livro: {selectedReview.livro?.titulo}</p>
-
-                                <div className="mb-3">
-                                    <span className="form-label fw-bold">Nota:</span>
-
-                                    <div className="mt-2">
-                                        <StarRatingInput
-                                            currentRating={parseFloat(selectedReview.nota) || 0}
-                                            onRate={handleEditNotaChange}
-                                        />
-                                    </div>
-                                </div>
-
-                                <textarea
-                                    className="form-control"
-                                    rows="4"
-                                    value={selectedReview.review || ""}
-                                    onChange={(e) =>
-                                        setSelectedReview({
-                                            ...selectedReview,
-                                            review: e.target.value,
-                                        })
-                                    }
-                                />
-                            </>
-                        )}
-                    </Modal.Body>
-
-                    <Modal.Footer>
-                        <Button variant="secondary" onClick={() => setSelectedReview(null)}>
-                            Cancelar
-                        </Button>
-                        <Button
-                            variant="success"
-                            onClick={async () => {
-                                if (!selectedReview) return;
-                                await handleSaveEdit(selectedReview.id, {
-                                    nota: selectedReview.nota,
-                                    review: selectedReview.review,
-                                });
-                            }}
-                        >
-                            Salvar
-                        </Button>
-                    </Modal.Footer>
-                </Modal>
-
-                <SuccessToast
-                    show={toast.show}
-                    onClose={() => setToast({ show: false, message: '', type: 'success' })}
-                    message={toast.message}
-                    type={toast.type}
+            {isOwner && (
+                <ReviewModal
+                    show={false}
+                    onHide={() => {}}
+                    onSaveSuccess={handleReviewCreationSuccess}
                 />
-            </div></>
+            )}
+
+            <Modal show={!!selectedReview} onHide={() => setSelectedReview(null)} centered>
+                <Modal.Header closeButton>
+                    <Modal.Title>Editar Review</Modal.Title>
+                </Modal.Header>
+
+                <Modal.Body>
+                    {selectedReview && (
+                        <>
+                            <p className="text-muted">Livro: {selectedReview.livro?.titulo}</p>
+
+                            <div className="mb-3">
+                                <span className="form-label fw-bold">Nota:</span>
+
+                                <div className="mt-2">
+                                    <StarRatingInput
+                                        currentRating={parseFloat(selectedReview.nota) || 0}
+                                        onRate={handleEditNotaChange}
+                                    />
+                                </div>
+                            </div>
+
+                            <textarea
+                                className="form-control"
+                                rows="4"
+                                value={selectedReview.review || ""}
+                                onChange={(e) =>
+                                    setSelectedReview({
+                                        ...selectedReview,
+                                        review: e.target.value,
+                                    })
+                                }
+                            />
+                        </>
+                    )}
+                </Modal.Body>
+
+                <Modal.Footer>
+                    <Button variant="secondary" onClick={() => setSelectedReview(null)}>
+                        Cancelar
+                    </Button>
+                    <Button
+                        variant="success"
+                        onClick={async () => {
+                            if (!selectedReview) return;
+                            await handleSaveEdit(selectedReview.id, {
+                                nota: selectedReview.nota,
+                                review: selectedReview.review,
+                            });
+                        }}
+                    >
+                        Salvar
+                    </Button>
+                </Modal.Footer>
+            </Modal>
+
+            <SuccessToast
+                show={toast.show}
+                onClose={() => setToast({ show: false, message: '', type: 'success' })}
+                message={toast.message}
+                type={toast.type}
+            />
+        </div>
     );
 }

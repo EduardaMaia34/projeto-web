@@ -1,7 +1,6 @@
-"use client";
 import React from "react";
 
-// Componente StarRatingInput (adaptado do ReviewModal.jsx para usar a prop 'onRate')
+// Componente StarRatingInput
 const StarRatingInput = ({ currentRating, onRate }) => {
     const stars = [1, 2, 3, 4, 5];
 
@@ -44,7 +43,7 @@ const StarRatingInput = ({ currentRating, onRate }) => {
                     <i
                         key={starValue}
                         className={`bi ${iconClass}`}
-                        style={{ fontSize: "1.5rem", cursor: "pointer", color: color }}
+                        style={{ fontSize: "1.5rem", cursor: "pointer", color: color, marginRight: '4px' }}
                         onClick={() => handleClick(starValue)}
                     ></i>
                 );
@@ -53,67 +52,109 @@ const StarRatingInput = ({ currentRating, onRate }) => {
     );
 };
 
+export default function EditarReviewModal({ show, onHide, review, nota, setNota, texto, setTexto, onSave }) {
 
-export default function EditarReviewModal({ review, nota, setNota, texto, setTexto, onSave }) {
+    // Se não estiver visível, não renderiza nada
+    if (!show) return null;
 
-    // A função 'onRate' é o próprio setNota
     const handleSetNota = (newRating) => {
         setNota(newRating);
     };
 
+    const handleSaveClick = () => {
+        onSave();
+        onHide(); // Fecha o modal após salvar
+    };
+
     return (
-        <div className="modal fade" id="editarReviewModal" tabIndex="-1" aria-hidden="true">
-            <div className="modal-dialog modal-dialog-centered">
-                <div className="modal-content custom-modal-content">
-                    <div className="modal-header custom-modal-header">
-                        <h5 className="modal-title">
-                            Editar Review de: {review?.livro?.titulo || ""}
-                        </h5>
-                        <button type="button" className="btn-close" data-bs-dismiss="modal"></button>
-                    </div>
+        <>
+            {/* Backdrop (Fundo Escuro) */}
+            <div
+                className="modal-backdrop show"
+                style={{ opacity: 0.5, backgroundColor: '#000', zIndex: 1050 }}
+                onClick={onHide}
+            ></div>
 
-                    <div className="modal-body p-4">
-                        {review && (
-                            <>
-                                <div className="d-flex">
-                                    <img
-                                        src={review?.livro?.urlCapa}
-                                        className="modal-cover me-3"
-                                        alt="Capa"
-                                        style={{ width: "90px" }}
-                                    />
+            {/* Modal */}
+            <div
+                className="modal show d-block"
+                tabIndex="-1"
+                role="dialog"
+                style={{ zIndex: 1055 }}
+            >
+                <div className="modal-dialog modal-dialog-centered">
+                    <div className="modal-content shadow-lg border-0" style={{ borderRadius: '12px' }}>
 
-                                    <div>
-                                        <p className="text-muted mb-2">
-                                            Finalizado em: {new Date(review?.data).toLocaleDateString("pt-BR")}
-                                        </p>
+                        {/* Header */}
+                        <div className="modal-header border-bottom-0" style={{ backgroundColor: '#f8f9fa', borderRadius: '12px 12px 0 0' }}>
+                            <h5 className="modal-title fw-bold text-dark">
+                                Editar Review
+                            </h5>
+                            <button
+                                type="button"
+                                className="btn-close"
+                                onClick={onHide}
+                                aria-label="Close"
+                            ></button>
+                        </div>
 
-                                        <div className="mb-3">
-                                            <span className="fw-bold">Sua nota:</span>
-                                            {/* ✅ USANDO O COMPONENTE STAR RATING COM MEIO-PONTO */}
-                                            <StarRatingInput currentRating={nota} onRate={handleSetNota} />
+                        {/* Body */}
+                        <div className="modal-body p-4">
+                            {review && (
+                                <>
+                                    <div className="d-flex mb-4">
+                                        <img
+                                            src={review?.livro?.urlCapa || "https://placehold.co/90x130"}
+                                            className="modal-cover me-3 rounded shadow-sm"
+                                            alt="Capa"
+                                            style={{ width: "90px", objectFit: 'cover' }}
+                                        />
+
+                                        <div>
+                                            <h6 className="fw-bold mb-1">{review?.livro?.titulo}</h6>
+                                            <p className="text-muted small mb-2">
+                                                Finalizado em: {review?.data ? new Date(review.data).toLocaleDateString("pt-BR") : "-"}
+                                            </p>
+
+                                            <div className="mb-1">
+                                                <span className="fw-bold d-block mb-1" style={{fontSize: '0.9rem'}}>Sua avaliação:</span>
+                                                <StarRatingInput currentRating={nota} onRate={handleSetNota} />
+                                            </div>
                                         </div>
                                     </div>
-                                </div>
 
-                                <textarea
-                                    className="form-control mt-3 modal-review-text"
-                                    rows="4"
-                                    value={texto}
-                                    onChange={(e) => setTexto(e.target.value)}
-                                    style={{ resize: "none" }}
-                                ></textarea>
-                            </>
-                        )}
-                    </div>
+                                    <label className="form-label fw-bold small text-muted">Seu comentário:</label>
+                                    <textarea
+                                        className="form-control"
+                                        rows="5"
+                                        value={texto}
+                                        onChange={(e) => setTexto(e.target.value)}
+                                        style={{ resize: "none", backgroundColor: '#fdfbf7', border: '1px solid #ddd' }}
+                                        placeholder="Escreva o que você achou do livro..."
+                                    ></textarea>
+                                </>
+                            )}
+                        </div>
 
-                    <div className="modal-footer custom-modal-footer d-flex justify-content-center">
-                        <button className="btn btn-success fw-bold" onClick={onSave} data-bs-dismiss="modal">
-                            Salvar
-                        </button>
+                        {/* Footer */}
+                        <div className="modal-footer border-top-0 justify-content-center pb-4">
+                            <button
+                                className="btn btn-outline-secondary me-2 px-4"
+                                onClick={onHide}
+                            >
+                                Cancelar
+                            </button>
+                            <button
+                                className="btn btn-success fw-bold px-4"
+                                onClick={handleSaveClick}
+                                style={{ backgroundColor: '#198754' }}
+                            >
+                                Salvar Alterações
+                            </button>
+                        </div>
                     </div>
                 </div>
             </div>
-        </div>
+        </>
     );
 }

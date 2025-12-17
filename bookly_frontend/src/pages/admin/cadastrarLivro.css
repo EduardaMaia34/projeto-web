@@ -1,0 +1,73 @@
+/* Container principal que centraliza o formulário */
+.cadastrar-livro-container {
+    max-width: 600px;
+    margin: 3rem auto; /* Margem superior/inferior e centralizado horizontalmente */
+    padding: 2rem;
+    background-color: #ffffff;
+    border-radius: 12px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1); /* Sombra suave */
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+/* Título da página */
+.cadastrar-livro-container h2 {
+    text-align: center;
+    color: #2c3e50;
+    margin-bottom: 1.5rem;
+    font-weight: 700;
+}
+
+/* Estilo para cada grupo de input (label + input) */
+.form-group {
+    margin-bottom: 1.2rem;
+}
+
+/* Labels (etiquetas) */
+.form-group label {
+    display: block;
+    margin-bottom: 0.5rem;
+    color: #555;
+    font-weight: 600;
+    font-size: 0.9rem;
+}
+
+/* Inputs de texto, número, data e textarea */
+.form-group input,
+.form-group textarea,
+.form-group select {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    font-size: 1rem;
+    transition: border-color 0.3s ease;
+    box-sizing: border-box; /* Garante que o padding não aumente a largura total */
+}
+
+/* Efeito ao clicar no input */
+.form-group input:focus,
+.form-group textarea:focus,
+.form-group select:focus {
+    outline: none;
+    border-color: #4a90e2; /* Cor de destaque (Azul) */
+    box-shadow: 0 0 0 3px rgba(74, 144, 226, 0.1);
+}
+
+/* Botão de Enviar */
+.btn-cadastrar {
+    width: 100%;
+    padding: 12px;
+    background-color: #27ae60; /* Verde estilo sucesso */
+    color: white;
+    border: none;
+    border-radius: 6px;
+    font-size: 1rem;
+    font-weight: bold;
+    cursor: pointer;
+    transition: background-color 0.3s;
+    margin-top: 1rem;
+}
+
+.btn-cadastrar:hover {
+    background-color: #219150;
+}

@@ -1,30 +1,32 @@
-// src/components/Navbar.jsx
-"use client";
-
 import React, { useState, useEffect } from "react";
-import { useRouter } from 'next/navigation';
-import Link from 'next/link';
-import SearchModal from "./SearchModal";
-import ReviewModal from "./ReviewModal"; // 1. IMPORTAR O MODAL
+import { useNavigate, Link } from 'react-router-dom';
 
-export default function Navbar({ onAddBookClick }) { // onAddBookClick fica opcional agora
-    const router = useRouter();
+import SearchModal from "./SearchModal";
+import ReviewModal from "./ReviewModal";
+
+
+const LOGO_BG_COLOR = '#F5F4ED';
+const HEADER_BORDER_COLOR = '#DED2C2';
+const PRIMARY_TEXT_COLOR = '#594A47';
+
+export default function Navbar({ onAddBookClick }) {
+    const navigate = useNavigate();
+
     const [isLoggedIn, setIsLoggedIn] = useState(false);
     const [userData, setUserData] = useState({ name: "", photo: "" });
     const [userId, setUserId] = useState(null);
     const [isAdmin, setIsAdmin] = useState(false);
     const [isLoadingUser, setIsLoadingUser] = useState(true);
 
-    // ESTADOS DOS MODAIS
     const [openSearchModal, setOpenSearchModal] = useState(false);
-    const [openReviewModal, setOpenReviewModal] = useState(false); // 2. NOVO ESTADO
+    const [openReviewModal, setOpenReviewModal] = useState(false);
 
     useEffect(() => {
         let user;
         let token;
 
         const timer = setTimeout(() => {
-            token = typeof window !== "undefined" && localStorage.getItem("jwtToken");
+            token = localStorage.getItem("jwtToken");
             setIsLoggedIn(!!token);
 
             if (token) {
@@ -60,20 +62,17 @@ export default function Navbar({ onAddBookClick }) { // onAddBookClick fica opci
     }, []);
 
     const handleLogin = () => {
-        router.push("/login");
+        navigate("/login");
     };
 
     const handleLogout = () => {
-        if (typeof window !== "undefined") {
-            localStorage.removeItem("jwtToken");
-            localStorage.removeItem("userData");
-            setIsLoggedIn(false);
-            setIsAdmin(false);
-            router.push("/");
-        }
+        localStorage.removeItem("jwtToken");
+        localStorage.removeItem("userData");
+        setIsLoggedIn(false);
+        setIsAdmin(false);
+        navigate("/");
     };
 
-    // Callback para quando salvar o review com sucesso (opcional: recarregar página)
     const handleReviewSuccess = () => {
         window.location.reload();
     };
@@ -82,10 +81,17 @@ export default function Navbar({ onAddBookClick }) { // onAddBookClick fica opci
 
     if (isLoadingUser) {
         return (
-            <nav className="navbar navbar-light header-bar p-3 fixed-top">
+            <nav
+                className="navbar navbar-light header-bar p-3 fixed-top"
+                style={{
+                    backgroundColor: LOGO_BG_COLOR, // APLICANDO A COR
+                    borderBottom: `1px solid ${HEADER_BORDER_COLOR}`,
+                    boxShadow: '0 2px 5px rgba(0, 0, 0, 0.05)' // Sombra para destaque
+                }}
+            >
                 <div className="navbar-brand d-flex align-items-center">
                     <img src="https://imgur.com/HLvpHYn.png" alt="Bookly Logo" style={{ height: 50, marginRight: 10 }} />
-                    Bookly
+                    <span style={{ fontFamily: 'Georgia, serif', fontWeight: 'bold', color: PRIMARY_TEXT_COLOR }}>Bookly</span>
                 </div>
             </nav>
         );
@@ -93,16 +99,25 @@ export default function Navbar({ onAddBookClick }) { // onAddBookClick fica opci
 
     return (
         <>
-            <nav className="navbar navbar-light header-bar p-3 fixed-top">
-                <Link href="/" className="navbar-brand d-flex align-items-center">
+            <nav
+                className="navbar navbar-light header-bar p-3 fixed-top"
+                style={{
+                    backgroundColor: LOGO_BG_COLOR, // APLICANDO A COR
+                    borderBottom: `1px solid ${HEADER_BORDER_COLOR}`,
+                    boxShadow: '0 2px 5px rgba(0, 0, 0, 0.05)' // Sombra para destaque
+                }}
+            >
+                <Link to="/home" className="navbar-brand d-flex align-items-center">
                     <img src="https://imgur.com/HLvpHYn.png" alt="Bookly Logo" style={{ height: 50, marginRight: 10 }} />
+                    <span style={{ fontFamily: 'Georgia, serif', fontWeight: 'bold', color: PRIMARY_TEXT_COLOR }}>Bookly</span>
                 </Link>
 
                 <div className="d-flex align-items-center ms-auto">
                     <button
-                        className="btn btn-link text-dark me-3"
+                        className="btn btn-link me-3"
                         onClick={() => setOpenSearchModal(true)}
                         title="Pesquisar Livros, Autores e Usuários"
+                        style={{ color: PRIMARY_TEXT_COLOR }} // Cor do ícone
                     >
                         <i className="bi bi-search" style={{ fontSize: '1.2rem' }}></i>
                     </button>
@@ -111,14 +126,14 @@ export default function Navbar({ onAddBookClick }) { // onAddBookClick fica opci
                         {isLoggedIn ? (
                             <>
                                 <Link
-                                    href={userId ? `/perfil/${userId}` : '/perfil'}
-                                    className="d-flex align-items-center me-3 text-decoration-none text-dark"
+                                    to={userId ? ('/perfil/' + userId) : '/perfil'}
+                                    className="d-flex align-items-center me-3 text-decoration-none"
                                     title={userData.name}
                                 >
                                     {useIconFallback ? (
                                         <i
                                             className="bi bi-person-circle"
-                                            style={{ fontSize: 30, color: '#594A47' }}
+                                            style={{ fontSize: 30, color: PRIMARY_TEXT_COLOR }} // Cor do ícone
                                         ></i>
                                     ) : (
                                         <img
@@ -132,7 +147,7 @@ export default function Navbar({ onAddBookClick }) { // onAddBookClick fica opci
 
                                 {isAdmin && (
                                     <Link
-                                        href="/admin/modo-admin"
+                                        to="/admin/painel"
                                         className="btn me-3 fw-bold"
                                         style={{ backgroundColor: "#003366", color: "#fff", borderColor: "#003366" }}
                                         title="Área Administrativa"
@@ -141,20 +156,24 @@ export default function Navbar({ onAddBookClick }) { // onAddBookClick fica opci
                                     </Link>
                                 )}
 
-                                {/* 3. BOTÃO AGORA ABRE O MODAL */}
                                 <button
                                     className="btn btn-success me-3 d-flex align-items-center"
                                     onClick={() => setOpenReviewModal(true)}
+                                    style={{ backgroundColor: '#198754', border: 'none' }}
                                 >
                                     <span style={{ fontSize: '1.2rem', lineHeight: 1, marginRight: 4 }}>+</span> Livro
                                 </button>
 
-                                <button className="btn btn-link text-dark" onClick={handleLogout} title="Sair">
-                                    <i className="bi bi-box-arrow-right"></i>
+                                <button className="btn btn-link" onClick={handleLogout} title="Sair" style={{ color: PRIMARY_TEXT_COLOR }}>
+                                    <i className="bi bi-box-arrow-right" style={{ fontSize: '1.2rem' }}></i>
                                 </button>
                             </>
                         ) : (
-                            <button className="btn btn-success me-3 d-flex align-items-center" onClick={handleLogin}>
+                            <button
+                                className="btn me-3 d-flex align-items-center"
+                                onClick={handleLogin}
+                                style={{ backgroundColor: PRIMARY_TEXT_COLOR, color: '#fff', border: 'none' }}
+                            >
                                 Log in
                             </button>
                         )}
@@ -162,13 +181,11 @@ export default function Navbar({ onAddBookClick }) { // onAddBookClick fica opci
                 </div>
             </nav>
 
-            {/* MODAL DE PESQUISA */}
             <SearchModal
                 show={openSearchModal}
                 onHide={() => setOpenSearchModal(false)}
             />
 
-            {/* 4. MODAL DE REVIEW ADICIONADO AQUI */}
             <ReviewModal
                 show={openReviewModal}
                 onHide={() => setOpenReviewModal(false)}

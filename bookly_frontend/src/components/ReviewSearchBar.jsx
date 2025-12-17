@@ -14,7 +14,7 @@ const ReviewSearchBar = ({ searchTerm, onSearchChange, placeholder = "Pesquisar 
                 autoFocus
                 style={{ width: '100%' }}
             />
-            <button className="btn btn-link text-dark ms-2">
+            <button className="btn btn-link text-dark ms-2" title="Buscar">
                 <i className="bi bi-search"></i>
             </button>
         </div>

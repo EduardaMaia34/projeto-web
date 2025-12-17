@@ -1,15 +1,18 @@
-"use client";
-
 import React, { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
-import Link from "next/link";
-import Navbar from "@/components/Navbar";
-import EditBookModal from "@/components/EditBookModal";
-import DeleteBookModal from "@/components/DeleteBookModal";
-import "../../layout.jsx";
+// MUDANÇA 1: Hooks e Link do React Router Dom
+import { useNavigate, Link } from "react-router-dom";
+
+// MUDANÇA 2: Caminhos relativos
+import Navbar from "../../components/Navbar";
+// Certifique-se que esses modais existem na pasta components, senão o código quebra
+import EditBookModal from "../../components/EditBookModal";
+import DeleteBookModal from "../../components/DeleteBookModal";
+
+// MUDANÇA 3: Removemos o layout.jsx (estilos globais devem estar no main.jsx/index.css)
 
 export default function ModoAdmin() {
-    const router = useRouter();
+    // MUDANÇA 4: useNavigate em vez de useRouter
+    const navigate = useNavigate();
 
     const [books, setBooks] = useState([]);
     const [filteredBooks, setFilteredBooks] = useState([]);
@@ -26,12 +29,12 @@ export default function ModoAdmin() {
 
     // 1. Verificação de Admin e Token
     useEffect(() => {
-        const storedToken = typeof window !== "undefined" ? localStorage.getItem("jwtToken") : null;
+        const storedToken = localStorage.getItem("jwtToken");
         const userData = JSON.parse(localStorage.getItem("userData") || "{}");
 
         // Verifica permissões de forma mais flexível
         const role = userData.role || userData.perfil || userData.roles;
-        // Ajuste: verifica se role existe e contém ADMIN (seja string ou array)
+
         const isAdmin = role && (
             role === 'ROLE_ADMIN' ||
             (Array.isArray(role) && role.includes('ROLE_ADMIN'))
@@ -39,19 +42,20 @@ export default function ModoAdmin() {
 
         if (!storedToken || !isAdmin) {
             console.warn("Acesso negado: Usuário não é admin ou sem token.");
-            router.push("/login");
+            // MUDANÇA 5: navigate
+            navigate("/login");
             return;
         }
 
         setToken(storedToken);
         fetchBooks(storedToken);
-    }, [router]);
+    }, [navigate]);
 
-    // 2. Busca de Livros (Corrigida e com Logs)
+    // 2. Busca de Livros
     const fetchBooks = async (authToken) => {
         setLoading(true);
         try {
-            const url = `http://localhost:8081/api/v1/livros`; // Confirme se a rota é esta mesma
+            const url = `http://localhost:8081/api/v1/livros`;
             console.log("Buscando livros em:", url);
 
             const response = await fetch(url, {
@@ -63,9 +67,8 @@ export default function ModoAdmin() {
 
             if (response.ok) {
                 const data = await response.json();
-                console.log("Dados recebidos da API:", data); // Olhe seu console (F12)
+                console.log("Dados recebidos da API:", data);
 
-                // Lógica robusta para extrair a lista, seja Array puro ou Pageable (Spring)
                 let lista = [];
                 if (Array.isArray(data)) {
                     lista = data;
@@ -74,7 +77,7 @@ export default function ModoAdmin() {
                 }
 
                 setBooks(lista);
-                setFilteredBooks(lista); // Inicializa os filtrados com a lista completa
+                setFilteredBooks(lista);
             } else {
                 console.error("Erro na resposta da API:", response.status);
             }
@@ -85,14 +88,13 @@ export default function ModoAdmin() {
         }
     };
 
-    // 3. Filtro de Pesquisa (Blindado contra Null)
+    // 3. Filtro de Pesquisa
     useEffect(() => {
         if (!books) return;
 
         const term = searchTerm.toLowerCase();
 
         const results = books.filter(book => {
-            // Usa encadeamento opcional (?.) e valores padrão ("") para evitar erro se for null
             const titulo = (book.titulo || "").toLowerCase();
             const autor = (book.autor || "").toLowerCase();
             const id = String(book.id || "");
@@ -120,7 +122,6 @@ export default function ModoAdmin() {
             });
 
             if (response.status === 204 || response.ok) {
-                // Remove da lista local para não precisar recarregar tudo
                 const novaLista = books.filter(b => b.id !== bookToDelete.id);
                 setBooks(novaLista);
                 // O useEffect do filtro atualizará o filteredBooks automaticamente
@@ -146,12 +147,11 @@ export default function ModoAdmin() {
         // Atualiza a lista local com o livro editado
         const updatedList = books.map(b => b.id === updatedBook.id ? updatedBook : b);
         setBooks(updatedList);
-        setFilteredBooks(updatedList); // Reseta o filtro momentaneamente ou aplica logica
+        setFilteredBooks(updatedList);
         alert("Livro atualizado com sucesso!");
         setShowEditModal(false);
     };
 
-    // --- RENDERIZAÇÃO ---
     return (
         <div style={{ backgroundColor: "#f4f1ea", minHeight: "100vh" }}>
             <Navbar />
@@ -175,7 +175,8 @@ export default function ModoAdmin() {
                             <i className="bi bi-search" style={{ fontSize: '1.2rem' }}></i>
                         </button>
 
-                        <Link href="/admin/cadastrar-livro" className="btn btn-success shadow-sm" style={{ backgroundColor: "#198754", border: "none" }}>
+                        {/* MUDANÇA 6: Link com 'to' em vez de 'href' e rota correta */}
+                        <Link to="/admin/cadastrar" className="btn btn-success shadow-sm" style={{ backgroundColor: "#198754", border: "none" }}>
                             <i className="bi bi-plus-lg me-2"></i> Adicionar Livro
                         </Link>
                     </div>
@@ -268,6 +269,7 @@ export default function ModoAdmin() {
                 )}
             </div>
 
+            {/* Certifique-se que estes componentes existem e aceitam estas props */}
             <EditBookModal
                 show={showEditModal}
                 onHide={() => setShowEditModal(false)}

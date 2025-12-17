@@ -1,22 +1,25 @@
-"use client";
+import React, { useCallback, useEffect, useState } from 'react';
+// MUDANÇA 1: useNavigate em vez de useRouter
+import { useNavigate } from 'react-router-dom';
 
-import React, { useState, useEffect, useCallback } from 'react';
-import { useRouter } from 'next/navigation';
-import Navbar from '../../components/Navbar';
-import AddBookModal from '../../components/AddBookModal.jsx'; // Importa o modal fornecido
+import Navbar from '../../components/Navbar.jsx';
+import AddBookModal from '../../components/AddBookModal.jsx'; // Certifique-se que o caminho está certo
 import {
-    getUserById,
-    updateUser,
-    fetchInteresses,
     fetchFavoriteBooks,
-    removerLivroFavoritoApi
-} from '../../api/booklyApi';
-import './editar.css';
-import 'bootstrap/dist/css/bootstrap.min.css';
+    fetchInteresses,
+    getUserById,
+    removerLivroFavoritoApi,
+    updateUser
+} from '../../api/booklyApi.js';
 
+import './editar.css'; // Importa o CSS que criamos acima
+import 'bootstrap/dist/css/bootstrap.min.css';
+import 'bootstrap-icons/font/bootstrap-icons.css'; // Garante que os ícones funcionem
 
 export default function EditarPerfilPage() {
-    const router = useRouter();
+    // MUDANÇA 2: Hook de navegação do React Router Dom
+    const navigate = useNavigate();
+
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [userId, setUserId] = useState(null);
@@ -55,7 +58,8 @@ export default function EditarPerfilPage() {
     const carregarDadosIniciais = async () => {
         const storedUser = localStorage.getItem('userData');
         if (!storedUser) {
-            router.push('/login');
+            // MUDANÇA 3: Redirecionamento com navigate
+            navigate('/login');
             return;
         }
 
@@ -116,12 +120,10 @@ export default function EditarPerfilPage() {
         });
     };
 
-    // Função de callback para recarregar a lista após o modal adicionar um livro
     const handleBookAddedSuccess = async () => {
         await carregarFavoritos(userId);
     };
 
-    // Lógica para remover Livro Favorito
     const handleRemoveFavorite = async (livroId, livroTitulo) => {
         if (confirm(`Tem certeza que deseja remover "${livroTitulo}" dos seus favoritos?`)) {
             try {
@@ -152,7 +154,8 @@ export default function EditarPerfilPage() {
             localStorage.setItem('userData', JSON.stringify(newData));
 
             alert("Perfil atualizado com sucesso!");
-            router.push(`/perfil/${userId}`);
+            // MUDANÇA 4: Redirecionamento para a página de perfil
+            navigate(`/perfil`); // Ou navigate(`/perfil/${userId}`) dependendo da sua rota
 
         } catch (error) {
             console.error(error);
@@ -199,7 +202,6 @@ export default function EditarPerfilPage() {
         );
     };
 
-    // Auxiliar para renderizar Livros Favoritos (Centralizado e com botão de remover)
     const renderFavoriteBooks = () => {
         return (
             <div className="d-flex justify-content-center gap-3 p-3 rounded" style={{ backgroundColor: '#f8f9fa', border: '1px solid #e9ecef' }}>
@@ -218,13 +220,12 @@ export default function EditarPerfilPage() {
                             onClick={() => handleRemoveFavorite(livro.id, livro.titulo)}
                             style={{ width: '24px', height: '24px', padding: 0, lineHeight: 1, fontSize: '0.8rem', top: '-10px', right: '-10px' }}
                         >
-                            X
+                            <i className="bi bi-x"></i> {/* Ícone X do Bootstrap Icons */}
                         </button>
                         <small className="d-block text-truncate mt-1" style={{ fontSize: '0.75rem' }}>{livro.titulo}</small>
                     </div>
                 ))}
 
-                {/* Slot para adicionar novo favorito */}
                 {livrosFavoritos.length < MAX_FAVORITES && (
                     <div className="text-center d-flex justify-content-center align-items-center" style={{ width: '80px', height: '120px', border: '2px dashed #ccc', borderRadius: '4px', cursor: 'pointer' }}
                          onClick={() => setIsSearchModalOpen(true)}>
@@ -295,7 +296,7 @@ export default function EditarPerfilPage() {
                                     ></textarea>
                                 </div>
 
-                                {/* 7. UI DE INTERESSES (TAGS) */}
+                                {/* UI DE INTERESSES */}
                                 <div className="mt-4">
                                     <label className="form-label-custom mb-2">
                                         Seus Interesses <small className="text-muted">(Máximo 5)</small>
@@ -317,7 +318,8 @@ export default function EditarPerfilPage() {
                                     <button
                                         type="button"
                                         className="btn-cancel"
-                                        onClick={() => router.back()}
+                                        // MUDANÇA 5: navigate(-1) volta para a página anterior
+                                        onClick={() => navigate(-1)}
                                     >
                                         Cancelar
                                     </button>
@@ -338,7 +340,6 @@ export default function EditarPerfilPage() {
                 </div>
             </div>
 
-            {/* O MODAL DE BUSCA AGORA USA O COMPONENTE AddBookModal.jsx FORNECIDO */}
             <AddBookModal
                 show={isSearchModalOpen}
                 onHide={() => setIsSearchModalOpen(false)}

@@ -1,9 +1,8 @@
-"use client";
-
 import React, { useState, useEffect } from 'react';
 import { Modal, Button } from 'react-bootstrap';
 import InteressesSelector from './InteressesSelector';
-//import { updateUserProfile } from '../api/booklyApi';
+
+import { updateUserProfile } from '../api/booklyApi';
 
 export default function InteressesModal({ show, onHide, currentInteressesIds, onSaveSuccess, userId }) {
     const [selectedIds, setSelectedIds] = useState([]);
@@ -14,7 +13,7 @@ export default function InteressesModal({ show, onHide, currentInteressesIds, on
         if (currentInteressesIds) {
             setSelectedIds(currentInteressesIds);
         }
-    }, [currentInteressesIds]);
+    }, [currentInteressesIds, show]); // Adicionei 'show' para garantir atualização ao abrir
 
     const handleSave = async () => {
         if (!userId) {
@@ -26,13 +25,16 @@ export default function InteressesModal({ show, onHide, currentInteressesIds, on
         setError(null);
 
         try {
+
             const payload = {
                 interessesIds: selectedIds
             };
 
             await updateUserProfile(userId, payload);
 
-            onSaveSuccess(selectedIds);
+            if (onSaveSuccess) {
+                onSaveSuccess(selectedIds);
+            }
             onHide();
 
         } catch (err) {
@@ -49,10 +51,14 @@ export default function InteressesModal({ show, onHide, currentInteressesIds, on
                 <Modal.Title>Editar Interesses</Modal.Title>
             </Modal.Header>
             <Modal.Body>
-                <p className="text-muted small">Escolha seus 3 principais interesses de leitura. (Máximo de 3)</p>
+                <p className="text-muted small">
+                    Escolha seus principais interesses de leitura.
+                    <span className="fw-bold ms-1">(Selecionados: {selectedIds.length})</span>
+                </p>
 
                 {error && <div className="alert alert-danger">{error}</div>}
 
+                {}
                 <InteressesSelector
                     selectedIds={selectedIds}
                     onSelect={setSelectedIds}
@@ -65,14 +71,14 @@ export default function InteressesModal({ show, onHide, currentInteressesIds, on
                 <Button
                     variant="primary"
                     onClick={handleSave}
-                    disabled={loading || selectedIds.length === 0}
+                    disabled={loading} // Removi a obrigação de ter > 0, caso o usuário queira limpar tudo
                     style={{
                         backgroundColor: '#387638',
                         borderColor: '#387638',
                         color: 'white'
                     }}
                 >
-                    {loading ? 'Salvando...' : `Salvar (${selectedIds.length}/3)`}
+                    {loading ? 'Salvando...' : 'Salvar Alterações'}
                 </Button>
             </Modal.Footer>
         </Modal>

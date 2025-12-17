@@ -1,8 +1,8 @@
-"use client";
-
 import React, { useState, useEffect, useCallback } from 'react';
-import { useParams, useRouter } from 'next/navigation';
-import Navbar from '../../../components/Navbar';
+// MUDANÇA 1: Imports do React Router Dom em vez do Next.js
+import { useParams, useNavigate } from 'react-router-dom';
+
+import Navbar from '../../components/Navbar.jsx';
 import {
     getLivroById,
     getReviewsByLivroId,
@@ -10,12 +10,12 @@ import {
     adicionarLivroApi,
     removerLivroApi,
     fetchLivroStatus
-} from '../../../api/booklyApi';
-import ReviewModal from '../../../components/ReviewModal.jsx';
+} from '../../api/booklyApi.js';
+import ReviewModal from '../../components/ReviewModal.jsx';
 
 import 'bootstrap/dist/css/bootstrap.min.css';
 import 'bootstrap-icons/font/bootstrap-icons.css';
-import './bookDetails.css';
+import './bookDetails.css'; // Certifique-se que esse arquivo está na mesma pasta
 
 const SuccessToast = ({ show, onClose, message, type = 'success' }) => {
     const bgColor = type === 'success' ? 'bg-success' : 'bg-danger';
@@ -64,9 +64,10 @@ const StaticStars = ({ nota }) => {
 };
 
 export default function LivroPage() {
-    const params = useParams();
-    const router = useRouter();
-    const { id } = params;
+    // MUDANÇA 2: Usando os hooks do React Router Dom
+    const { id } = useParams(); // Pega o ID direto da URL
+    const navigate = useNavigate(); // Substituto do router.push
+
     const livroId = id;
     const userId = getLoggedInUserId();
 
@@ -130,7 +131,8 @@ export default function LivroPage() {
 
         if (!userId) {
             setToast({ show: true, message: 'Você precisa estar logado para adicionar livros à sua biblioteca.', type: 'danger' });
-            router.push('/login');
+            // MUDANÇA 3: router.push vira navigate
+            navigate('/login');
             return;
         }
 
@@ -151,7 +153,8 @@ export default function LivroPage() {
 
     const handleCreateReviewClick = () => {
         if (!userId) {
-            router.push('/login');
+            // MUDANÇA 4: router.push vira navigate
+            navigate('/login');
             return;
         }
         setShowReviewModal(true);

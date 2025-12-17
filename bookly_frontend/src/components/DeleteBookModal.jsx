@@ -1,14 +1,25 @@
-"use client";
-
 import React from "react";
 
 export default function DeleteBookModal({ show, onHide, book, onConfirm, loading }) {
+    // Se não estiver visível, não renderiza nada
     if (!show) return null;
 
     return (
         <>
-            <div className="modal-backdrop show" style={{ opacity: 0.5, backgroundColor: '#000' }}></div>
-            <div className="modal show d-block" tabIndex="-1">
+            {/* Fundo Escuro (Backdrop) Manual */}
+            <div
+                className="modal-backdrop show"
+                style={{ opacity: 0.5, backgroundColor: '#000', zIndex: 1040 }}
+                onClick={onHide} // Fecha ao clicar fora (opcional)
+            ></div>
+
+            {/* Modal */}
+            <div
+                className="modal show d-block"
+                tabIndex="-1"
+                role="dialog"
+                style={{ zIndex: 1050 }}
+            >
                 <div className="modal-dialog modal-dialog-centered">
                     <div className="modal-content border-0 shadow-lg" style={{ borderRadius: '12px', overflow: 'hidden' }}>
 

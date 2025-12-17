@@ -1,0 +1,84 @@
+/* src/pages/editar-perfil/editar.css */
+
+.edit-page-container {
+    background-color: #f4f1ea;
+    min-height: 100vh;
+    padding-bottom: 60px;
+}
+
+.edit-card {
+    background-color: #ffffff;
+    border-radius: 12px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+    padding: 2rem;
+    margin-top: 100px; /* Espaço para a Navbar fixa */
+}
+
+.preview-img {
+    width: 120px;
+    height: 120px;
+    object-fit: cover;
+    border-radius: 50%;
+    border: 3px solid #594A47;
+    margin-bottom: 1rem;
+}
+
+.form-label-custom {
+    font-weight: 600;
+    color: #594A47;
+    margin-bottom: 0.5rem;
+    display: block;
+}
+
+.form-control-custom {
+    width: 100%;
+    padding: 0.75rem;
+    border: 1px solid #ced4da;
+    border-radius: 8px;
+    margin-bottom: 1rem;
+    font-size: 1rem;
+    transition: border-color 0.2s;
+}
+
+.form-control-custom:focus {
+    border-color: #594A47;
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(89, 74, 71, 0.1);
+}
+
+.btn-save {
+    background-color: #198754; /* Verde sucesso */
+    color: white;
+    padding: 10px 24px;
+    border: none;
+    border-radius: 6px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.btn-save:hover {
+    background-color: #157347;
+}
+
+.btn-save:disabled {
+    background-color: #a3cfbb;
+    cursor: not-allowed;
+}
+
+.btn-cancel {
+    background-color: transparent;
+    color: #6c757d;
+    padding: 10px 24px;
+    border: 1px solid #ced4da;
+    border-radius: 6px;
+    font-weight: 600;
+    margin-right: 10px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.btn-cancel:hover {
+    background-color: #e9ecef;
+    color: #495057;
+}

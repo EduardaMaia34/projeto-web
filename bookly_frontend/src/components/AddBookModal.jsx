@@ -1,15 +1,15 @@
-// src/components/AddBookSearchModal.jsx
-
 import React, { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useNavigate } from 'react-router-dom';
 import { Modal, Button } from 'react-bootstrap';
 import { useDebounce } from "../hooks/useDebounce";
 import { searchLivrosApi, adicionarLivroFavoritoApi } from "../api/booklyApi";
 
 export default function AddBookModal({ show, onHide, onBookAdded, currentUserId, currentFavoritesCount, maxFavorites }) {
-    const router = useRouter();
+    // MUDANÇA 2: useNavigate em vez de useRouter
+    const navigate = useNavigate();
+
     const [searchTerm, setSearchTerm] = useState('');
-    const [searchResults, setSearchResults] = useState([]); // Apenas livros
+    const [searchResults, setSearchResults] = useState([]);
     const [loading, setLoading] = useState(false);
     const [actionLoading, setActionLoading] = useState(null);
 
@@ -28,8 +28,8 @@ export default function AddBookModal({ show, onHide, onBookAdded, currentUserId,
             try {
                 // Apenas busca livros
                 const livrosResults = await searchLivrosApi(debouncedSearch);
-
-                setSearchResults(livrosResults || []);
+                // Garante que seja um array
+                setSearchResults(Array.isArray(livrosResults) ? livrosResults : []);
 
             } catch (error) {
                 console.error("Falha ao buscar livros:", error);
@@ -46,8 +46,10 @@ export default function AddBookModal({ show, onHide, onBookAdded, currentUserId,
 
 
     const handleSelectBook = (livroId) => {
-        // Redireciona para a página do livro
-        router.push(`/livros/${livroId}`);
+        // Opcional: Fechar o modal ao navegar
+        onHide();
+        // MUDANÇA 3: navigate
+        navigate(`/livros/${livroId}`);
     };
 
 
@@ -64,7 +66,6 @@ export default function AddBookModal({ show, onHide, onBookAdded, currentUserId,
         setActionLoading(livroId);
 
         try {
-            // Chamada para a API de Favoritos, que usa o endpoint users/favoritos/{livroId}
             await adicionarLivroFavoritoApi(livroId);
 
             if (onBookAdded) {
@@ -75,7 +76,6 @@ export default function AddBookModal({ show, onHide, onBookAdded, currentUserId,
 
         } catch (error) {
             console.error("Erro ao adicionar livro:", error);
-            // Mostrar erro do servidor (ex: "Livro já é favorito")
             alert(`Falha ao adicionar favorito: ${error.message}`);
         } finally {
             setActionLoading(null);
@@ -101,6 +101,7 @@ export default function AddBookModal({ show, onHide, onBookAdded, currentUserId,
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
                         autoComplete="off"
+                        autoFocus
                     />
                 </div>
 
@@ -110,9 +111,14 @@ export default function AddBookModal({ show, onHide, onBookAdded, currentUserId,
                     </div>
                 )}
 
-                {loading && searchTerm && <p className="text-info">Buscando...</p>}
+                {loading && searchTerm && (
+                    <div className="text-center text-info my-2">
+                        <span className="spinner-border spinner-border-sm me-2"></span>
+                        Buscando...
+                    </div>
+                )}
 
-                {!loading && debouncedSearch && canAddMore && (
+                {!loading && debouncedSearch && canAddMore && hasResults && (
                     <small className="text-muted d-block mb-3">Clique na capa ou título para ver detalhes.</small>
                 )}
 
@@ -128,14 +134,16 @@ export default function AddBookModal({ show, onHide, onBookAdded, currentUserId,
                                     className="d-flex align-items-center flex-grow-1"
                                     role="button"
                                     onClick={() => handleSelectBook(livro.id)}
+                                    style={{ cursor: 'pointer' }}
                                 >
                                     <img
                                         src={livro.urlCapa || 'https://placehold.co/40x60'}
-                                        style={{ width: '40px', height: '60px', objectFit: 'cover', marginRight: '10px' }}
+                                        style={{ width: '40px', height: '60px', objectFit: 'cover', marginRight: '10px', borderRadius: '4px' }}
                                         alt={`Capa de ${livro.titulo}`}
+                                        onError={(e) => e.target.src = "https://placehold.co/40x60?text=Capa"}
                                     />
                                     <div>
-                                        <h6 className="mb-0">{livro.titulo}</h6>
+                                        <h6 className="mb-0 fw-bold">{livro.titulo}</h6>
                                         <small className="text-muted">{livro.autor}</small>
                                     </div>
                                 </div>
@@ -148,8 +156,10 @@ export default function AddBookModal({ show, onHide, onBookAdded, currentUserId,
                                     style={{
                                         backgroundColor: '#387638',
                                         borderColor: '#387638',
-                                        color: 'white'
+                                        color: 'white',
+                                        minWidth: '40px'
                                     }}
+                                    title="Adicionar aos Favoritos"
                                 >
                                     {actionLoading === livro.id ?
                                         <span className="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> :
@@ -162,11 +172,15 @@ export default function AddBookModal({ show, onHide, onBookAdded, currentUserId,
                 )}
 
                 {!loading && searchTerm && !hasResults && (
-                    <p className="text-muted">Nenhum livro encontrado para "{searchTerm}".</p>
+                    <div className="text-center py-3 text-muted">
+                        Nenhum livro encontrado para "{searchTerm}".
+                    </div>
                 )}
 
                 {!searchTerm && (
-                    <p className="text-muted">Use a busca acima para encontrar livros e adicionar aos seus favoritos.</p>
+                    <p className="text-muted text-center mt-3">
+                        Use a busca acima para encontrar livros e adicionar aos seus favoritos.
+                    </p>
                 )}
             </Modal.Body>
             <Modal.Footer>

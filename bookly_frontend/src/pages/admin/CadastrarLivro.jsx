@@ -1,11 +1,14 @@
-"use client";
-
 import React, { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
-import Navbar from "@/components/Navbar";
+// MUDANÇA 1: useNavigate do React Router Dom
+import { useNavigate } from "react-router-dom";
+import Navbar from "../../components/Navbar";
+
+// MUDANÇA 2: Importar o CSS criado acima
+import "./cadastrarLivro.css";
 
 export default function CadastrarLivro() {
-    const router = useRouter();
+    // MUDANÇA 3: Hook de navegação
+    const navigate = useNavigate();
 
     const [formData, setFormData] = useState({
         titulo: "",
@@ -23,19 +26,17 @@ export default function CadastrarLivro() {
     // 1. Ao carregar, verifica Auth e busca Interesses
     useEffect(() => {
         const token = localStorage.getItem("jwtToken");
-        const userData = JSON.parse(localStorage.getItem("userData") || "{}");
 
-        if (!token) { // Adicione a verificação de role se necessário (userData.role !== "ROLE_ADMIN")
-            router.push("/login");
+        if (!token) {
+            navigate("/login");
             return;
         }
 
         fetchInteresses(token);
-    }, [router]);
+    }, [navigate]);
 
     const fetchInteresses = async (token) => {
         try {
-
             const response = await fetch("http://localhost:8081/api/v1/interesses", {
                 headers: { Authorization: `Bearer ${token}` },
             });
@@ -54,7 +55,7 @@ export default function CadastrarLivro() {
         setFormData((prev) => ({ ...prev, [name]: value }));
     };
 
-    // 3. Manipula seleção de Interesses (Agora com estilo de TAGS)
+    // 3. Manipula seleção de Interesses
     const handleInteresseToggle = (interesseId) => {
         setSelectedInteresses((prev) => {
             if (prev.includes(interesseId)) {
@@ -79,7 +80,7 @@ export default function CadastrarLivro() {
             descricao: formData.descricao,
             urlCapa: formData.urlCapa,
             ano: parseInt(formData.ano),
-            interessesIds: selectedInteresses // Mantendo sua correção de lógica
+            interessesIds: selectedInteresses
         };
 
         try {
@@ -94,7 +95,8 @@ export default function CadastrarLivro() {
 
             if (response.ok) {
                 setMessage({ type: "success", text: "Livro cadastrado com sucesso!" });
-                setTimeout(() => router.push("/admin/modo-admin"), 2000);
+                // MUDANÇA 4: Redireciona para a rota definida no App.jsx (/admin/painel)
+                setTimeout(() => navigate("/admin/painel"), 2000);
             } else {
                 let errorMsg = "Falha ao cadastrar";
                 try {
@@ -117,92 +119,6 @@ export default function CadastrarLivro() {
     return (
         <div style={{ backgroundColor: "#f4f1ea", minHeight: "100vh" }}>
             <Navbar />
-
-            {/* --- CSS CUSTOMIZADO PARA ESTILO BOOKLY --- */}
-            <style jsx>{`
-                .bookly-label {
-                    font-family: 'Georgia', 'Times New Roman', serif;
-                    text-transform: uppercase;
-                    letter-spacing: 1px;
-                    font-size: 0.85rem;
-                    color: #594A47;
-                    font-weight: bold;
-                    margin-bottom: 8px;
-                    display: block;
-                }
-                .bookly-input {
-                    background-color: #fff;
-                    border: 1px solid #ddd;
-                    border-radius: 4px;
-                    padding: 12px;
-                    width: 100%;
-                    outline: none;
-                    transition: border-color 0.3s;
-                    font-family: sans-serif;
-                }
-                .bookly-input:focus {
-                    border-color: #594A47;
-                    box-shadow: 0 0 0 2px rgba(89, 74, 71, 0.1);
-                }
-                .bookly-card {
-                    background: white;
-                    padding: 40px;
-                    border-radius: 8px;
-                    box-shadow: 0 4px 6px rgba(0,0,0,0.02); 
-                }
-                .bookly-btn {
-                    background-color: #198754; 
-                    color: white;
-                    padding: 12px 24px;
-                    border: none;
-                    border-radius: 4px;
-                    font-weight: 600;
-                    text-transform: uppercase;
-                    letter-spacing: 1px;
-                    font-size: 0.9rem;
-                    transition: opacity 0.3s;
-                }
-                .bookly-btn:hover {
-                    opacity: 0.9;
-                }
-                .bookly-btn-outline {
-                    background: transparent;
-                    border: 1px solid #999;
-                    color: #666;
-                    padding: 12px 24px;
-                    border-radius: 4px;
-                    font-weight: 600;
-                    text-transform: uppercase;
-                    letter-spacing: 1px;
-                    font-size: 0.9rem;
-                    transition: all 0.3s;
-                }
-                .bookly-btn-outline:hover {
-                    background-color: #f0f0f0;
-                    color: #333;
-                }
-                .tag-badge {
-                    cursor: pointer;
-                    padding: 8px 16px;
-                    border-radius: 20px;
-                    border: 1px solid #ddd;
-                    background: #fff;
-                    color: #555;
-                    display: inline-block;
-                    margin: 0 8px 8px 0;
-                    font-size: 0.9rem;
-                    transition: all 0.2s;
-                    user-select: none;
-                }
-                .tag-badge:hover {
-                    border-color: #aaa;
-                }
-                .tag-badge.selected {
-                    background-color: #594A47;
-                    color: white;
-                    border-color: #594A47;
-                }
-            `}</style>
 
             <div className="container" style={{ paddingTop: "120px", paddingBottom: "80px" }}>
                 <div className="row justify-content-center">
@@ -340,7 +256,7 @@ export default function CadastrarLivro() {
                                     <button
                                         type="button"
                                         className="bookly-btn-outline"
-                                        onClick={() => router.back()}
+                                        onClick={() => navigate(-1)} // Volta 1 página
                                     >
                                         Cancelar
                                     </button>
